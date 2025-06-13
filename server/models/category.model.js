@@ -1,0 +1,36 @@
+import mongoose from "mongoose";
+
+const categorySchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  type: {
+    type: String,
+    enum: ["income", "expense"],
+    required: true,
+  },
+  icon: {
+    type: String,
+    trim: true,
+  },
+  color: {
+    type: String,
+    trim: true,
+  },
+  isDefault: {
+    type: Boolean,
+    default: false, 
+  },
+}, {
+  timestamps: true, 
+});
+
+const Category = mongoose.model("Category", categorySchema);
+export default Category;
