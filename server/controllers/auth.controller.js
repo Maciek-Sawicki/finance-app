@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import { generateTokenAndSetCookie } from "../libs/utils/generateToken.js";
+import { initDefaultCategoriesForUser } from "./category.controller.js"; 
 
 export const signUp = async (req, res) => {
   try {
@@ -33,6 +34,7 @@ export const signUp = async (req, res) => {
     });
 
     await newUser.save();
+    await initDefaultCategoriesForUser(newUser._id);
     generateTokenAndSetCookie(newUser._id, res);
 
     res.status(201).json({

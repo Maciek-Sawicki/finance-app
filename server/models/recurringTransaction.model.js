@@ -77,6 +77,10 @@ const recurringTransactionSchema = new mongoose.Schema({
     type: Boolean,
     default: true, 
   },
+  settled: {
+    type: Boolean,
+    default: false,
+  },
 }, {
   timestamps: true, 
 });

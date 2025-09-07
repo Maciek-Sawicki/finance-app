@@ -34,6 +34,10 @@ const transactionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now, 
   },
+  settled: {
+    type: Boolean,
+    default: false,
+  },
   description: {
     type: String,
     trim: true,
