@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.routes.js';
 import accountRoutes from './routes/account.routes.js';
 import categoryRoutes from './routes/category.routes.js';
+import transactionRoutes from './routes/transaction.routes.js';
 
 import connectMongoDB from './db/connectMongoDB.js';
 
@@ -24,6 +25,7 @@ app.get('/', (req, res) => res.send('API works!'));
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server works on port ${PORT}`);
