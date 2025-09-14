@@ -1,4 +1,6 @@
 import Transaction from "../models/transaction.model.js";
+import mongoose from 'mongoose';
+import { convertCurrency } from "../services/exchangeRate.service.js";
 
 const ALLOWED_TYPES = ["income", "expense", "exclude"];
 
@@ -13,10 +15,10 @@ export const createTransaction = async (req, res) => {
     if (!ALLOWED_TYPES.includes(type)) {
       return res.status(400).json({ message: "Type must be either 'income', 'expense' or 'exclude'." });
     }
-    if (typeof amount === "number" )  {
+    if (isNaN(amount) || amount <= 0) {
       return res.status(400).json({ message: "Amount must be a positive number." });
     }
-
+  
     const newTransaction = new Transaction({
       userId,
       categoryId,
@@ -111,46 +113,191 @@ export const getTransactions = async (req, res) => {
   }
 };
 
-export const getTransactionSummary = async (req, res) => {
+
+// export const getTransactionSummary = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+//     const { startDate, endDate, accountId, categoryId, type, targetCurrency } = req.query;
+
+//     const user = req.user;
+//     const baseCurrency = user.settings?.baseCurrency || "USD";
+
+//     const filter = { userId };
+
+//     if (startDate || endDate) {
+//       filter.date = {};
+//       if (startDate) {
+//         const start = new Date(startDate);
+//         filter.date.$gte = start;
+//       }
+//       if (endDate) {
+//         const end = new Date(endDate); 
+//         end.setHours(23, 59, 59, 999);
+//         filter.date.$lte = end;
+//       }
+//     }
+
+//     if (accountId) {
+//       filter.accountId = new mongoose.Types.ObjectId(accountId);
+//     }
+
+//     if (categoryId) {
+//       filter.categoryId = new mongoose.Types.ObjectId(categoryId);
+//     }
+
+//     if (type) {
+//       if (!ALLOWED_TYPES.includes(type)) {
+//         return res.status(400).json({ message: "Type must be either 'income', 'expense', or 'exclude'." });
+//       }
+//       filter.type = type;
+//     }
+
+//     const transactions = await Transaction.find(filter).populate('accountId');
+
+//     const summary = {};
+
+//     for (const tx of transactions) {
+//       const accountCurrency = tx.accountId.currency;
+//       const orginalAmount = tx.amount;
+//       const convertedAmount = await convertCurrency(orginalAmount, accountCurrency, targetCurrency || baseCurrency);
+
+//       if (!summary[tx.type]) {
+//         summary[tx.type] = {
+//           totalOriginal: 0,
+//           totalConverted: 0,
+//           count: 0
+//         };
+//       }
+//       summary[tx.type].totalOriginal += orginalAmount;
+//       summary[tx.type].totalConverted += convertedAmount;
+//       summary[tx.type].count += 1;
+//     }
+//     for (const key of Object.keys(summary)) {
+//       summary[key].totalOriginal = Number(summary[key].totalOriginal.toFixed(2));
+//       summary[key].totalConverted = Number(summary[key].totalConverted.toFixed(2));
+//     }
+
+//     res.status(200).json(summary);
+//   } catch (error) {
+//     console.error("Error fetching transaction summary:", error);
+//     res.status(500).json({ message: "Internal server error." });
+//   }
+// };
+
+export const getAccountTransactionSummary = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { startDate, endDate, accountId, categoryId, type } = req.query;
-  
-    const filter = { userId };
+    const { accountId, startDate, endDate, categoryId, type, targetCurrency } = req.query;
+
+    if (!accountId) {
+      return res.status(400).json({ message: "accountId is required." });
+    }
+
+    const filter = { userId, accountId: new mongoose.Types.ObjectId(accountId) };
 
     if (startDate || endDate) {
       filter.date = {};
       if (startDate) filter.date.$gte = new Date(startDate);
-      if (endDate) filter.date.$lte = new Date(endDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        filter.date.$lte = end;
+      }
     }
 
-    if (accountId) filter.accountId = accountId;
-    if (categoryId) filter.categoryId = categoryId;
-    
+    if (categoryId) filter.categoryId = new mongoose.Types.ObjectId(categoryId);
     if (type) {
       if (!ALLOWED_TYPES.includes(type)) {
-        return res.status(400).json({ message: "Type must be either 'income', 'expense', or 'exclude'." });
+        return res.status(400).json({ message: "Invalid type." });
       }
       filter.type = type;
     }
 
-    const summary = await Transaction.aggregate([
-      { $match: filter },
-      {
-        $group: {
-          _id: "$type",
-          totalAmount: { $sum: "$amount" },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-  
-    res.status(200).json(summary);
+    const transactions = await Transaction.find(filter).populate("accountId");
+
+    const summary = {};
+    for (const tx of transactions) {
+      const accountCurrency = tx.accountId.currency;
+      const originalAmount = tx.amount;
+      const convertedAmount = targetCurrency 
+        ? await convertCurrency(originalAmount, accountCurrency, targetCurrency) 
+        : originalAmount;
+
+      if (!summary[tx.type]) {
+        summary[tx.type] = { total: 0, count: 0 };
+      }
+
+      summary[tx.type].total += convertedAmount;
+      summary[tx.type].count += 1;
+    }
+
+    Object.keys(summary).forEach(key => {
+      summary[key].total = Number(summary[key].total.toFixed(2));
+    });
+
+    res.status(200).json({targetCurrency, summary});
+
   } catch (error) {
-    console.error("Error fetching transaction summary:", error);
+    console.error("Error fetching account summary:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 };
+
+export const getAllAccountsTransactionSummary = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { startDate, endDate, categoryId, type, targetCurrency } = req.query;
+
+    if (!targetCurrency) {
+      return res.status(400).json({ message: "targetCurrency is required." });
+    }
+
+    const filter = { userId };
+    if (startDate || endDate) {
+      filter.date = {};
+      if (startDate) filter.date.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        filter.date.$lte = end;
+      }
+    }
+    if (categoryId) filter.categoryId = new mongoose.Types.ObjectId(categoryId);
+    if (type) {
+      if (!ALLOWED_TYPES.includes(type)) {
+        return res.status(400).json({ message: "Invalid type." });
+      }
+      filter.type = type;
+    }
+
+    const transactions = await Transaction.find(filter).populate("accountId");
+
+    const summary = {};
+    for (const tx of transactions) {
+      const accountCurrency = tx.accountId.currency;
+      const convertedAmount = await convertCurrency(tx.amount, accountCurrency, targetCurrency);
+
+      if (!summary[tx.type]) {
+        summary[tx.type] = { totalAmount: 0 };
+      }
+
+      summary[tx.type].totalAmount += convertedAmount;
+    }
+
+    Object.keys(summary).forEach(key => {
+      summary[key].totalAmount = Number(summary[key].totalAmount.toFixed(2));
+    });
+
+    res.status(200).json({ targetCurrency, summary });
+
+  } catch (error) {
+    console.error("Error fetching all accounts summary:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+
+
 
 export const toggleTransactionSettled = async (req, res) => {
   try {
@@ -169,6 +316,3 @@ export const toggleTransactionSettled = async (req, res) => {
     res.status(500).json({ message: "Internal server error." });
   }
 };
-
-
-

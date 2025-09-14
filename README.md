@@ -9,4 +9,6 @@ forgot password email,
 user's options:
 import transactions from spreadsheets,
 
+zegrać ze sobą waluty konta i tranzakcje 
+
 
