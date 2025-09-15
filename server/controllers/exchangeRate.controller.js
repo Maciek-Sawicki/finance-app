@@ -1,4 +1,5 @@
 import { fetchAndSaveRates, convertCurrency } from '../services/exchangeRate.service.js';
+import ExchangeRate from '../models/exchangeRate.model.js';
 
 export const updateExchangeRates = async (req, res) => {
   try {
@@ -22,6 +23,49 @@ export const convertAmount = async (req, res) => {
     res.status(200).json({ amount: convertedAmount, from, to });
   } catch (error) {
     console.error("Error converting currency:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+export const getAvailableCurrencies = async (req, res) => {
+  try {
+    const ratesDoc = await ExchangeRate.findOne().sort({ createdAt: -1 }).lean();
+    if (!ratesDoc) {
+      return res.status(404).json({ message: "No exchange rates found." });
+    }
+    const currencies = Object.keys(ratesDoc.rates).map(code => ({
+      code
+    }));
+
+    res.status(200).json(currencies);
+  } catch (error) {
+    console.error("Error fetching currencies:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+const POPULAR_CURRENCIES = [
+  "USD", "EUR", "GBP", "PLN", "CHF", "JPY", "CAD", "AUD", "NZD",
+  "SEK", "NOK", "DKK", "CZK", "HUF", "AED"
+];
+
+export const getPopularCurrencies = async (req, res) => {
+  try {
+    const ratesDoc = await ExchangeRate.findOne().sort({ createdAt: -1 }).lean();
+
+    if (!ratesDoc) {
+      return res.status(404).json({ message: "No exchange rates found." });
+    }
+
+    const currencies = POPULAR_CURRENCIES
+      .filter(code => ratesDoc.rates[code]) 
+      .map(code => ({
+        code,
+      }));
+
+    res.status(200).json(currencies);
+  } catch (error) {
+    console.error("Error fetching popular currencies:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 };
