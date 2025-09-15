@@ -9,6 +9,12 @@ forgot password email,
 user's options:
 import transactions from spreadsheets,
 
-zegrać ze sobą waluty konta i tranzakcje 
+-user's settings
+language / locale, date/currency format, 
 
+
+
+-budgets - raports
+-recurringTransactions - cron, 
+-import/export csv 
 

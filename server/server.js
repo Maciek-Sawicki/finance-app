@@ -11,6 +11,7 @@ import categoryRoutes from './routes/category.routes.js';
 import transactionRoutes from './routes/transaction.routes.js';
 import exchangeRateRoutes from './routes/exchangeRates.routes.js';
 import summaryRoutes from './routes/summary.routes.js';
+import settingsRoutes from './routes/settings.routes.js';
 
 import connectMongoDB from './db/connectMongoDB.js';
 
@@ -31,7 +32,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/rates', exchangeRateRoutes);
 app.use('/api/summary', summaryRoutes);
-
+app.use('/api/settings', settingsRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server works on port ${PORT}`);
