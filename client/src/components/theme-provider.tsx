@@ -33,13 +33,13 @@ export function ThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement
 
-    root.classList.remove("dark")
+    root.classList.remove("light", "dark")
 
     if (theme === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
         .matches
         ? "dark"
-        : ""
+        : "light"
 
       root.classList.add(systemTheme)
       return
@@ -49,12 +49,12 @@ export function ThemeProvider({
   }, [theme])
 
   const value = {
-    theme: theme,
+    theme,
     setTheme: (theme: Theme) => {
       localStorage.setItem(storageKey, theme)
       setTheme(theme)
     },
-  };
+  }
 
   return (
     <ThemeProviderContext.Provider {...props} value={value}>

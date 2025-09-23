@@ -1,19 +1,16 @@
-import * as React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import AppRouter from "./routes/AppRouter";
 import { ThemeProvider } from "@/components/theme-provider";
 
-const App: React.FC = () => {
+export default function App() {
   return (
-  <ThemeProvider defaultTheme="system">
     <AuthProvider>
       <BrowserRouter>
-        <AppRouter />
+        <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+          <AppRouter />
+        </ThemeProvider>
       </BrowserRouter>
     </AuthProvider>
-  </ThemeProvider>
   );
-};
-
-export default App;
+}

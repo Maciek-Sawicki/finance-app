@@ -1,7 +1,8 @@
 import * as React from "react";
 import { LoginForm } from "@/components/login-form"; // popraw ścieżkę do komponentu ShadCN
 import { useAuth } from "../contexts/AuthContext";
-import { GalleryVerticalEnd } from "lucide-react";
+import { CircleDollarSign } from "lucide-react";
+import background from "../assets/background.svg";
 
 const SignIn: React.FC = () => {
   const { signIn } = useAuth();
@@ -31,9 +32,9 @@ const SignIn: React.FC = () => {
         <div className="flex justify-center gap-2 md:justify-start">
           <a href="#" className="flex items-center gap-2 font-medium">
             <div className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="h-4 w-4" />
+              <CircleDollarSign className="h-4 w-4" />
             </div>
-            Acme Inc.
+            Cashora Finance
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
@@ -47,7 +48,7 @@ const SignIn: React.FC = () => {
       {/* Prawa część grafiki */}
       <div className="bg-muted relative hidden lg:block">
         <img
-          src="/placeholder.svg"
+          src={background}
           alt="Image"
           className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
         />
