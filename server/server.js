@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cron from 'node-cron';
 
-
 import authRoutes from './routes/auth.routes.js';
 import accountRoutes from './routes/account.routes.js';
 import categoryRoutes from './routes/category.routes.js';
@@ -13,6 +12,8 @@ import exchangeRateRoutes from './routes/exchangeRates.routes.js';
 import summaryRoutes from './routes/summary.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 
+import { fetchAndSaveRates } from './services/exchangeRate.service.js';
+
 import connectMongoDB from './db/connectMongoDB.js';
 
 dotenv.config();
@@ -20,7 +21,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL,
+  credentials: true,
+}));
 app.use(express.json());
 app.use(cookieParser());
 

@@ -1,0 +1,19 @@
+import * as React from "react";
+import { BrowserRouter } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import AppRouter from "./routes/AppRouter";
+import { ThemeProvider } from "@/components/theme-provider";
+
+const App: React.FC = () => {
+  return (
+  <ThemeProvider defaultTheme="system">
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRouter />
+      </BrowserRouter>
+    </AuthProvider>
+  </ThemeProvider>
+  );
+};
+
+export default App;
