@@ -11,7 +11,6 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   const { token } = useAuth();
 
   if (!token) {
-    // Brak tokenu → przekieruj na logowanie
     return <Navigate to="/signin" replace />;
   }
 

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/Navigation/app-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 export const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {

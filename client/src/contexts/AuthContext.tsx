@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import axios from 'axios';
-import api from '../services/api';
+import React, { createContext, useEffect, useContext, useState } from "react";
+import type { ReactNode } from "react";
+import api from "../lib/api";
 
 interface AuthContextType {
   user: any;
@@ -13,13 +12,12 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
+  // Przy odświeżeniu strony odczytujemy token z localStorage
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  // Dane usera trzymamy w stanie tylko jeśli był signin w tej sesji
+  const [user, setUser] = useState<any>(null);
 
-  useEffect(() => {
-    if (token) axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  }, [token]);
-
+  // Funkcja logowania
   const signIn = async (email: string, password: string) => {
     const res = await api.post('/auth/signIn', { email, password });
     setUser(res.data.user);
@@ -27,6 +25,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('token', res.data.token);
   };
 
+  // Funkcja wylogowania
   const signOut = () => {
     setUser(null);
     setToken(null);
@@ -40,6 +39,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
+// Hook do korzystania z kontekstu
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within AuthProvider');

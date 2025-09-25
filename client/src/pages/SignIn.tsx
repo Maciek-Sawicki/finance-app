@@ -1,5 +1,5 @@
 import * as React from "react";
-import { LoginForm } from "@/components/login-form"; // popraw ścieżkę do komponentu ShadCN
+import { LoginForm } from "@/components/Login/login-form"; // popraw ścieżkę do komponentu ShadCN
 import { useAuth } from "../contexts/AuthContext";
 import { CircleDollarSign } from "lucide-react";
 import background from "../assets/background.svg";

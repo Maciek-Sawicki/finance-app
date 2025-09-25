@@ -10,8 +10,8 @@ import {
   CircleDollarSign,
 } from "lucide-react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/Navigation/nav-main"
+import { NavUser } from "@/components/Navigation/nav-user"
 import {
   Sidebar,
   SidebarContent,
@@ -21,7 +21,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem
 } from "@/components/ui/sidebar"
-import { ModeToggle } from "./mode-toggle"
+import { ModeToggle } from "../Theme/mode-toggle"
 
 const data = {
   user: {
