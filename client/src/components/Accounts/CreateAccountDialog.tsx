@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -19,12 +20,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Account } from "@/lib/types";
+import { accountTypes, accountIcons, currencies } from "@/lib/constants";
 
 type CreateAccountDialogProps = {
   open: boolean;
   onClose: () => void;
   onSave: (data: Partial<Account>) => Promise<void>;
 };
+
+
 
 export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDialogProps) => {
   const [form, setForm] = useState<Partial<Account>>({
@@ -36,12 +40,26 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
     balance: 0,
   });
 
+  const isFormValid = form.name && form.type && form.icon && /^[0-9]*\.?[0-9]*$/.test(form.balanceStr ?? "");
+
   const handleChange = (field: keyof Account, value: string | number) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async () => {
-    await onSave(form);
+    if (!form.name || !form.type || !form.icon) {
+      alert("Please fill in all required fields (Name, Type, Icon).");
+      return;
+    }
+  
+    const balanceNumber = parseFloat(form.balanceStr || "0");
+  
+    const dataToSave = {
+      ...form,
+      balance: isNaN(balanceNumber) ? 0 : balanceNumber,
+    };
+  
+    await onSave(dataToSave);
     onClose();
     setForm({
       name: "",
@@ -50,14 +68,18 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
       icon: "",
       currency: "USD",
       balance: 0,
+      balanceStr: "",
     });
   };
-
+  
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create New Account</DialogTitle>
+          <DialogDescription>
+            Fill in the account details below and click Create.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -79,21 +101,9 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="bank">Bank</SelectItem>
-                <SelectItem value="cash">Cash</SelectItem>
-                <SelectItem value="credit">Credit</SelectItem>
-                <SelectItem value="investment">Investment</SelectItem>
-                <SelectItem value="savings">Savings</SelectItem>
-                <SelectItem value="loan">Loan</SelectItem>
-                <SelectItem value="mortgage">Mortgage</SelectItem>
-                <SelectItem value="retirement">Retirement</SelectItem>
-                <SelectItem value="brokerage">Brokerage</SelectItem>
-                <SelectItem value="crypto">Crypto</SelectItem>
-                <SelectItem value="business">Business</SelectItem>
-                <SelectItem value="joint">Joint</SelectItem>
-                <SelectItem value="student">Student</SelectItem>
-                <SelectItem value="insurance">Insurance</SelectItem>
-                <SelectItem value="prepaid">Prepaid</SelectItem>
+                {accountTypes.map((c) => (
+                <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+              ))}
               </SelectContent>
             </Select>
           </div>
@@ -108,34 +118,9 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
                 <SelectValue placeholder="Select icon" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="🏦">🏦</SelectItem>
-                <SelectItem value="💵">💵</SelectItem>
-                <SelectItem value="💳">💳</SelectItem>
-                <SelectItem value="📈">📈</SelectItem>
-                <SelectItem value="💰">💰</SelectItem>
-                <SelectItem value="🪙">🪙</SelectItem>
-                <SelectItem value="🏧">🏧</SelectItem>
-                <SelectItem value="🏠">🏠</SelectItem>
-                <SelectItem value="📉">📉</SelectItem>
-                <SelectItem value="💹">💹</SelectItem>
-                <SelectItem value="💎">💎</SelectItem>
-                <SelectItem value="💷">💷</SelectItem>
-                <SelectItem value="💶">💶</SelectItem>
-                <SelectItem value="💴">💴</SelectItem>
-                <SelectItem value="💸">💸</SelectItem>
-                <SelectItem value="📊">📊</SelectItem>
-                <SelectItem value="💼">💼</SelectItem>
-                <SelectItem value="🧾">🧾</SelectItem>
-                <SelectItem value="🔑">🔑</SelectItem>
-                <SelectItem value="⚖️">⚖️</SelectItem>
-                <SelectItem value="🏅">🏅</SelectItem>
-                <SelectItem value="🥇">🥇</SelectItem>
-                <SelectItem value="🥈">🥈</SelectItem>
-                <SelectItem value="🥉">🥉</SelectItem>
-                <SelectItem value="💡">💡</SelectItem>
-                <SelectItem value="🛡️">🛡️</SelectItem>
-                <SelectItem value="🏢">🏢</SelectItem>
-                <SelectItem value="🌍">🌍</SelectItem>
+                {accountIcons.map((c) => (
+                <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+              ))}
               </SelectContent>
             </Select>
           </div>
@@ -147,41 +132,48 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
               onChange={(e) => handleChange("description", e.target.value)}
             />
           </div>
-
-          <div>
-            <Label>Currency</Label>
-            <Select
-              value={form.currency ?? "USD"}
-              onValueChange={(value) => handleChange("currency", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select currency" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="USD">USD</SelectItem>
-                <SelectItem value="EUR">EUR</SelectItem>
-                <SelectItem value="PLN">PLN</SelectItem>
-                <SelectItem value="GBP">GBP</SelectItem>
-                <SelectItem value="JPY">JPY</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label>Starting Balance</Label>
-            <Input
-              type="number"
-              value={form.balance ?? 0}
-              onChange={(e) => handleChange("balance", parseFloat(e.target.value))}
-            />
-          </div>
+        <div>
+          <Label>Currency</Label>
+          <Select
+            value={form.currency ?? "USD"}
+            onValueChange={(value) => handleChange("currency", value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select currency" />
+            </SelectTrigger>
+            <SelectContent>
+              {currencies.map((c) => (
+                <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+
+        <div>
+          <Label>Starting Balance</Label>
+          <Input
+            type="text"
+            value={form.balanceStr ?? ""} 
+            placeholder="0.00"
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
+                setForm((prev) => ({ 
+                  ...prev, 
+                  balanceStr: value 
+                }));
+              }
+            }}
+          />
+        </div>
+
+      </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Create</Button>
+          <Button onClick={handleSubmit} disabled={!isFormValid}>Create</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

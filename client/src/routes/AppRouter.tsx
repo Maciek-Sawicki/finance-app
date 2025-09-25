@@ -22,7 +22,7 @@ const AppRouter: React.FC = () => (
     />
 
     <Route
-      path="/accounts/*"
+      path="/accounts/all/*"
       element={
         <PrivateRoute>
           <ProtectedLayout>

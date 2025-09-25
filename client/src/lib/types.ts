@@ -4,6 +4,7 @@ export interface Account {
   type: string;
   currency: string;
   balance: number;
+  balanceStr?: string; 
   icon?: string;
   description?: string;
   isDefault: boolean;
