@@ -18,42 +18,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Account } from "@/lib/types";
-import { accountTypes, accountIcons } from "@/lib/constants";
+import { Switch } from "@/components/ui/switch"
+import type { Category } from "@/lib/types";
+import { categoryIcons, categoryColors } from "@/lib/constants";
 
-type EditAccountDialogProps = {
-  account: Account | null;
+const categoryTypes = [
+  { code: "income" },
+  { code: "expense" },
+];
+
+type EditCategoryDialogProps = {
+  category: Category | null;
   open: boolean;
   onClose: () => void;
-  onSave: (id: string, data: Partial<Account>) => Promise<void>;
+  onSave: (id: string, data: Partial<Category>) => Promise<void>;
 };
 
-export const EditAccountDialog = ({
-  account,
+export const EditCategoryDialog = ({
+  category,
   open,
   onClose,
   onSave,
-}: EditAccountDialogProps) => {
-  const [form, setForm] = useState<Partial<Account>>({});
+}: EditCategoryDialogProps) => {
+  const [form, setForm] = useState<Partial<Category>>({});
 
   useEffect(() => {
-    if (account) {
+    if (category) {
       setForm({
-        name: account.name,
-        description: account.description,
-        type: account.type,
-        icon: account.icon,
+        name: category.name,
+        type: category.type,
+        icon: category.icon,
+        color: category.color,
+        favorite: category.favorite,
       });
     }
-  }, [account]);
+  }, [category]);
 
-  const handleChange = (field: keyof Account, value: string) => {
+  const handleChange = (field: keyof Category, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async () => {
-    if (!account) return;
-    await onSave(account._id, form);
+    if (!category) return;
+    await onSave(category._id, form);
     onClose();
   };
 
@@ -61,7 +68,7 @@ export const EditAccountDialog = ({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Account</DialogTitle>
+          <DialogTitle>Edit Category</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -83,13 +90,14 @@ export const EditAccountDialog = ({
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
-                {accountTypes.map((c) => (
-                <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
-              ))}
+                {categoryTypes.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.code}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
-
           <div>
             <Label>Icon</Label>
             <Select
@@ -100,18 +108,43 @@ export const EditAccountDialog = ({
                 <SelectValue placeholder="Select icon" />
               </SelectTrigger>
               <SelectContent>
-                {accountIcons.map((c) => (
+                {categoryIcons.map((c) => (
                 <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
               ))}
               </SelectContent>
             </Select>
           </div>
+
           <div>
-            <Label>Description</Label>
-            <Input
-              value={form.description ?? ""}
-              onChange={(e) => handleChange("description", e.target.value)}
+            <Label>Color</Label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {categoryColors.map((color) => {
+                const isSelected = form.color === color;
+                return (
+                  <button
+                    key={color}
+                    type="button"
+                    className={`w-6 h-6 rounded-full border-2 ${
+                      isSelected
+                        ? "border-black dark:border-white"
+                        : "border-transparent"
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => handleChange("color", color)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="favorite"
+              checked={form.favorite ?? false}
+              onCheckedChange={(checked: boolean) => handleChange("favorite", checked)}
             />
+            <Label htmlFor="favorite">Favorite</Label>
           </div>
         </div>
 

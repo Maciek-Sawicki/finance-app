@@ -26,7 +26,7 @@ const categorySchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    isDefault: {
+    favorite: {
       type: Boolean,
       default: false,
     },

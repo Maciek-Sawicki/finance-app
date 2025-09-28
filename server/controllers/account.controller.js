@@ -1,4 +1,5 @@
 import Account from "../models/account.model.js";
+import { convertCurrency } from "../services/exchangeRate.service.js";
 
 export const createAccount = async (req, res) => {
   try {
@@ -209,17 +210,22 @@ export const updateAccountBalance = async (req, res) => {
 export const getTotalBalance = async (req, res) => {
   try {
     const userId = req.user._id;
-
+    const baseCurrency = req.query.base || "USD";
     const accounts = await Account.find({ userId });
+
     if (accounts.length === 0) {
       return res.status(404).json({ message: "No accounts found." });
     }
 
-    const totalBalance = accounts.reduce((total, account) => total + account.balance, 0);
+    let total = 0;
+    for (const account of accounts) {
+      const converted = await convertCurrency(account.balance, account.currency, baseCurrency);
+      total += converted;
+    }
+    res.status(200).json({ totalBalance: total.toFixed(2), currency: baseCurrency });
 
-    res.status(200).json({ totalBalance });
   } catch (error) {
-    console.error("Error fetching total balance:", error);
+    console.error("Error calculating total balance:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 };

@@ -9,6 +9,11 @@ export const createCategory = async (req, res) => {
       return res.status(400).json({ message: 'Name and type are required.' });
     }    
 
+    const existing = await Category.findOne({ userId, name, type });
+    if (existing) {
+      return res.status(409).json({ message: 'Category already exists.' }); 
+    }
+
     const newCategory = new Category({
       userId,
       name,
@@ -25,6 +30,7 @@ export const createCategory = async (req, res) => {
     res.status(500).json({ message: 'Internal server error.' });
   }
 }
+
 
 export const getCategories = async (req, res) => {
   try {
@@ -86,16 +92,17 @@ export const deleteCategory = async (req, res) => {
   }
 };
 
-export const getDefaultCategories = async (req, res) => {
+export const getFavoriteCategories = async (req, res) => {
   try {
-    const categories = await Category.find({ isDefault: true }).sort({ createdAt: -1 });
+    const userId = req.user._id;
+    const favorites = await Category.find({ userId, favorite: true }).sort({ createdAt: -1 });
 
-    res.status(200).json(categories);
+    res.status(200).json(favorites);
   } catch (error) {
-    console.error('Error fetching default categories:', error);
+    console.error('Error fetching favorite categories:', error);
     res.status(500).json({ message: 'Internal server error.' });
   }
-};
+}
 
 export const initDefaultCategoriesForUser = async (userId) => {
   try {
@@ -112,7 +119,8 @@ export const initDefaultCategoriesForUser = async (userId) => {
       type: cat.type,
       icon: cat.icon,
       color: cat.color,
-      isDefault: false, 
+      isDefault: false,
+      favorite: false
     }));
 
     await Category.insertMany(userCategories);

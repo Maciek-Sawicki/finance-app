@@ -42,16 +42,8 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "History",
-          url: "/accounts/history",
-        },
-        {
           title: "All accounts",
           url: "/accounts/all",
-        },
-        {
-          title: "Add account",
-          url: "accounts/add",
         },
       ],
     },

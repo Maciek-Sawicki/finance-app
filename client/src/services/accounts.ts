@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import type { Account } from "@/lib/types";
+import type { Account, TotalBalanceResponse } from "@/lib/types";
 
 export const AccountsService = {
   getAll: async (): Promise<Account[]> => {
@@ -28,5 +28,13 @@ export const AccountsService = {
 
   setDefault: async (id: string): Promise<void> => {
     await api.post(`/accounts/${id}/default`);
+  },
+  getTotalBalanceAndCurrency: async (): Promise<TotalBalanceResponse> => {
+    const res = await api.get("/accounts/total-balance");
+    return res.data;
+  },
+  getDefaultAccount: async (): Promise<Account> => {
+    const res = await api.get("/accounts/default");
+    return res.data; 
   },
 };

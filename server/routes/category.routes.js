@@ -6,14 +6,14 @@ import {
   getCategory,
   updateCategory,
   deleteCategory,
-  getDefaultCategories,
+  getFavoriteCategories,
 } from '../controllers/category.controller.js';
 
 const router = express.Router();
 
 router.post('/create', authenticate, createCategory);
 router.get('/', authenticate, getCategories);
-router.get('/default', getDefaultCategories);
+router.get('/favorites', authenticate, getFavoriteCategories);
 
 router.get('/:id', authenticate, getCategory);
 router.put('/:id', authenticate, updateCategory);

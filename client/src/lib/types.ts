@@ -11,3 +11,20 @@ export interface Account {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface TotalBalanceResponse {
+  totalBalance: number;
+  currency: string;
+}
+
+export interface Category {
+  _id: string;
+  name: string;
+  type: "income" | "expense";
+  icon?: string;
+  color?: string;
+  favorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
