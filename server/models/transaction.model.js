@@ -42,6 +42,11 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  transferId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Transfer",
+    default: null,
+  },
 }, {
   timestamps: true, 
 });

@@ -56,10 +56,6 @@ const data = {
           title: "All categories",
           url: "/categories/all",
         },
-        {
-          title: "Add category",
-          url: "/categories/add",
-        },
       ],
     },
     {

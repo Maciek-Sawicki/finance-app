@@ -7,6 +7,8 @@ import AccountsDashboard from "../pages/AccountsDashboard";
 
 import Categories from "../pages/Categories";
 
+import Transactions from "../pages/Transactions";
+
 import SignIn from "../pages/SignIn";
 import PrivateRoute from "../components/PrivateRoute";
 import { ProtectedLayout } from "../layouts/ProtectedLayout";
@@ -56,6 +58,19 @@ const AppRouter: React.FC = () => (
         <PrivateRoute>
           <ProtectedLayout>
             <Categories />
+          </ProtectedLayout>
+        </PrivateRoute>
+      }
+    />
+
+    {/* Transactions */}
+
+    <Route
+      path="/transactions/all/*"
+      element={
+        <PrivateRoute>
+          <ProtectedLayout>
+            <Transactions />
           </ProtectedLayout>
         </PrivateRoute>
       }

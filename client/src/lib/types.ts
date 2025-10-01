@@ -28,3 +28,19 @@ export interface Category {
   updatedAt: string;
 }
 
+export interface Transaction {
+  _id: string;
+  userId: string;
+  categoryId: Category;
+  accountId: Account;
+  type: "income" | "expense" | "transfer" | "exclude" | string;
+  amount: number;
+  currency: string;
+  date: string; 
+  settled: boolean;
+  description?: string;
+  createdAt: string; 
+  updatedAt: string; 
+  __v: number;
+}
+
