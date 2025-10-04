@@ -9,14 +9,14 @@ const ALLOWED_TYPES = ["income", "expense", "exclude", "transfer"];
 
 export const createTransaction = async (req, res) => {
   try {
-    const { categoryId, accountId, type, amount, date, settled, description } = req.body;
+    const { categoryId, accountId, type, amount, date, settled, description, exclude } = req.body;
     const userId = req.user._id;
 
     if (!categoryId || !accountId || !type || !amount) {
       return res.status(400).json({ message: "Category, Account, Type and Amount are required." });
     }
-    if (!ALLOWED_TYPES.includes(type)) {
-      return res.status(400).json({ message: "Type must be either 'income', 'expense' or 'exclude'." });
+    if (!["income", "expense"].includes(type)) {
+      return res.status(400).json({ message: "Type must be either 'income' or 'expense'." });
     }
     if (isNaN(amount) || amount <= 0) {
       return res.status(400).json({ message: "Amount must be a positive number." });
@@ -31,6 +31,8 @@ export const createTransaction = async (req, res) => {
       date: date || Date.now(),
       settled: settled || false,
       description,
+      exclude: exclude || false,  // 🔹 nowa flaga
+      isTransfer: false           // 🔹 zwykła transakcja
     });
 
     await newTransaction.save();
@@ -40,6 +42,7 @@ export const createTransaction = async (req, res) => {
     res.status(500).json({ message: "Internal server error." });
   }
 };
+
 
 // export const createTransactionBulk = async (req, res) => {
 //   try {

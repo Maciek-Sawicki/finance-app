@@ -18,8 +18,12 @@ const transactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["income", "expense", "exclude"],
+    enum: ["income", "expense"],
     required: true,
+  },
+  exclude: {
+    type: Boolean,
+    default: false, 
   },
   amount: {
     type: Number,

@@ -20,10 +20,10 @@ const accountSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
-  balance: {
+  startingBalance: {          
     type: Number,
     required: true,
-    min: 0, 
+    min: 0,
   },
   icon: {
     type: String,

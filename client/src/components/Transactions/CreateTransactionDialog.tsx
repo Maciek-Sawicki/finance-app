@@ -634,6 +634,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from "@/components/ui/popover";
+
+import {
+ Calendar
+} from "@/components/ui/calendar";
+
+import { ChevronDownIcon } from "lucide-react"
+
+
+import { Switch } from "@/components/ui/switch";
 import * as Tabs from "@radix-ui/react-tabs";
 import type { Account, Category } from "@/lib/types";
 import { RatesService } from "@/services/rates";
@@ -653,7 +667,9 @@ export const CreateTransactionDialog = ({
   accounts,
   categories,
 }: CreateTransactionDialogProps) => {
-  const [tab, setTab] = useState<"income" | "expense" | "transfer" | "exclude">("income");
+  const [tab, setTab] = useState<"income" | "expense" | "transfer">("income");
+
+  const [openDate, setOpenDate] = useState(false);
 
   const [form, setForm] = useState<any>({
     accountId: "",
@@ -664,16 +680,17 @@ export const CreateTransactionDialog = ({
     toAmount: "",
     customToAmount: "",
     description: "",
-    date: new Date().toISOString().slice(0, 16),
+    date: new Date().toISOString().slice(0, 10), // tylko data
+    exclude: false, // switch Exclude
+    settled: false, // domyślnie false
   });
 
   const [exchangeRate, setExchangeRate] = useState<number | null>(null);
 
-  const handleChange = (field: string, value: string | number) => {
+  const handleChange = (field: string, value: string | number | boolean) => {
     setForm((prev: any) => ({ ...prev, [field]: value }));
   };
 
-  // 🔹 Liczenie toAmount w transferze po kursie
   useEffect(() => {
     const calculateToAmount = async () => {
       if (
@@ -709,7 +726,7 @@ export const CreateTransactionDialog = ({
   const isValid = () => {
     if (tab === "transfer")
       return form.fromAccountId && form.toAccountId && form.amount;
-    return form.accountId && form.amount && (tab === "exclude" || form.categoryId);
+    return form.accountId && form.amount && form.categoryId;
   };
 
   const handleSubmit = async () => {
@@ -723,22 +740,27 @@ export const CreateTransactionDialog = ({
         amount: parseFloat(form.amount),
         toAmount: form.customToAmount ? parseFloat(form.customToAmount) : parseFloat(form.toAmount),
         description: form.description,
-        date: new Date(form.date).toISOString(),
+        date: form.date,
         type: "transfer",
+        settled: form.settled,
+        exclude: form.exclude,
       };
     } else {
       payload = {
         accountId: form.accountId,
-        categoryId: tab === "exclude" ? undefined : form.categoryId,
+        categoryId: form.categoryId,
         amount: parseFloat(form.amount),
         description: form.description,
-        date: new Date(form.date).toISOString(),
+        date: form.date,
         type: tab,
+        settled: form.settled,
+        exclude: form.exclude,
       };
     }
 
     await onSave(payload);
     onClose();
+
     setForm({
       accountId: "",
       categoryId: "",
@@ -748,7 +770,9 @@ export const CreateTransactionDialog = ({
       toAmount: "",
       customToAmount: "",
       description: "",
-      date: new Date().toISOString().slice(0, 16),
+      date: new Date().toISOString().slice(0, 10),
+      exclude: false,
+      settled: false,
     });
     setExchangeRate(null);
   };
@@ -768,156 +792,343 @@ export const CreateTransactionDialog = ({
     </Select>
   );
 
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Create Transaction</DialogTitle>
-          <DialogDescription>
-            Choose transaction type and fill in details.
-          </DialogDescription>
-        </DialogHeader>
+//   return (
+//     <Dialog open={open} onOpenChange={onClose}>
+//       <DialogContent className="max-w-lg">
+//         <DialogHeader>
+//           <DialogTitle>Create Transaction</DialogTitle>
+//           <DialogDescription>Choose transaction type and fill in details.</DialogDescription>
+//         </DialogHeader>
 
-        <Tabs.Root value={tab} onValueChange={(val) => setTab(val as any)}>
-          <Tabs.List className="grid grid-cols-4 gap-2 mb-4">
-            {["income", "expense", "transfer", "exclude"].map((t) => (
-              <Tabs.Trigger
-                key={t}
-                value={t}
-                className={`p-2 rounded ${
-                  tab === t ? "bg-primary text-white" : "bg-muted"
-                }`}
-              >
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </Tabs.Trigger>
-            ))}
-          </Tabs.List>
+//         <Tabs.Root value={tab} onValueChange={(val) => setTab(val as any)}>
+//           <Tabs.List className="grid grid-cols-3 gap-2 mb-4">
+//             {["income", "expense", "transfer"].map((t) => (
+//               <Tabs.Trigger
+//                 key={t}
+//                 value={t}
+//                 className={`p-2 rounded ${tab === t ? "bg-primary tx" : "bg-muted"}`}
+//               >
+//                 {t.charAt(0).toUpperCase() + t.slice(1)}
+//               </Tabs.Trigger>
+//             ))}
+//           </Tabs.List>
 
-          {/* Content sections */}
-          {["income", "expense", "transfer", "exclude"].map((type) => (
-            <Tabs.Content key={type} value={type} className="space-y-4">
-              {(type === "income" || type === "expense" || type === "exclude") && (
-                <>
-                  <div>
-                    <Label>Account</Label>
-                    {renderAccountSelect("accountId", form.accountId)}
-                  </div>
-                  {type !== "exclude" && (
-                    <div>
-                      <Label>Category</Label>
-                      <Select
-                        value={form.categoryId}
-                        onValueChange={(val) => handleChange("categoryId", val)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories
-                            .filter((c) => c.type === type)
-                            .map((c) => (
-                              <SelectItem key={c._id} value={c._id}>
-                                {c.name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                  <div>
-                    <Label>Amount</Label>
-                    <Input
-                      type="number"
-                      value={form.amount}
-                      onChange={(e) => handleChange("amount", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Date</Label>
-                    <Input
-                      type="datetime-local"
-                      value={form.date}
-                      onChange={(e) => handleChange("date", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Description</Label>
-                    <Input
-                      value={form.description}
-                      onChange={(e) => handleChange("description", e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
+//           {["income", "expense", "transfer"].map((type) => (
+//             <Tabs.Content key={type} value={type} className="space-y-4">
+//               {(type === "income" || type === "expense") && (
+//                 <>
+//                   <div>
+//                     <Label>Account</Label>
+//                     {renderAccountSelect("accountId", form.accountId)}
+//                   </div>
+//                   <div>
+//                     <Label>Category</Label>
+//                     <Select
+//                       value={form.categoryId}
+//                       onValueChange={(val) => handleChange("categoryId", val)}
+//                     >
+//                       <SelectTrigger>
+//                         <SelectValue placeholder="Select category" />
+//                       </SelectTrigger>
+//                       <SelectContent>
+//                         {categories
+//                           .filter((c) => c.type === type)
+//                           .map((c) => (
+//                             <SelectItem key={c._id} value={c._id}>
+//                               {c.name}
+//                             </SelectItem>
+//                           ))}
+//                       </SelectContent>
+//                     </Select>
+//                   </div>
+//                   <div>
+//                     <Label>Amount</Label>
+//                     <Input
+//                       type="number"
+//                       value={form.amount}
+//                       onChange={(e) => handleChange("amount", e.target.value)}
+//                     />
+//                   </div>
+//                   <div>
+//                     <Label>Date</Label>
+//                     <Input
+//                       type="date"
+//                       value={form.date}
+//                       onChange={(e) => handleChange("date", e.target.value)}
+//                     />
+//                   </div>
+//                   <div>
+//                     <Label>Description</Label>
+//                     <Input
+//                       value={form.description}
+//                       onChange={(e) => handleChange("description", e.target.value)}
+//                     />
+//                   </div>
+//                   <div className="flex items-center space-x-2">
+//               <Label>Exclude</Label>
+//               <Switch checked={form.exclude} onCheckedChange={val => handleChange("exclude", val)} />
+//             </div>
+//                 </>
+//               )}
 
-              {type === "transfer" && (
-                <>
-                  <div>
-                    <Label>From Account</Label>
-                    {renderAccountSelect("fromAccountId", form.fromAccountId)}
-                  </div>
-                  <div>
-                    <Label>To Account</Label>
-                    {renderAccountSelect("toAccountId", form.toAccountId)}
-                  </div>
-                  <div>
-                    <Label>Amount</Label>
-                    <Input
-                      type="number"
-                      value={form.amount}
-                      onChange={(e) => handleChange("amount", e.target.value)}
-                    />
-                  </div>
-                  {exchangeRate && (
-                    <div className="text-sm text-muted-foreground">
-                      Exchange rate: {exchangeRate.toFixed(4)}
-                    </div>
-                  )}
-                  <div>
-                    <Label>Calculated To Amount</Label>
-                    <Input type="number" value={form.toAmount} readOnly />
-                  </div>
-                  <div>
-                    <Label>Custom To Amount (optional)</Label>
-                    <Input
-                      type="number"
-                      value={form.customToAmount}
-                      onChange={(e) => handleChange("customToAmount", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Date</Label>
-                    <Input
-                      type="datetime-local"
-                      value={form.date}
-                      onChange={(e) => handleChange("date", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Description</Label>
-                    <Input
-                      value={form.description}
-                      onChange={(e) => handleChange("description", e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
-            </Tabs.Content>
+//               {type === "transfer" && (
+//                 <>
+//                   <div>
+//                     <Label>From Account</Label>
+//                     {renderAccountSelect("fromAccountId", form.fromAccountId)}
+//                   </div>
+//                   <div>
+//                     <Label>To Account</Label>
+//                     {renderAccountSelect("toAccountId", form.toAccountId)}
+//                   </div>
+//                   <div>
+//                     <Label>Amount</Label>
+//                     <Input
+//                       type="number"
+//                       value={form.amount}
+//                       onChange={(e) => handleChange("amount", e.target.value)}
+//                     />
+//                   </div>
+//                   {exchangeRate && (
+//                     <div className="text-sm text-muted-foreground">
+//                       Exchange rate: {exchangeRate.toFixed(4)}
+//                     </div>
+//                   )}
+//                   <div>
+//                     <Label>Calculated To Amount</Label>
+//                     <Input type="number" value={form.toAmount} readOnly />
+//                   </div>
+//                   <div>
+//                     <Label>Custom To Amount (optional)</Label>
+//                     <Input
+//                       type="number"
+//                       value={form.customToAmount}
+//                       onChange={(e) => handleChange("customToAmount", e.target.value)}
+//                     />
+//                   </div>
+//                   <div>
+//                     <Label>Date</Label>
+//                     <Input
+//                       type="date"
+//                       value={form.date}
+//                       onChange={(e) => handleChange("date", e.target.value)}
+//                     />
+//                   </div>
+//                   <div>
+//                     <Label>Description</Label>
+//                     <Input
+//                       value={form.description}
+//                       onChange={(e) => handleChange("description", e.target.value)}
+//                     />
+//                   </div>
+//                 </>
+//               )}
+//             </Tabs.Content>
+//           ))}
+//         </Tabs.Root>
+
+//         <DialogFooter>
+//           <Button variant="outline" onClick={onClose}>
+//             Cancel
+//           </Button>
+//           <Button onClick={handleSubmit} disabled={!isValid()}>
+//             Create
+//           </Button>
+//         </DialogFooter>
+//       </DialogContent>
+//     </Dialog>
+//   );
+// };
+
+return (
+  <Dialog open={open} onOpenChange={onClose}>
+    <DialogContent className="max-w-lg bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]">
+      <DialogHeader>
+        <DialogTitle>Create Transaction</DialogTitle>
+        <DialogDescription>Choose transaction type and fill in details.</DialogDescription>
+      </DialogHeader>
+
+      <Tabs.Root value={tab} onValueChange={(val) => setTab(val as any)}>
+        <Tabs.List className="grid grid-cols-3 gap-2 mb-4">
+          {["income", "expense", "transfer"].map((t) => (
+            <Tabs.Trigger
+              key={t}
+              value={t}
+              className={`p-2 rounded text-center font-medium transition-colors ${
+                tab === t
+                  ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                  : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
+              }`}
+            >
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </Tabs.Trigger>
           ))}
-        </Tabs.Root>
+        </Tabs.List>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!isValid()}>
-            Create
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
+        {["income", "expense", "transfer"].map((type) => (
+          <Tabs.Content key={type} value={type} className="space-y-4">
+            {(type === "income" || type === "expense") && (
+              <>
+                <div>
+                  <Label>Account</Label>
+                  {renderAccountSelect("accountId", form.accountId)}
+                </div>
+                <div>
+                  <Label>Category</Label>
+                  <Select
+                    value={form.categoryId}
+                    onValueChange={(val) => handleChange("categoryId", val)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]">
+                      {categories
+                        .filter((c) => c.type === type)
+                        .map((c) => (
+                          <SelectItem key={c._id} value={c._id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Amount</Label>
+                  <Input
+                    type="number"
+                    value={form.amount}
+                    onChange={(e) => handleChange("amount", e.target.value)}
+                  />
+                </div>
+                {/* <div>
+                  <Label>Date</Label>
+                  <Input
+                    type="date"
+                    value={form.date}
+                    onChange={(e) => handleChange("date", e.target.value)}
+                  />
+                </div> */}
+                <Label>Date</Label>
+<Popover open={openDate} onOpenChange={setOpenDate}>
+  <PopoverTrigger asChild>
+    <Button
+      variant="outline"
+      className="w-full justify-between font-normal"
+    >
+      {form.date ? new Date(form.date).toLocaleDateString() : "Select date"}
+      <ChevronDownIcon />
+    </Button>
+  </PopoverTrigger>
+  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+    <Calendar
+      mode="single"
+      selected={form.date ? new Date(form.date) : undefined}
+      captionLayout="dropdown"
+      onSelect={(date) => {
+        if (date) handleChange("date", date.toISOString().split("T")[0]);
+        setOpenDate(false);
+      }}
+      
+    />
+  </PopoverContent>
+</Popover>
 
+                <div>
+                  <Label>Description</Label>
+                  <Input
+                    value={form.description}
+                    onChange={(e) => handleChange("description", e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Label>Exclude</Label>
+                  <Switch
+                    checked={form.exclude}
+                    onCheckedChange={(val) => handleChange("exclude", val)}
+                  />
+                </div>
+              </>
+            )}
 
+            {type === "transfer" && (
+              <>
+                <div>
+                  <Label>From Account</Label>
+                  {renderAccountSelect("fromAccountId", form.fromAccountId)}
+                </div>
+                <div>
+                  <Label>To Account</Label>
+                  {renderAccountSelect("toAccountId", form.toAccountId)}
+                </div>
+                <div>
+                  <Label>Amount</Label>
+                  <Input
+                    type="number"
+                    value={form.amount}
+                    onChange={(e) => handleChange("amount", e.target.value)}
+                  />
+                </div>
+                {exchangeRate && (
+                  <div className="text-sm text-[hsl(var(--muted-foreground))]">
+                    Exchange rate: {exchangeRate.toFixed(4)}
+                  </div>
+                )}
+                <div>
+                  <Label>Calculated To Amount</Label>
+                  <Input
+                    type="number"
+                    value={form.toAmount}
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <Label>Custom To Amount (optional)</Label>
+                  <Input
+                    type="number"
+                    value={form.customToAmount}
+                    onChange={(e) => handleChange("customToAmount", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Date</Label>
+                  <Input
+                    type="date"
+                    value={form.date}
+                    onChange={(e) => handleChange("date", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Input
+                    value={form.description}
+                    onChange={(e) => handleChange("description", e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+          </Tabs.Content>
+        ))}
+      </Tabs.Root>
+
+      <DialogFooter>
+        <Button
+          variant="outline"
+          onClick={onClose}
+          className="border-[hsl(var(--border))] text-[hsl(var(--foreground))]"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={!isValid()}
+          className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+        >
+          Create
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+);
+}
 

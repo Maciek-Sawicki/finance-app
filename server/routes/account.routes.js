@@ -11,7 +11,6 @@ import {
   getAccountsByType,
   getAccountsByCurrency,
   getAccountBalance,
-  updateAccountBalance,
   getTotalBalance,
   getAccountSummary
 } from '../controllers/account.controller.js';
@@ -31,6 +30,5 @@ router.put('/:id', authenticate, updateAccount);
 router.delete('/:id', authenticate, deleteAccount);
 router.post('/:id/default', authenticate, setDefaultAccount);
 router.get('/:id/balance', authenticate, getAccountBalance);
-router.put('/:id/balance', authenticate, updateAccountBalance);
 
 export default router;
