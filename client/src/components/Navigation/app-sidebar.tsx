@@ -60,7 +60,7 @@ const data = {
     },
     {
       title: "Transactions",
-      url: "/transactions",
+      url: "/transactions/all",
       icon: ArrowRightLeft,
       isActive: true,
       items: [

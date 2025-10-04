@@ -69,3 +69,19 @@ export const getPopularCurrencies = async (req, res) => {
     res.status(500).json({ message: "Internal server error." });
   }
 };
+
+export const getExchangeRates = async (req, res) => {
+  try {
+    const { base } = req.query;
+    const ratesDoc = await ExchangeRate.findOne(base ? { base } : {}).sort({ createdAt: -1 }).lean();
+
+    if (!ratesDoc) {
+      return res.status(404).json({ message: "No exchange rates found." });
+    }
+
+    res.status(200).json(ratesDoc);
+  } catch (error) {
+    console.error("Error fetching exchange rates:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+}

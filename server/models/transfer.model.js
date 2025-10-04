@@ -21,18 +21,10 @@ const transferSchema = new mongoose.Schema({
     required: true,
     min: 0, 
   },
-  fromCurrency: {
-    type: String,
-    required: true,
-  },
   toAmount: {
     type: Number,
     required: true,
     min: 0, 
-  },
-  toCurrency: {
-    type: String,
-    required: true,
   },
   exchangeRate: {
     type: Number,

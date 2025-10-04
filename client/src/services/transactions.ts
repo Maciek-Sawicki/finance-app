@@ -1,5 +1,6 @@
 import api from "@/lib/api";
-import type { Transaction } from "@/lib/types";
+import type { Transaction, Transfer } from "@/lib/types";
+
 
 export const TransactionsService = {
   getAll: async (): Promise<Transaction[]> => {
@@ -25,4 +26,11 @@ export const TransactionsService = {
     const res = await api.patch(`/transactions/${id}/toggle-settled`);
     return res.data;
   },
+  // createTransfer: async (transferData: any): Promise<void> => {
+  //   await api.post("/transactions/transfer", transferData);
+  // }
+  createTransfer: async (transfer: Partial<Transfer>): Promise<Transfer> => {
+    const res = await api.post("/transactions/transfer", transfer);
+    return res.data;
+  }
 };

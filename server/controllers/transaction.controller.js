@@ -9,11 +9,11 @@ const ALLOWED_TYPES = ["income", "expense", "exclude", "transfer"];
 
 export const createTransaction = async (req, res) => {
   try {
-    const { categoryId, accountId, type, amount, currency, date, settled, description } = req.body;
+    const { categoryId, accountId, type, amount, date, settled, description } = req.body;
     const userId = req.user._id;
 
-    if (!categoryId || !accountId || !type || !amount || !currency) {
-      return res.status(400).json({ message: "Category, Account, Type, Amount, and Currency are required." });
+    if (!categoryId || !accountId || !type || !amount) {
+      return res.status(400).json({ message: "Category, Account, Type and Amount are required." });
     }
     if (!ALLOWED_TYPES.includes(type)) {
       return res.status(400).json({ message: "Type must be either 'income', 'expense' or 'exclude'." });
@@ -28,7 +28,6 @@ export const createTransaction = async (req, res) => {
       accountId,
       type,
       amount: Number(amount.toFixed(2)),
-      currency,
       date: date || Date.now(),
       settled: settled || false,
       description,
@@ -42,60 +41,165 @@ export const createTransaction = async (req, res) => {
   }
 };
 
-export const createTransactionBulk = async (req, res) => {
-  try {
-    const transactions = req.body.transactions;
-    const userId = req.user._id;
-    if (!Array.isArray(transactions) || transactions.length === 0) {
-      return res.status(400).json({ message: "Transactions must be a non-empty array." });
-    }
-    const newTransactions = transactions.map(tx => {
-      if (!tx.categoryId || !tx.accountId || !tx.type || !tx.amount || !tx.currency) {
-        throw new Error("Category, Account, Type, Amount, and Currency are required for each transaction.");
-      }
-      if (!ALLOWED_TYPES.includes(tx.type)) {
-        throw new Error("Type must be either 'income', 'expense' or 'exclude'.");
-      }
-      if (isNaN(tx.amount) || tx.amount <= 0) {
-        throw new Error("Amount must be a positive number.");
-      }
-      return {
-        userId,
-        categoryId: tx.categoryId,
-        accountId: tx.accountId,
-        type: tx.type,
-        amount: Number(tx.amount.toFixed(2)),
-        currency: tx.currency,
-        date: tx.date || Date.now(),
-        settled: tx.settled || false,
-        description: tx.description,
-      };
-    });
-    const createdTransactions = await Transaction.insertMany(newTransactions);
-    res.status(201).json({ message: "Transactions created successfully", transactions: createdTransactions });
-  } catch (error) {
-    console.error("Error creating transactions in bulk:", error);
-    res.status(500).json({ message: error.message || "Internal server error." });
-  }
-}; 
+// export const createTransactionBulk = async (req, res) => {
+//   try {
+//     const transactions = req.body.transactions;
+//     const userId = req.user._id;
+//     if (!Array.isArray(transactions) || transactions.length === 0) {
+//       return res.status(400).json({ message: "Transactions must be a non-empty array." });
+//     }
+//     const newTransactions = transactions.map(tx => {
+//       if (!tx.categoryId || !tx.accountId || !tx.type || !tx.amount) {
+//         throw new Error("Category, Account, Type and Amount are required for each transaction.");
+//       }
+//       if (!ALLOWED_TYPES.includes(tx.type)) {
+//         throw new Error("Type must be either 'income', 'expense' or 'exclude'.");
+//       }
+//       if (isNaN(tx.amount) || tx.amount <= 0) {
+//         throw new Error("Amount must be a positive number.");
+//       }
+//       return {
+//         userId,
+//         categoryId: tx.categoryId,
+//         accountId: tx.accountId,
+//         type: tx.type,
+//         amount: Number(tx.amount.toFixed(2)),
+//         date: tx.date || Date.now(),
+//         settled: tx.settled || false,
+//         description: tx.description,
+//       };
+//     });
+//     const createdTransactions = await Transaction.insertMany(newTransactions);
+//     res.status(201).json({ message: "Transactions created successfully", transactions: createdTransactions });
+//   } catch (error) {
+//     console.error("Error creating transactions in bulk:", error);
+//     res.status(500).json({ message: error.message || "Internal server error." });
+//   }
+// }; 
+
+// export const createTransfer = async (req, res) => {
+//   try {
+//     const { 
+//       fromAccountId, 
+//       toAccountId, 
+//       amount, 
+//       currency, 
+//       toCurrency, 
+//       toAmount: customToAmount, // <-- frontend może przesłać nadpisaną kwotę
+//       date, 
+//       description 
+//     } = req.body;
+
+//     const userId = req.user._id;
+
+//     if (!fromAccountId || !toAccountId || !amount || !currency || !toCurrency) {
+//       return res.status(400).json({ message: "From Account, To Account, Amount, Currency and ToCurrency are required." });
+//     }
+//     if (fromAccountId === toAccountId) {
+//       return res.status(400).json({ message: "From and To accounts must be different." });
+//     }
+//     if (isNaN(amount) || amount <= 0) {
+//       return res.status(400).json({ message: "Amount must be a positive number." });
+//     }
+
+//     const transferDate = date || new Date();
+
+//     const fromAccount = await Account.findById(fromAccountId);
+//     const toAccount = await Account.findById(toAccountId);
+//     if (!fromAccount || !toAccount) {
+//       return res.status(404).json({ message: "One of the accounts not found." });
+//     }
+
+//     // 🔹 Wyliczenie kursu i kwoty docelowej
+//     let exchangeRate = 1;
+//     let toAmount = Number(amount.toFixed(2));
+
+//     if (currency !== toCurrency) {
+//       // jeśli frontend poda customToAmount → bierzemy to
+//       if (customToAmount && !isNaN(customToAmount)) {
+//         toAmount = Number(customToAmount.toFixed(2));
+//         exchangeRate = Number((toAmount / amount).toFixed(6));
+//       } else {
+//         // inaczej liczysz z kursu z bazy
+//         toAmount = await convertCurrency(amount, currency, toCurrency);
+//         exchangeRate = Number((toAmount / amount).toFixed(6));
+//       }
+//     }
+
+//     // 🔹 Pobranie lub stworzenie kategorii "Transfer"
+//     let transferCategory = await Category.findOne({ name: "Transfer", userId });
+//     if (!transferCategory) {
+//       transferCategory = await Category.create({
+//         name: "Transfer",
+//         type: "transfer", // pamiętaj dodać do enum!
+//         userId,
+//         icon: "🔄",
+//         color: "#888888",
+//         favorite: false,
+//       });
+//     }
+
+//     // 🔹 Tworzymy rekord Transfer
+//     const transfer = await Transfer.create({
+//       userId,
+//       fromAccountId,
+//       toAccountId,
+//       fromAmount: Number(amount.toFixed(2)),
+//       fromCurrency: currency,
+//       toAmount,
+//       toCurrency,
+//       exchangeRate,
+//     });
+
+//     // 🔹 Tworzymy powiązane transakcje
+//     const expenseTransaction = await Transaction.create({
+//       userId,
+//       accountId: fromAccountId,
+//       type: "expense",
+//       amount: Number(amount.toFixed(2)),
+//       currency,
+//       date: transferDate,
+//       settled: true,
+//       categoryId: transferCategory._id,
+//       description: description
+//         ? `Transfer to ${toAccount.name} (${toAmount} ${toCurrency}): ${description}`
+//         : `Transfer to ${toAccount.name} (${toAmount} ${toCurrency})`,
+//       transferId: transfer._id,
+//     });
+
+//     const incomeTransaction = await Transaction.create({
+//       userId,
+//       accountId: toAccountId,
+//       type: "income",
+//       amount: toAmount,
+//       currency: toCurrency,
+//       date: transferDate,
+//       settled: true,
+//       categoryId: transferCategory._id,
+//       description: description
+//         ? `Transfer from ${fromAccount.name} (${amount} ${currency}): ${description}`
+//         : `Transfer from ${fromAccountId.name} (${amount} ${currency})`,
+//       transferId: transfer._id,
+//     });
+
+//     res.status(201).json({
+//       message: "Transfer created successfully",
+//       transfer,
+//       transactions: [expenseTransaction, incomeTransaction],
+//     });
+//   } catch (error) {
+//     console.error("Error creating transfer:", error);
+//     res.status(500).json({ message: "Internal server error." });
+//   }
+// };
 
 export const createTransfer = async (req, res) => {
   try {
-    const { 
-      fromAccountId, 
-      toAccountId, 
-      amount, 
-      currency, 
-      toCurrency, 
-      toAmount: customToAmount, // <-- frontend może przesłać nadpisaną kwotę
-      date, 
-      description 
-    } = req.body;
-
+    const { fromAccountId, toAccountId, amount, toAmount: customToAmount, date, description } = req.body;
     const userId = req.user._id;
 
-    if (!fromAccountId || !toAccountId || !amount || !currency || !toCurrency) {
-      return res.status(400).json({ message: "From Account, To Account, Amount, Currency and ToCurrency are required." });
+    if (!fromAccountId || !toAccountId || !amount) {
+      return res.status(400).json({ message: "From Account, To Account and Amount are required." });
     }
     if (fromAccountId === toAccountId) {
       return res.status(400).json({ message: "From and To accounts must be different." });
@@ -112,18 +216,16 @@ export const createTransfer = async (req, res) => {
       return res.status(404).json({ message: "One of the accounts not found." });
     }
 
-    // 🔹 Wyliczenie kursu i kwoty docelowej
-    let exchangeRate = 1;
+    // Kwota docelowa
     let toAmount = Number(amount.toFixed(2));
+    let exchangeRate = 1;
 
-    if (currency !== toCurrency) {
-      // jeśli frontend poda customToAmount → bierzemy to
+    if (fromAccount.currency !== toAccount.currency) {
       if (customToAmount && !isNaN(customToAmount)) {
         toAmount = Number(customToAmount.toFixed(2));
         exchangeRate = Number((toAmount / amount).toFixed(6));
       } else {
-        // inaczej liczysz z kursu z bazy
-        toAmount = await convertCurrency(amount, currency, toCurrency);
+        toAmount = await convertCurrency(amount, fromAccount.currency, toAccount.currency);
         exchangeRate = Number((toAmount / amount).toFixed(6));
       }
     }
@@ -133,7 +235,7 @@ export const createTransfer = async (req, res) => {
     if (!transferCategory) {
       transferCategory = await Category.create({
         name: "Transfer",
-        type: "transfer", // pamiętaj dodać do enum!
+        type: "expense", // ważne: enum tylko income/expense/exclude
         userId,
         icon: "🔄",
         color: "#888888",
@@ -141,15 +243,13 @@ export const createTransfer = async (req, res) => {
       });
     }
 
-    // 🔹 Tworzymy rekord Transfer
+    // 🔹 Zapis transferu
     const transfer = await Transfer.create({
       userId,
       fromAccountId,
       toAccountId,
       fromAmount: Number(amount.toFixed(2)),
-      fromCurrency: currency,
       toAmount,
-      toCurrency,
       exchangeRate,
     });
 
@@ -159,13 +259,12 @@ export const createTransfer = async (req, res) => {
       accountId: fromAccountId,
       type: "expense",
       amount: Number(amount.toFixed(2)),
-      currency,
       date: transferDate,
       settled: true,
       categoryId: transferCategory._id,
       description: description
-        ? `Transfer to ${toAccount.name} (${toAmount} ${toCurrency}): ${description}`
-        : `Transfer to ${toAccount.name} (${toAmount} ${toCurrency})`,
+        ? `Transfer to ${toAccount.name} (${toAmount} ${toAccount.currency}): ${description}`
+        : `Transfer to ${toAccount.name} (${toAmount} ${toAccount.currency})`,
       transferId: transfer._id,
     });
 
@@ -174,13 +273,12 @@ export const createTransfer = async (req, res) => {
       accountId: toAccountId,
       type: "income",
       amount: toAmount,
-      currency: toCurrency,
       date: transferDate,
       settled: true,
       categoryId: transferCategory._id,
       description: description
-        ? `Transfer from ${fromAccount.name} (${amount} ${currency}): ${description}`
-        : `Transfer from ${fromAccountId.name} (${amount} ${currency})`,
+        ? `Transfer from ${fromAccount.name} (${amount} ${fromAccount.currency}): ${description}`
+        : `Transfer from ${fromAccount.name} (${amount} ${fromAccount.currency})`,
       transferId: transfer._id,
     });
 
@@ -194,6 +292,7 @@ export const createTransfer = async (req, res) => {
     res.status(500).json({ message: "Internal server error." });
   }
 };
+
 
   
 

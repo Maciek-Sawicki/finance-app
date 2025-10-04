@@ -20,7 +20,7 @@ export interface TotalBalanceResponse {
 export interface Category {
   _id: string;
   name: string;
-  type: "income" | "expense";
+  type: "income" | "expense" | "exclude" | "transfer";
   icon?: string;
   color?: string;
   favorite: boolean;
@@ -35,12 +35,21 @@ export interface Transaction {
   accountId: Account;
   type: "income" | "expense" | "transfer" | "exclude" | string;
   amount: number;
-  currency: string;
   date: string; 
   settled: boolean;
   description?: string;
   createdAt: string; 
   updatedAt: string; 
   __v: number;
+}
+
+export interface Transfer {
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  currency: string;
+  toCurrency: string;
+  date: string;
+  description?: string;
 }
 

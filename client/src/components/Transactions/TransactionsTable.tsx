@@ -77,9 +77,11 @@ export const TransactionsTable = ({ refreshSignal }: TransactionsTableProps) => 
       header: "Amount",
       cell: ({ row, column }) => {
         const value = row.getValue<number>("amount");
-        const currency = row.original.currency;
         const type = row.original.type;
-
+    
+        // teraz waluta jest w account
+        const currency = row.original.accountId?.currency ?? "USD"; // fallback np. na USD
+    
         let color;
         if (type === "income") color = "green";
         else if (type === "expense") color = "red";
