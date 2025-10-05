@@ -49,9 +49,9 @@ export function TotalBalanceByCurrencyCard() {
       <CardContent className="flex flex-col gap-4">
         {!balances && <div className="text-xl font-medium">Loading...</div>}
         {balances?.map((b) => (
-          <div key={b.currency} className="flex justify-between items-center">
-            <span className="text-2xl font-semibold">{b.currency}</span>
-            <span className="text-2xl font-bold">
+          <div key={b.currency} className="flex justify-between items-center border-b last:border-0 pb-2">
+            <span className="text-lg font-semibold">{b.currency}</span>
+            <span className="text-lg font-bold">
               {b.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2})}
             </span>
           </div>
@@ -60,3 +60,4 @@ export function TotalBalanceByCurrencyCard() {
     </Card>
   );
 }
+

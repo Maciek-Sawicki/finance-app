@@ -12,6 +12,15 @@ export interface Account {
   updatedAt: string;
 }
 
+export interface AccountSummary {
+  _id: string;
+  accountName: string;
+  type: string;
+  currency: string;
+  balance: number;
+  isDefault: boolean;
+}
+
 export interface TotalBalanceResponse {
   totalBalance: number;
   currency: string;
