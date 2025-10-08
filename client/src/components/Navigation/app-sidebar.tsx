@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 import {
   LayoutDashboard,
@@ -19,114 +21,106 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem
+  SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { ModeToggle } from "../Theme/mode-toggle"
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/",
-      icon: LayoutDashboard
-    },
-    {
-      title: "Accounts",
-      url: "/accounts",
-      icon: Wallet,
-      isActive: true,
-      items: [
-        {
-          title: "All accounts",
-          url: "/accounts/all",
-        },
-      ],
-    },
-    {
-      title: "Categories",
-      url: "/caregories",
-      icon: ChartColumnStacked,
-      items: [
-        {
-          title: "All categories",
-          url: "/categories/all",
-        },
-      ],
-    },
-    {
-      title: "Transactions",
-      url: "/transactions/all",
-      icon: ArrowRightLeft,
-      isActive: true,
-      items: [
-        {
-          title: "History",
-          url: "/transactions/history",
-        },
-        {
-          title: "Add transaction",
-          url: "/transaction/add",
-        },
-      ],
-    },
-    {
-      title: "Budgets",
-      url: "/budgets",
-      icon: PiggyBank,
-      items: [
-        {
-          title: "Summary",
-          url: "/budgets/summary",
-        },
-        {
-          title: "Add budget",
-          url: "/budget/add",
-        },
-      ],
-    },
-    {
-      title: "Recurring transactions",
-      url: "/recuring-transactions",
-      icon: CalendarArrowUp,
-      items: [
-        {
-          title: "Add recurring transaction",
-          url: "/recuring-transaction/add",
-        }
-      ],
-    },
-    {
-      title: "Raports",
-      url: "/raports",
-      icon: ChartNoAxesCombined,
-      items: [
-        { title: "Overview", url: "/reports/overview" },
-        { title: "Income & Expenses", url: "/reports/income-expenses" },
-        { title: "Categories", url: "/reports/categories" },
-        { title: "Accounts Summary", url: "/reports/accounts" },
-        { title: "Cashflow", url: "/reports/cashflow" },
-        { title: "Trends", url: "/reports/trends" },
-        { title: "Savings", url: "/reports/savings" },
-        { title: "Compare Periods", url: "/reports/compare" },
-      ],
-    },
-
-  ]
-}
+import { AccountsService } from "@/services/accounts"
+import type { Account } from "@/lib/types"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [accounts, setAccounts] = React.useState<Account[]>([])
+
+  React.useEffect(() => {
+    AccountsService.getAll().then(setAccounts)
+  }, [])
+
+  const data = {
+    user: {
+      name: "shadcn",
+      email: "m@example.com",
+      avatar: "/avatars/shadcn.jpg",
+    },
+    navMain: [
+      {
+        title: "Dashboard",
+        url: "/",
+        icon: LayoutDashboard,
+      },
+      {
+        title: "Accounts",
+        url: "/accounts",
+        icon: Wallet,
+        items: [
+          { title: "All accounts", url: "/accounts/all" },
+          ...accounts.map((acc) => ({
+            title: acc.name,
+            url: `/accounts/${acc._id}`,
+          })),
+        ],
+      },
+      {
+        title: "Categories",
+        url: "/categories",
+        icon: ChartColumnStacked,
+        items: [
+          {
+            title: "All categories",
+            url: "/categories/all",
+          },
+        ],
+      },
+      {
+        title: "Transactions",
+        url: "/transactions/all",
+        icon: ArrowRightLeft,
+        items: [
+          { title: "History", url: "/transactions/history" },
+          { title: "Add transaction", url: "/transaction/add" },
+        ],
+      },
+      {
+        title: "Budgets",
+        url: "/budgets",
+        icon: PiggyBank,
+        items: [
+          { title: "Summary", url: "/budgets/summary" },
+          { title: "Add budget", url: "/budget/add" },
+        ],
+      },
+      {
+        title: "Recurring transactions",
+        url: "/recurring-transactions",
+        icon: CalendarArrowUp,
+        items: [
+          { title: "Add recurring transaction", url: "/recurring-transaction/add" },
+        ],
+      },
+      {
+        title: "Reports",
+        url: "/reports",
+        icon: ChartNoAxesCombined,
+        items: [
+          { title: "Overview", url: "/reports/overview" },
+          { title: "Income & Expenses", url: "/reports/income-expenses" },
+          { title: "Categories", url: "/reports/categories" },
+          { title: "Accounts Summary", url: "/reports/accounts" },
+          { title: "Cashflow", url: "/reports/cashflow" },
+          { title: "Trends", url: "/reports/trends" },
+          { title: "Savings", url: "/reports/savings" },
+          { title: "Compare Periods", url: "/reports/compare" },
+        ],
+      },
+    ],
+  }
+
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <a href="/">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <CircleDollarSign className="size-4" />
                 </div>
@@ -139,9 +133,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
+
       <SidebarFooter>
         <ModeToggle />
         <NavUser user={data.user} />
@@ -149,3 +145,4 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   )
 }
+

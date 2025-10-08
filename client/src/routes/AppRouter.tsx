@@ -4,6 +4,7 @@ import Dashboard from "../pages/Dashboard";
 
 import Accounts from "../pages/Accounts";
 import AccountsDashboard from "../pages/AccountsDashboard";
+import AccountPage from "../pages/AccountPage";
 
 import Categories from "../pages/Categories";
 
@@ -49,6 +50,19 @@ const AppRouter: React.FC = () => (
         </PrivateRoute>
       }
     />
+
+<Route
+      path="/accounts/:id"
+      element={
+        <PrivateRoute>
+          <ProtectedLayout>
+            <AccountPage />
+          </ProtectedLayout>
+        </PrivateRoute>
+      }
+    />
+
+      
 
     {/* {Categories} */}
 

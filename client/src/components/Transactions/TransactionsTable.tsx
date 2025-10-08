@@ -5,12 +5,27 @@ import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
+  getPaginationRowModel,
   flexRender,
+  type SortingState,
 } from "@tanstack/react-table";
-import type { ColumnDef, SortingState } from "@tanstack/react-table";
-
-import { TransactionsService } from "@/services/transactions";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
 import type { Transaction } from "@/lib/types";
+import { TransactionsService } from "@/services/transactions";
+import { CategoriesService } from "@/services/categories";
+import type { Category } from "@/lib/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 import {
   Table,
@@ -20,90 +35,113 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 
-import { Switch } from "@/components/ui/switch";
-import { MoreHorizontal } from "lucide-react";
-// np. jak chcesz mieć edycję, analogicznie jak z kategoriami
-// import { EditTransactionDialog } from "@/components/Transactions/EditTransactionDialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 type TransactionsTableProps = {
   refreshSignal?: number;
+  accountId?: string;
+  onUpdated?: () => void;
 };
 
-export const TransactionsTable = ({ refreshSignal }: TransactionsTableProps) => {
+export const TransactionsTable = ({
+  refreshSignal,
+  accountId,
+  onUpdated,
+}: TransactionsTableProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  // const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  // const [dialogOpen, setDialogOpen] = useState(false);
+  const [sorting, setSorting] = useState<SortingState>([{ id: "date", desc: true }]);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize] = useState(20);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const fetchTransactions = async () => {
-    const data = await TransactionsService.getAll();
+    const params: any = {};
+    if (accountId) params.accountId = accountId;
+    if (selectedCategoryId) params.categoryId = selectedCategoryId;
+
+    const data = await TransactionsService.getAll(params);
     setTransactions(data);
   };
 
   useEffect(() => {
     fetchTransactions();
-  }, [refreshSignal]);
+  }, [refreshSignal, accountId, selectedCategoryId]);
+
+  useEffect(() => {
+    CategoriesService.getAll().then(setCategories);
+  }, []);
+
+  const handleToggleSettled = async (transactionId: string, newValue: boolean) => {
+    await TransactionsService.update(transactionId, { settled: newValue });
+    fetchTransactions();
+    onUpdated?.();
+  };
+
+  const handleToggleExclude = async (transactionId: string, newValue: boolean) => {
+    await TransactionsService.update(transactionId, { exclude: newValue });
+    fetchTransactions();
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this transaction?")) return;
     await TransactionsService.delete(id);
     fetchTransactions();
+    onUpdated?.();
   };
-
-  // const startEditing = (transaction: Transaction) => {
-  //   setEditingTransaction(transaction);
-  //   setDialogOpen(true);
-  // };
 
   const columns: ColumnDef<Transaction>[] = [
     {
       accessorKey: "date",
-      header: "Date",
-      cell: (info) =>
-        new Date(info.getValue<string>()).toLocaleDateString("pl-PL"),
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Date <ArrowUpDown className="ml-1 h-4 w-4" />
+        </Button>
+      ),
+      cell: (info) => new Date(info.getValue<string>()).toLocaleDateString("pl-PL"),
     },
     {
       accessorKey: "amount",
-      header: "Amount",
-      cell: ({ row, column }) => {
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Amount <ArrowUpDown className="ml-1 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
         const value = row.getValue<number>("amount");
         const type = row.original.type;
-    
-        // teraz waluta jest w account
-        const currency = row.original.accountId?.currency ?? "USD"; // fallback np. na USD
-    
-        let color;
-        if (type === "income") color = "green";
-        else if (type === "expense") color = "red";
-    
+        const currency = row.original.accountId?.currency ?? "USD";
+
+        const isIncome = type === "income";
+        const sign = isIncome ? "+" : "-";
+        const colorClass = isIncome ? "text-green-500" : "text-red-500";
+
         return (
-          <span
-            key={column.id + "_" + row.id}
-            className="font-bold"
-            style={{ color }}
-          >
-            {value.toLocaleString("en-US", {
+          <div className={`font-semibold ${colorClass}`}>
+            {sign}
+            {Math.abs(value).toLocaleString("en-US", {
               style: "currency",
               currency,
             })}
-          </span>
+          </div>
         );
       },
-    },    
-    {
-      accessorKey: "type",
-      header: "Type",
     },
+    { accessorKey: "type", header: "Type" },
     {
       accessorKey: "categoryId",
       header: "Category",
@@ -117,105 +155,180 @@ export const TransactionsTable = ({ refreshSignal }: TransactionsTableProps) => 
     {
       accessorKey: "settled",
       header: "Settled",
-      cell: ({ row }) => {
-        const transaction = row.original;
-        const handleToggle = async () => {
-          try {
-            await TransactionsService.toggleSettled(transaction._id);
-            fetchTransactions();
-          } catch (err) {
-            console.error("Failed to toggle settled:", err);
-          }
-        };
-  
-        return (
-          <Switch
-            checked={transaction.settled}
-            onCheckedChange={handleToggle}
-          />
-        );
-      },
+      cell: ({ row }) => (
+        <Switch
+          checked={row.original.settled}
+          onCheckedChange={(checked) => handleToggleSettled(row.original._id, checked)}
+        />
+      ),
     },
     {
-      accessorKey: "description",
-      header: "Description",
+      accessorKey: "exclude",
+      header: "Exclude",
+      cell: ({ row }) => (
+        <Switch
+          checked={row.original.exclude}
+          onCheckedChange={(checked) => handleToggleExclude(row.original._id, checked)}
+        />
+      ),
     },
+    { accessorKey: "description", header: "Description" },
     {
       id: "actions",
       header: "Actions",
-      cell: (info) => {
-        const transaction = info.row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => handleDelete(transaction._id)}>
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm">
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => handleDelete(row.original._id)}>
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
     },
   ];
 
   const table = useReactTable({
     data: transactions,
     columns,
-    state: { sorting },
+    state: { sorting, pagination: { pageIndex, pageSize } },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onPaginationChange: (updater) => {
+      const state = typeof updater === "function" ? updater({ pageIndex, pageSize }) : updater;
+      setPageIndex(state.pageIndex);
+    },
   });
 
-  return (
-    <>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+  const pageCount = table.getPageCount();
 
-      {/* 
-      <EditTransactionDialog
-        transaction={editingTransaction}
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        onSave={async (id, data) => {
-          await TransactionsService.update(id, data);
-          fetchTransactions();
-        }}
-      /> 
-      */}
-    </>
+  return (
+    <div>
+
+      <div className="p-4 rounded-md mb-4">
+        <label className="block text-sm font-medium mb-2">Category:</label>
+        <Select
+          value={selectedCategoryId ?? "all"}
+          onValueChange={(val) => setSelectedCategoryId(val === "all" ? null : val)}
+        >
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="All categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            {categories.some((c) => c.favorite) && (
+              <>
+                <Separator className="my-1" />
+                {categories
+                  .filter((c) => c.favorite)
+                  .map((cat) => (
+                    <SelectItem key={cat._id} value={cat._id}>
+                      <div className="flex items-center gap-2">
+                        {cat.icon && (
+                          <span className="text-lg">{cat.icon}</span>
+                        )}
+                        <span>{cat.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+              </>
+            )}
+
+            {categories.some((c) => !c.favorite) && (
+              <>
+                <Separator className="my-1" />
+                {categories
+                  .filter((c) => !c.favorite)
+                  .map((cat) => (
+                    <SelectItem key={cat._id} value={cat._id}>
+                      <div className="flex items-center gap-2">
+                        {cat.icon && (
+                          <span className="text-lg">{cat.icon}</span>
+                        )}
+                        <span>{cat.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+              </>
+            )}
+          </SelectContent>
+        </Select>
+
+      </div>
+
+      <div>
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex justify-end py-4">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => table.previousPage()}
+                className={table.getCanPreviousPage() ? "" : "opacity-50 pointer-events-none"}
+              />
+            </PaginationItem>
+            {Array.from({ length: table.getPageCount() }).map((_, i) => (
+              <PaginationItem key={i}>
+                <PaginationLink
+                  onClick={() => table.setPageIndex(i)}
+                  isActive={table.getState().pagination.pageIndex === i}
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => table.nextPage()}
+                className={table.getCanNextPage() ? "" : "opacity-50 pointer-events-none"}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
+    </div>
   );
-};
+}

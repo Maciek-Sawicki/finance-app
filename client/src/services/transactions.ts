@@ -3,12 +3,16 @@ import type { Transaction, Transfer } from "@/lib/types";
 
 
 export const TransactionsService = {
-  getAll: async (): Promise<Transaction[]> => {
-    const res = await api.get("/transactions");
+  getAll: async (params?: any): Promise<Transaction[]> => {
+    const res = await api.get("/transactions", { params });
     return res.data;
   },
   getById: async (id: string): Promise<Transaction> => {
     const res = await api.get(`/transactions/${id}`);
+    return res.data;
+  },
+  getByAccountId: async (accountId: string): Promise<Transaction[]> => {
+    const res = await api.get(`/transactions`, { params: { accountId: accountId } });
     return res.data;
   },
   create: async (transaction: Partial<Transaction>): Promise<Transaction> => {
@@ -26,9 +30,6 @@ export const TransactionsService = {
     const res = await api.patch(`/transactions/${id}/toggle-settled`);
     return res.data;
   },
-  // createTransfer: async (transferData: any): Promise<void> => {
-  //   await api.post("/transactions/transfer", transferData);
-  // }
   createTransfer: async (transfer: Partial<Transfer>): Promise<Transfer> => {
     const res = await api.post("/transactions/transfer", transfer);
     return res.data;

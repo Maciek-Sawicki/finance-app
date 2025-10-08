@@ -46,6 +46,7 @@ export interface Transaction {
   amount: number;
   date: string; 
   settled: boolean;
+  exclude: boolean;
   description?: string;
   createdAt: string; 
   updatedAt: string; 
