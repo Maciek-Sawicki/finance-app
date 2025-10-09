@@ -40,8 +40,14 @@ export default function Accounts() {
 
   return (
     <div className="w-full h-full flex-col justify-center items-center p-10">
-      <div className="flex justify-end mb-4">
-        <Button onClick={() => setCreateOpen(true)}>+ Add Transaction</Button>
+      <div className="mb-6 w-full flex flex-col md:flex-row md:justify-between md:items-end gap-2">
+        <div>
+          <h1 className="text-4xl font-bold">Your All Transactions</h1>
+        </div>
+
+        <div className="flex justify-end items-center">
+          <Button onClick={() => setCreateOpen(true)}>+ Add Transaction</Button>
+        </div>
       </div>
 
       <Card>
@@ -58,5 +64,8 @@ export default function Accounts() {
     </div>
   );
 }
+
+
+
 
 

@@ -11,6 +11,7 @@ import transactionRoutes from './routes/transaction.routes.js';
 import exchangeRateRoutes from './routes/exchangeRates.routes.js';
 import summaryRoutes from './routes/summary.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
+import categoryBreakdownRoutes from './routes/categoryBreakdown.routes.js';
 
 import { fetchAndSaveRates } from './services/exchangeRate.service.js';
 
@@ -37,6 +38,7 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/rates', exchangeRateRoutes);
 app.use('/api/summary', summaryRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/category-breakdown', categoryBreakdownRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server works on port ${PORT}`);

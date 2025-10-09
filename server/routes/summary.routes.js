@@ -4,7 +4,6 @@ import {
   getAccountTransactionSummary,
   getAllAccountsTransactionSummary,
   getAccountCategorySummary,
-  getAllAccountsCategorySummary,
   getBalanceSummary,
   getCashFlowSummary,
   getTrendsSummary,
@@ -18,7 +17,6 @@ const router = express.Router();
 router.get('/account-summary', authenticate, getAccountTransactionSummary);
 router.get('/summary', authenticate, getAllAccountsTransactionSummary);
 router.get('/category-summary', authenticate, getAccountCategorySummary);
-router.get('/category-summary/all', authenticate, getAllAccountsCategorySummary);
 router.get('/balance-summary', authenticate, getBalanceSummary);
 router.get('/cashflow-summary', authenticate, getCashFlowSummary);
 router.get('/trends-summary', authenticate, getTrendsSummary);

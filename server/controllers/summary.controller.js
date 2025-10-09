@@ -1,5 +1,6 @@
 import Transaction from "../models/transaction.model.js";
 import Account from "../models/account.model.js";
+import Category from "../models/category.model.js";
 import mongoose from 'mongoose';
 import { convertCurrency } from "../services/exchangeRate.service.js";
 const ALLOWED_TYPES = ["income", "expense", "exclude"];
@@ -39,8 +40,8 @@ export const getAccountTransactionSummary = async (req, res) => {
     for (const tx of transactions) {
       const accountCurrency = tx.accountId.currency;
       const originalAmount = tx.amount;
-      const convertedAmount = targetCurrency 
-        ? await convertCurrency(originalAmount, accountCurrency, targetCurrency) 
+      const convertedAmount = targetCurrency
+        ? await convertCurrency(originalAmount, accountCurrency, targetCurrency)
         : originalAmount;
 
       if (!summary[tx.type]) {
@@ -55,7 +56,7 @@ export const getAccountTransactionSummary = async (req, res) => {
       summary[key].total = Number(summary[key].total.toFixed(2));
     });
 
-    res.status(200).json({targetCurrency, summary});
+    res.status(200).json({ targetCurrency, summary });
 
   } catch (error) {
     console.error("Error fetching account summary:", error);
@@ -177,63 +178,6 @@ export const getAccountCategorySummary = async (req, res) => {
   }
 };
 
-export const getAllAccountsCategorySummary = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { startDate, endDate, type, targetCurrency } = req.query;
-
-    const filter = { userId };
-
-    if (startDate || endDate) {
-      filter.date = {};
-      if (startDate) filter.date.$gte = new Date(startDate);
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        filter.date.$lte = end;
-      }
-    }
-
-    if (type) {
-      if (!ALLOWED_TYPES.includes(type)) {
-        return res.status(400).json({ message: "Invalid type." });
-      }
-      filter.type = type;
-    }
-
-    const transactions = await Transaction.find(filter).populate("accountId categoryId");
-
-    const summary = {};
-    for (const tx of transactions) {
-      const categoryName = tx.categoryId?.name || "Uncategorized";
-      const accountCurrency = tx.accountId.currency;
-      const convertedAmount = targetCurrency
-        ? await convertCurrency(tx.amount, accountCurrency, targetCurrency)
-        : tx.amount;
-
-      if (!summary[categoryName]) {
-        summary[categoryName] = { total: 0, count: 0 };
-      }
-
-      summary[categoryName].total += convertedAmount;
-      summary[categoryName].count += 1;
-    }
-
-    Object.keys(summary).forEach(key => {
-      summary[key].total = Number(summary[key].total.toFixed(2));
-    });
-
-    res.status(200).json({
-      targetCurrency,
-      summary
-    });
-
-  } catch (error) {
-    console.error("Error fetching all accounts category summary:", error);
-    res.status(500).json({ message: "Internal server error." });
-  }
-};
-
 export const getBalanceSummary = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -296,7 +240,7 @@ export const getCashFlowSummary = async (req, res) => {
       }
     }
     const transactions = await Transaction.find(filter).populate("accountId");
-    const grouped = {}; 
+    const grouped = {};
 
     for (const tx of transactions) {
       const date = new Date(tx.date);
@@ -450,47 +394,47 @@ export const getMonthlyTrends = async (req, res) => {
   }
 };
 
-export const getTopCategories = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { startDate, endDate, limit = 5, targetCurrency, type } = req.query;
+// export const getTopCategories = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+//     const { startDate, endDate, limit = 5, targetCurrency, type } = req.query;
 
-    if (!targetCurrency) {
-      return res.status(400).json({ message: "targetCurrency is required." });
-    }
+//     if (!targetCurrency) {
+//       return res.status(400).json({ message: "targetCurrency is required." });
+//     }
 
-    const filter = { userId, type };
-    if (startDate || endDate) {
-      filter.date = {};
-      if (startDate) filter.date.$gte = new Date(startDate);
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        filter.date.$lte = end;
-      }
-    }
+//     const filter = { userId, type };
+//     if (startDate || endDate) {
+//       filter.date = {};
+//       if (startDate) filter.date.$gte = new Date(startDate);
+//       if (endDate) {
+//         const end = new Date(endDate);
+//         end.setHours(23, 59, 59, 999);
+//         filter.date.$lte = end;
+//       }
+//     }
 
-    const transactions = await Transaction.find(filter).populate("categoryId accountId");
+//     const transactions = await Transaction.find(filter).populate("categoryId accountId");
 
-    const categoryTotals = {};
-    for (const tx of transactions) {
-      const convertedAmount = await convertCurrency(tx.amount, tx.accountId.currency, targetCurrency);
-      const catName = tx.categoryId.name;
-      if (!categoryTotals[catName]) categoryTotals[catName] = 0;
-      categoryTotals[catName] += convertedAmount;
-    }
+//     const categoryTotals = {};
+//     for (const tx of transactions) {
+//       const convertedAmount = await convertCurrency(tx.amount, tx.accountId.currency, targetCurrency);
+//       const catName = tx.categoryId.name;
+//       if (!categoryTotals[catName]) categoryTotals[catName] = 0;
+//       categoryTotals[catName] += convertedAmount;
+//     }
 
-    const topCategories = Object.entries(categoryTotals)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, limit)
-      .map(([name, total]) => ({ name, total: Number(total.toFixed(2)) }));
+//     const topCategories = Object.entries(categoryTotals)
+//       .sort((a, b) => b[1] - a[1])
+//       .slice(0, limit)
+//       .map(([name, total]) => ({ name, total: Number(total.toFixed(2)) }));
 
-    res.status(200).json({ targetCurrency, topCategories });
-  } catch (error) {
-    console.error("Error fetching top categories:", error);
-    res.status(500).json({ message: "Internal server error." });
-  }
-};
+//     res.status(200).json({ targetCurrency, topCategories });
+//   } catch (error) {
+//     console.error("Error fetching top categories:", error);
+//     res.status(500).json({ message: "Internal server error." });
+//   }
+// };
 
 export const getSavingsRate = async (req, res) => {
   try {

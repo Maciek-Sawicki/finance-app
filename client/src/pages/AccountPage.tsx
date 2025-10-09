@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { TransactionsTable } from "@/components/Transactions/TransactionsTable";
-import { CreateTransactionDialog } from "@/components/Transactions/CreateTransactionDialog";
+import { CreateTransactionDialogAccount } from "@/components/Transactions/CreateTransactionDialogAccount";
 import { AccountsService } from "@/services/accounts";
 import { TransactionsService } from "@/services/transactions";
 import { CategoriesService } from "@/services/categories";
@@ -86,7 +86,7 @@ export default function AccountPage() {
         />
       </Card>
       {account && (
-        <CreateTransactionDialog
+        <CreateTransactionDialogAccount
           open={openDialog}
           onClose={() => setOpenDialog(false)}
           onSave={handleSave}

@@ -47,6 +47,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { EditTransactionDialog } from "@/components/Transactions/EditTransactionDialog";
+import { cn } from "@/lib/utils";
 
 type TransactionsTableProps = {
   refreshSignal?: number;
@@ -324,7 +325,7 @@ export const TransactionsTable = ({
               <SelectValue placeholder="20" />
             </SelectTrigger>
             <SelectContent>
-              {[20, 40, 60, 100].map((size) => (
+              {[10, 20, 40, 60, 100].map((size) => (
                 <SelectItem key={size} value={size.toString()}>
                   {size}
                 </SelectItem>
@@ -339,7 +340,7 @@ export const TransactionsTable = ({
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <Table>
+        <Table className="force-last-row-border">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -358,16 +359,20 @@ export const TransactionsTable = ({
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className={isRecentlyUpdated(row.original.updatedAt) ? "border-l-4 border-l-primary" : ""}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-4 py-2">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell, cellIndex) => (
+                    <TableCell
+                      key={cell.id}
+                      className={`px-4 py-2 ${cellIndex === 0 && isRecentlyUpdated(row.original.updatedAt)
+                          ? "border-l-4 border-l-primary"
+                          : ""
+                        }`}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
+
               ))
             ) : (
               <TableRow>
