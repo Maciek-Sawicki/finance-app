@@ -51,7 +51,7 @@ const AppRouter: React.FC = () => (
       }
     />
 
-<Route
+    <Route
       path="/accounts/:id"
       element={
         <PrivateRoute>

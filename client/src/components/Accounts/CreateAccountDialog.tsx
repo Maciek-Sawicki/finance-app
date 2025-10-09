@@ -51,14 +51,14 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
       alert("Please fill in all required fields (Name, Type, Icon).");
       return;
     }
-  
+
     const balanceNumber = parseFloat(form.balanceStr || "0");
-  
+
     const dataToSave = {
       ...form,
       balance: isNaN(balanceNumber) ? 0 : balanceNumber,
     };
-  
+
     await onSave(dataToSave);
     onClose();
     setForm({
@@ -71,7 +71,7 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
       balanceStr: "",
     });
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
@@ -102,8 +102,8 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
               </SelectTrigger>
               <SelectContent>
                 {accountTypes.map((c) => (
-                <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
-              ))}
+                  <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -119,8 +119,8 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
               </SelectTrigger>
               <SelectContent>
                 {accountIcons.map((c) => (
-                <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
-              ))}
+                  <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -132,42 +132,41 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
               onChange={(e) => handleChange("description", e.target.value)}
             />
           </div>
-        <div>
-          <Label>Currency</Label>
-          <Select
-            value={form.currency ?? "USD"}
-            onValueChange={(value) => handleChange("currency", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select currency" />
-            </SelectTrigger>
-            <SelectContent>
-              {currencies.map((c) => (
-                <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+          <div>
+            <Label>Currency</Label>
+            <Select
+              value={form.currency ?? "USD"}
+              onValueChange={(value) => handleChange("currency", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {currencies.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div>
-          <Label>Starting Balance</Label>
-          <Input
-            type="text"
-            value={form.balanceStr ?? ""} 
-            placeholder="0.00"
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
-                setForm((prev) => ({ 
-                  ...prev, 
-                  balanceStr: value 
-                }));
-              }
-            }}
-          />
+          <div>
+            <Label>Starting Balance</Label>
+            <Input
+              type="text"
+              value={form.balanceStr ?? ""}
+              placeholder="0.00"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
+                  setForm((prev) => ({
+                    ...prev,
+                    balanceStr: value
+                  }));
+                }
+              }}
+            />
+          </div>
         </div>
-
-      </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>

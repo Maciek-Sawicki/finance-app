@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AccountsService } from "@/services/accounts";
 import type { Account } from "@/lib/types";
 
@@ -30,43 +31,40 @@ export function DefaultAccountCard() {
     };
   }, []);
 
-  const renderBalance = () => {
-    if (loading) return "Loading...";
-    if (!defaultAccount || defaultAccount.balance === undefined || defaultAccount.balance === null) {
-      return "No data";
-    }
-
-    const amount = Number(defaultAccount.balance);
-    if (Number.isNaN(amount)) return "No data";
-
-    const formatted = amount.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-      useGrouping: true,
-    });
-
-    return `${formatted} ${defaultAccount.currency ?? ""}`;
-  };
-
-  const renderName = () => {
-    if (loading) return "Loading...";
-    if (!defaultAccount?.name) return "No data";
-    return defaultAccount.name;
-  };
-
   return (
     <Card className="h-full">
-      <CardHeader>
-        <CardDescription className="text-xl">Default Account</CardDescription>
-        <CardTitle className="text-4xl font-semibold tabular-nums @[250px]/card:text-5xl">
-          {renderBalance()}
-        </CardTitle>
-      </CardHeader>
-      <CardFooter className="flex-col items-start gap-1.5 text-sm">
-        <p className="text-muted-foreground">
-          Default Account: {renderName()}
-        </p>
-      </CardFooter>
+      {loading ? (
+        <>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/3 rounded-md" />
+            <Skeleton className="h-8 w-2/3 rounded-md mt-2" />
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <Skeleton className="h-6 w-full rounded-md" />
+          </CardFooter>
+        </>
+      ) : (
+        <>
+          <CardHeader>
+            <CardDescription className="text-xl">Default Account</CardDescription>
+            <CardTitle className="text-4xl font-semibold tabular-nums @[250px]/card:text-5xl">
+              {defaultAccount?.balance !== undefined && defaultAccount?.balance !== null
+                ? `${Number(defaultAccount.balance).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                  useGrouping: true,
+                })} ${defaultAccount.currency ?? ""}`
+                : "No data"}
+            </CardTitle>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <p className="text-muted-foreground">
+              Default Account: {defaultAccount?.name ?? "No data"}
+            </p>
+          </CardFooter>
+        </>
+      )}
     </Card>
   );
 }
+

@@ -188,8 +188,8 @@ export const CreateTransactionDialog = ({
                 key={t}
                 value={t}
                 className={`p-2 rounded text-center font-medium transition-colors ${tab === t
-                    ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
-                    : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
+                  ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                  : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
                   }`}
               >
                 {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -239,7 +239,7 @@ export const CreateTransactionDialog = ({
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-between font-normal"
+                          className="w-full justify-between font-normal rounded"
                         >
                           {form.date ? new Date(form.date).toLocaleDateString() : "Select date"}
                           <ChevronDownIcon />
@@ -328,7 +328,7 @@ export const CreateTransactionDialog = ({
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-between font-normal"
+                          className="w-full justify-between font-normal rounded"
                         >
                           {form.date ? new Date(form.date).toLocaleDateString() : "Select date"}
                           <ChevronDownIcon />

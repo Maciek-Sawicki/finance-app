@@ -13,6 +13,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 
 import { AccountsService } from "@/services/accounts";
 import type { Account } from "@/lib/types";
@@ -35,7 +37,22 @@ export function AccountsPieChart() {
     };
   }, []);
 
-  if (!accounts) return null;
+  if (!accounts)
+    return (
+      <Card className="flex flex-col h-full animate-pulse">
+        <CardHeader className="pb-0 flex items-center">
+          <Skeleton className="h-6 w-1/3 mb-2" />
+          <Skeleton className="h-4 w-1/4" />
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center">
+          <Spinner className="size-8 text-muted-foreground" />
+        </CardContent>
+        <CardFooter className="flex-col gap-2 text-sm">
+          <Skeleton className="h-4 w-1/2 mb-1" />
+          <Skeleton className="h-3 w-2/3" />
+        </CardFooter>
+      </Card>
+    );
 
   const sorted = [...accounts].sort((a, b) => b.balance - a.balance);
   const top4 = sorted.slice(0, 4);
@@ -52,12 +69,12 @@ export function AccountsPieChart() {
     })),
     ...(othersSum > 0
       ? [
-          {
-            account: "Other",
-            balance: othersSum,
-            fill: `hsl(var(--chart-5))`,
-          },
-        ]
+        {
+          account: "Other",
+          balance: othersSum,
+          fill: `hsl(var(--chart-5))`,
+        },
+      ]
       : []),
   ];
 
@@ -73,7 +90,10 @@ export function AccountsPieChart() {
   };
 
   const formatCurrency = (value: number) =>
-    value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   return (
     <Card className="flex flex-col h-full">
@@ -93,7 +113,8 @@ export function AccountsPieChart() {
                     return (
                       <div className="rounded-m px-2 py-1 shadow bg-card text-card-foreground">
                         <span className="text-sm font-medium">
-                          {name}: {typeof value === "number" ? formatCurrency(value) : "-"}
+                          {name}:{" "}
+                          {typeof value === "number" ? formatCurrency(value) : "-"}
                         </span>
                       </div>
                     );

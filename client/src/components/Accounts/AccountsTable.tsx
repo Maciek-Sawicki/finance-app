@@ -31,7 +31,7 @@ import { MoreHorizontal } from "lucide-react";
 import { EditAccountDialog } from "@/components/Accounts/EditAccountDialog";
 
 type AccountsTableProps = {
-  refreshSignal?: number; 
+  refreshSignal?: number;
 };
 
 export const AccountsTable = ({ refreshSignal }: AccountsTableProps) => {
@@ -142,9 +142,9 @@ export const AccountsTable = ({ refreshSignal }: AccountsTableProps) => {
                   {header.isPlaceholder
                     ? null
                     : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
                 </TableHead>
               ))}
             </TableRow>

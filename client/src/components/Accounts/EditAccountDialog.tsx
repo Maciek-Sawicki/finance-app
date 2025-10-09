@@ -84,8 +84,8 @@ export const EditAccountDialog = ({
               </SelectTrigger>
               <SelectContent>
                 {accountTypes.map((c) => (
-                <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
-              ))}
+                  <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -101,8 +101,8 @@ export const EditAccountDialog = ({
               </SelectTrigger>
               <SelectContent>
                 {accountIcons.map((c) => (
-                <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
-              ))}
+                  <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
