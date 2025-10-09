@@ -1,56 +1,29 @@
-TODO:
+# Cashora Financial App
+A modern full-stack personal finance management application built with React, TypeScript, Express, and MongoDB.
+It helps users track your personal finances — with clean UI, analytics, and summaries.
 
-account's stuff:
-sign in via google,
-email comfirmation for signing up, 
-email code for sign in, like in ikea website
-forgot password email,
+# Tech Stack
+#### Frontend
+- React 19 + TypeScript
+- Tailwind CSS + shadcn/ui + Radix UI
+- React Router v7
+- Recharts (data visualization)
+- Axios (API communication)
+- Vite (build & dev server)
+#### Backend
+- Node.js + Express
+- MongoDB + Mongoose ORM
+- JWT Authentication
+- bcrypt (password hashing)
+- dotenv (environment management)
+- node-cron (scheduled jobs, e.g. exchange rates update)
 
-user's options:
-import transactions from spreadsheets,
-
--user's settings
-language / locale, date/currency format, 
-
-
-
--budgets - raports
--recurringTransactions - cron, 
--import/export csv 
-
-Overview / Podsumowanie
-
-Szybki podgląd najważniejszych wskaźników: saldo wszystkich kont, łączny przychód i wydatki, saldo miesięczne.
-
-Income & Expenses / Przychody i wydatki
-
-Szczegółowy wykres przychodów vs wydatków w czasie.
-
-Możliwość filtrowania po miesiącach, kategoriach, kontach.
-
-Category Analysis / Kategorie
-
-Wydatki według kategorii: wykres kołowy lub słupkowy.
-
-Trendy wydatków w wybranych kategoriach.
-
-Accounts Summary / Salda kont
-
-Porównanie sald różnych kont.
-
-Wykres liniowy pokazujący zmiany salda w czasie.
-
-Cashflow / Przepływy gotówki
-
-Wykres przepływów pieniężnych: wpływy i wydatki w ujęciu tygodniowym/miesięcznym.
-
-Trends / Trendy
-
-Wydatki i przychody w czasie: wykres liniowy, wykres słupkowy lub heatmap.
-
-Savings / Oszczędności
-
-Wskaźnik oszczędności, porównanie z celami oszczędnościowymi.
-
-Wykres kolumnowy lub liniowy pokazujący tempo oszczędzania.
+#### Features
+- User authentication (sign up / sign in / sign out)
+- Manage multiple accounts (balance, currency, type, default account)
+- Detailed transaction summaries by account, category, and period
+- Automatic currency conversion and exchange rate updates
+- Monthly and yearly cash flow and trend analysis
+- Custom categories for income and expenses
+- Charts showing top categories, savings rate, and spending trends
 
