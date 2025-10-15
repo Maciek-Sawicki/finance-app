@@ -1,3 +1,6 @@
+TODO:
+Poprawa zmiany kategorii po zmianie typu transakcji
+
 # Cashora Financial App
 A modern full-stack personal finance management application built with React, TypeScript, Express, and MongoDB.
 It helps users track your personal finances — with clean UI, analytics, and summaries.

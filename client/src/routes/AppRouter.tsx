@@ -7,6 +7,7 @@ import AccountsDashboard from "../pages/AccountsDashboard";
 import AccountPage from "../pages/AccountPage";
 
 import Categories from "../pages/Categories";
+import CategoriesDashboard from "../pages/CategoriesDashboard";
 
 import Transactions from "../pages/Transactions";
 
@@ -62,7 +63,7 @@ const AppRouter: React.FC = () => (
       }
     />
 
-      
+
 
     {/* {Categories} */}
 
@@ -72,6 +73,17 @@ const AppRouter: React.FC = () => (
         <PrivateRoute>
           <ProtectedLayout>
             <Categories />
+          </ProtectedLayout>
+        </PrivateRoute>
+      }
+    />
+
+    <Route
+      path="/categories/*"
+      element={
+        <PrivateRoute>
+          <ProtectedLayout>
+            <CategoriesDashboard />
           </ProtectedLayout>
         </PrivateRoute>
       }

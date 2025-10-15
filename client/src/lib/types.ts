@@ -63,3 +63,42 @@ export interface Transfer {
   description?: string;
 }
 
+export interface YearlyCategory {
+  categoryId: string;
+  name: string;
+  icon: string;
+  color: string;
+  total: number;
+  percent: number;
+}
+
+export interface YearlyCategories {
+  [year: string]: YearlyCategory[];
+}
+
+export interface YearlyCategoryStats {
+  targetCurrency: string;
+  type: "expense" | "income";
+  yearlyCategories: YearlyCategories;
+}
+
+export interface MonthlyCategory {
+  categoryId: string;
+  name: string;
+  icon: string;
+  color: string;
+  total: number;
+  percent: number;
+}
+
+export interface MonthlyCategories {
+  [month: string]: MonthlyCategory[];
+}
+
+export interface MonthlyCategoryStats {
+  targetCurrency: string;
+  type: "expense" | "income";
+  monthlyCategories: MonthlyCategories;
+}
+
+

@@ -8,7 +8,6 @@ import {
   getCashFlowSummary,
   getTrendsSummary,
   getMonthlyTrends,
-  getTopCategories,
   getSavingsRate
 } from '../controllers/summary.controller.js';
 
@@ -21,7 +20,6 @@ router.get('/balance-summary', authenticate, getBalanceSummary);
 router.get('/cashflow-summary', authenticate, getCashFlowSummary);
 router.get('/trends-summary', authenticate, getTrendsSummary);
 router.get('/monthly-trends', authenticate, getMonthlyTrends);
-router.get('/top-categories', authenticate, getTopCategories);
 router.get('/savings-rate', authenticate, getSavingsRate);
 
 export default router;
