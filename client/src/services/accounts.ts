@@ -41,4 +41,5 @@ export const AccountsService = {
     const res = await api.get("/accounts/summary");
     return res.data; 
   }
+  
 };

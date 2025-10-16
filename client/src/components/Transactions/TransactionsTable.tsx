@@ -47,7 +47,6 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { EditTransactionDialog } from "@/components/Transactions/EditTransactionDialog";
-import { cn } from "@/lib/utils";
 
 type TransactionsTableProps = {
   refreshSignal?: number;

@@ -481,4 +481,80 @@ export const getSavingsRate = async (req, res) => {
   }
 };
 
+export const getMonthlySummary = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { targetCurrency } = req.query;
+
+    if (!targetCurrency) return res.status(400).json({ message: "targetCurrency is required." });
+
+    const aggregated = await Transaction.aggregate([
+      { $match: { userId, excluded: { $ne: true }, settled: true } },
+      {
+        $lookup: { from: "accounts", localField: "accountId", foreignField: "_id", as: "account" }
+      },
+      { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: { month: { $dateToString: { format: "%Y-%m", date: "$date" } }, type: "$type", currency: "$account.currency" },
+          totalAmount: { $sum: "$amount" }
+        }
+      }
+    ]);
+
+    const monthMap = {};
+    aggregated.forEach(item => {
+      const month = item._id.month;
+      const type = item._id.type;
+      const currency = item._id.currency || targetCurrency;
+
+      if (!monthMap[month]) monthMap[month] = { income: {}, expense: {} };
+      if (!monthMap[month][type][currency]) monthMap[month][type][currency] = 0;
+      monthMap[month][type][currency] += item.totalAmount;
+    });
+
+    const result = {};
+
+    for (const [month, data] of Object.entries(monthMap)) {
+      const allCurrencies = new Set([...Object.keys(data.income), ...Object.keys(data.expense)]);
+      const currencyRates = {};
+      await Promise.all(Array.from(allCurrencies).map(async currency => {
+        currencyRates[currency] = currency === targetCurrency ? 1 : await convertCurrency(1, currency, targetCurrency);
+      }));
+
+      let totalIncome = 0;
+      let totalExpense = 0;
+
+      for (const [currency, amount] of Object.entries(data.income)) {
+        totalIncome += amount * currencyRates[currency];
+      }
+
+      for (const [currency, amount] of Object.entries(data.expense)) {
+        totalExpense += amount * currencyRates[currency];
+      }
+
+      totalIncome = Number(totalIncome.toFixed(2));
+      totalExpense = Number(totalExpense.toFixed(2));
+      const profit = Number((totalIncome - totalExpense).toFixed(2));
+
+      const e_i_ratio = totalIncome !== 0 ? Number(((totalExpense / totalIncome) * 100).toFixed(2)) : null;
+
+      result[month] = {
+        totalIncome,
+        totalExpense,
+        profit,
+        e_i_ratio
+      };
+    }
+
+    res.status(200).json({ targetCurrency, monthlySummary: result });
+  } catch (err) {
+    console.error("Error fetching monthly summary:", err);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+
+
+
 

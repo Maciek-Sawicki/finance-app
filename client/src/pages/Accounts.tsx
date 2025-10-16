@@ -1,17 +1,23 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { CreateAccountDialog } from "@/components/Accounts/CreateAccountDialog";
 import { Button } from "@/components/ui/button";
 import { AccountsService } from "@/services/accounts";
 import { AccountsTable } from "@/components/Accounts/AccountsTable";
 import { Card } from "@/components/ui/card";
+import { useAccounts } from "@/contexts/AccountsContext";
 
 export default function Accounts() {
-  const [createOpen, setCreateOpen] = useState(false);
-  const [refreshSignal, setRefreshSignal] = useState(0);
-
+  const [openAccountDialog, setOpenAccountDialog] = useState(false);
   const [totalBalance, setTotalBalance] = useState<string>("Loading...");
+  const { refreshAccounts } = useAccounts();
 
-  const triggerRefresh = () => setRefreshSignal((prev) => prev + 1);
+  const handleSaveAccount = async (data: any) => {
+    await AccountsService.create(data);
+    await refreshAccounts();
+    setOpenAccountDialog(false);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -62,21 +68,18 @@ export default function Accounts() {
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={() => setCreateOpen(true)}>+ Add Account</Button>
+          <Button onClick={() => setOpenAccountDialog(true)}  >+ Add Account</Button>
         </div>
       </div>
 
       <Card className="w-full">
-        <AccountsTable refreshSignal={refreshSignal} />
+        <AccountsTable />
       </Card>
+
       <CreateAccountDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onSave={async (data) => {
-          await AccountsService.create(data);
-          setCreateOpen(false);
-          triggerRefresh();
-        }}
+        open={openAccountDialog}
+        onClose={() => setOpenAccountDialog(false)}
+        onSave={handleSaveAccount}
       />
     </div>
   );

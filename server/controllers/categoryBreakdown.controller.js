@@ -18,7 +18,8 @@ export const getTopCategories = async (req, res) => {
     const match = {
       userId,
       type,
-      exclude: { $ne: true }
+      exclude: { $ne: true },
+      settled: true
     };
     if (startDate || endDate) {
       match.date = {};
@@ -154,7 +155,7 @@ export const getMonthlyTopCategories = async (req, res) => {
       return res.status(400).json({ message: "Type is required and must be 'income' or 'expense'." });
 
     const aggregated = await Transaction.aggregate([
-      { $match: { userId, type, exclude: { $ne: true } } },
+      { $match: { userId, type, exclude: { $ne: true }, settled: true } },
       {
         $lookup: { from: "categories", localField: "categoryId", foreignField: "_id", as: "category" }
       },
@@ -240,7 +241,7 @@ export const getYearlyTopCategories = async (req, res) => {
       return res.status(400).json({ message: "Type is required and must be 'income' or 'expense'." });
 
     const aggregated = await Transaction.aggregate([
-      { $match: { userId, type, exclude: { $ne: true } } },
+      { $match: { userId, type, exclude: { $ne: true }, settled: true } },
       {
         $lookup: { from: "categories", localField: "categoryId", foreignField: "_id", as: "category" }
       },

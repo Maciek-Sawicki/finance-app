@@ -8,7 +8,8 @@ import {
   getCashFlowSummary,
   getTrendsSummary,
   getMonthlyTrends,
-  getSavingsRate
+  getSavingsRate,
+  getMonthlySummary
 } from '../controllers/summary.controller.js';
 
 const router = express.Router();
@@ -21,5 +22,6 @@ router.get('/cashflow-summary', authenticate, getCashFlowSummary);
 router.get('/trends-summary', authenticate, getTrendsSummary);
 router.get('/monthly-trends', authenticate, getMonthlyTrends);
 router.get('/savings-rate', authenticate, getSavingsRate);
+router.get('/dashboard-summary', authenticate, getMonthlySummary);
 
 export default router;

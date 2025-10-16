@@ -28,21 +28,25 @@ type CreateAccountDialogProps = {
   onSave: (data: Partial<Account>) => Promise<void>;
 };
 
-
+type AccountForm = Partial<Account> & { balanceStr?: string };
 
 export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDialogProps) => {
-  const [form, setForm] = useState<Partial<Account>>({
+  const [form, setForm] = useState<AccountForm>({
     name: "",
     description: "",
     type: "",
     icon: "",
     currency: "USD",
-    balance: 0,
+    balanceStr: "",
   });
 
-  const isFormValid = form.name && form.type && form.icon && /^[0-9]*\.?[0-9]*$/.test(form.balanceStr ?? "");
+  const isFormValid =
+    !!form.name &&
+    !!form.type &&
+    !!form.icon &&
+    /^[0-9]*\.?[0-9]*$/.test(form.balanceStr ?? "0");
 
-  const handleChange = (field: keyof Account, value: string | number) => {
+  const handleChange = (field: keyof Account | "balanceStr", value: string | number) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -52,22 +56,27 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
       return;
     }
 
-    const balanceNumber = parseFloat(form.balanceStr || "0");
+    const startingBalance = parseFloat(form.balanceStr || "0");
 
-    const dataToSave = {
-      ...form,
-      balance: isNaN(balanceNumber) ? 0 : balanceNumber,
+    const dataToSave: Partial<Account> = {
+      name: form.name,
+      type: form.type,
+      icon: form.icon,
+      description: form.description,
+      currency: form.currency,
+      startingBalance: isNaN(startingBalance) ? 0 : startingBalance,
+      isDefault: form.isDefault ?? false,
     };
 
     await onSave(dataToSave);
     onClose();
+
     setForm({
       name: "",
       description: "",
       type: "",
       icon: "",
       currency: "USD",
-      balance: 0,
       balanceStr: "",
     });
   };
@@ -85,24 +94,20 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
         <div className="space-y-4 py-4">
           <div>
             <Label>Name</Label>
-            <Input
-              value={form.name ?? ""}
-              onChange={(e) => handleChange("name", e.target.value)}
-            />
+            <Input value={form.name ?? ""} onChange={(e) => handleChange("name", e.target.value)} />
           </div>
 
           <div>
             <Label>Type</Label>
-            <Select
-              value={form.type ?? ""}
-              onValueChange={(value) => handleChange("type", value)}
-            >
+            <Select value={form.type ?? ""} onValueChange={(v) => handleChange("type", v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
                 {accountTypes.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.code}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -110,16 +115,15 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
 
           <div>
             <Label>Icon</Label>
-            <Select
-              value={form.icon ?? ""}
-              onValueChange={(value) => handleChange("icon", value)}
-            >
+            <Select value={form.icon ?? ""} onValueChange={(v) => handleChange("icon", v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select icon" />
               </SelectTrigger>
               <SelectContent>
                 {accountIcons.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.code}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -132,18 +136,18 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
               onChange={(e) => handleChange("description", e.target.value)}
             />
           </div>
+
           <div>
             <Label>Currency</Label>
-            <Select
-              value={form.currency ?? "USD"}
-              onValueChange={(value) => handleChange("currency", value)}
-            >
+            <Select value={form.currency ?? "USD"} onValueChange={(v) => handleChange("currency", v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
               <SelectContent>
                 {currencies.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.code}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -158,10 +162,7 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
               onChange={(e) => {
                 const value = e.target.value;
                 if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
-                  setForm((prev) => ({
-                    ...prev,
-                    balanceStr: value
-                  }));
+                  handleChange("balanceStr", value);
                 }
               }}
             />
@@ -172,7 +173,9 @@ export const CreateAccountDialog = ({ open, onClose, onSave }: CreateAccountDial
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!isFormValid}>Create</Button>
+          <Button onClick={handleSubmit} disabled={!isFormValid}>
+            Create
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -44,7 +44,6 @@ export const getAccounts = async (req, res) => {
       return res.status(404).json({ message: "No accounts found." });
     }
 
-    // opcjonalnie: policz saldo każdej z kont
     const accountsWithBalance = await Promise.all(accounts.map(async (account) => {
       const result = await Transaction.aggregate([
         { $match: { accountId: account._id, userId, settled: true } },
@@ -78,7 +77,6 @@ export const getAccount = async (req, res) => {
       return res.status(404).json({ message: "Account not found." });
     }
 
-    // policz saldo dynamicznie
     const result = await Transaction.aggregate([
       { $match: { accountId: account._id, userId: req.user._id, settled: true } },
       {
@@ -150,7 +148,6 @@ export const deleteAccount = async (req, res) => {
       return res.status(404).json({ message: "Account not found." });
     }
 
-    // opcjonalnie: usuń powiązane transakcje
     await Transaction.deleteMany({ accountId, userId });
 
     res.status(200).json({ message: "Account and related transactions deleted successfully" });
@@ -166,21 +163,18 @@ export const setDefaultAccount = async (req, res) => {
     const userId = req.user._id;
     const accountId = req.params.id;
 
-    // 1️⃣ Reset wszystkich kont użytkownika
     await Account.updateMany({ userId }, { $set: { isDefault: false } });
 
-    // 2️⃣ Ustaw konto jako domyślne
     const updatedAccount = await Account.findOneAndUpdate(
       { _id: accountId, userId },
       { $set: { isDefault: true } },
-      { new: true } // zwróć zaktualizowany dokument
+      { new: true } 
     );
 
     if (!updatedAccount) {
       return res.status(404).json({ message: "Account not found." });
     }
 
-    // 3️⃣ Policz dynamiczne saldo
     const result = await Transaction.aggregate([
       { $match: { accountId: updatedAccount._id, userId, settled: true } },
       {
@@ -214,7 +208,6 @@ export const getDefaultAccount = async (req, res) => {
       return res.status(404).json({ message: "No default account found." });
     }
 
-    // dynamiczne saldo
     const result = await Transaction.aggregate([
       { $match: { accountId: defaultAccount._id, userId, settled: true } },
       {
@@ -236,7 +229,6 @@ export const getDefaultAccount = async (req, res) => {
   }
 };
 
-// Filtr po type
 export const getAccountsByType = async (req, res) => {
   try {
     const { type } = req.params;
@@ -245,7 +237,7 @@ export const getAccountsByType = async (req, res) => {
     const accounts = await Account.find({ userId, type }).sort({ createdAt: -1 });
 
     if (!accounts.length) {
-      return res.status(200).json([]); // zwracamy pustą listę zamiast 404
+      return res.status(200).json([]); 
     }
 
     const accountsWithBalance = await Promise.all(accounts.map(async (account) => {
@@ -273,7 +265,6 @@ export const getAccountsByType = async (req, res) => {
   }
 };
 
-// Filtr po currency
 export const getAccountsByCurrency = async (req, res) => {
   try {
     const { currency } = req.params;
@@ -320,7 +311,6 @@ export const getAccountBalance = async (req, res) => {
       return res.status(404).json({ message: "Account not found." });
     }
 
-    // policz saldo na podstawie income/expense
     const result = await Transaction.aggregate([
       { $match: { accountId: account._id, userId, settled: true } },
       {
@@ -344,34 +334,6 @@ export const getAccountBalance = async (req, res) => {
   }
 };
 
-
-// export const updateAccountBalance = async (req, res) => {
-//   try {
-//     const amount = Number(req.body.balance);
-//     const accountId = req.params.id;
-//     const userId = req.user._id;
-
-//     if (isNaN(amount)) {
-//       return res.status(400).json({ message: "Invalid amount." });
-//     }
-
-//     const updatedAccount = await Account.findOneAndUpdate(
-//       { _id: accountId, userId },
-//       { $inc: { balance: amount } },
-//       { new: true }
-//     );
-
-//     if (!updatedAccount) {
-//       return res.status(404).json({ message: "Account not found." });
-//     }
-
-//     res.status(200).json({ message: "Balance updated successfully", account: updatedAccount });
-//   } catch (error) {
-//     console.error("Error updating account balance:", error);
-//     res.status(500).json({ message: "Internal server error." });
-//   }
-// };
-
 export const getTotalBalance = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -385,7 +347,6 @@ export const getTotalBalance = async (req, res) => {
     let total = 0;
 
     for (const account of accounts) {
-      // policz income/expense dla tego konta
       const result = await Transaction.aggregate([
         { $match: { accountId: account._id, userId, settled: true } },
         {
@@ -402,7 +363,6 @@ export const getTotalBalance = async (req, res) => {
         balance += result[0].income - result[0].expense;
       }
 
-      // konwersja na walutę bazową
       const converted = await convertCurrency(balance, account.currency, baseCurrency);
       total += converted;
     }
@@ -418,18 +378,16 @@ export const getTotalBalance = async (req, res) => {
   }
 };
 
-
 export const getAccountSummary = async (req, res) => {
   try {
     const userId = req.user._id;
 
     const accounts = await Account.find({ userId });
     if (!accounts.length) {
-      return res.status(200).json([]); // pusty array zamiast 404
+      return res.status(200).json([]); 
     }
 
     const summary = await Promise.all(accounts.map(async (account) => {
-      // agregacja transakcji dla dynamicznego salda
       const result = await Transaction.aggregate([
         { $match: { accountId: account._id, userId, settled: true } },
         {

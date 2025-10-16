@@ -1,15 +1,37 @@
+interface User {
+  _id: string
+  username: string
+  email: string
+  firstName: string
+  lastName: string
+  createdAt: string
+}
+
+export interface AuthContextType {
+  user: User | null
+  token: string | null
+  signIn: (email: string, password: string) => Promise<void>
+  signOut: () => void
+  loading: boolean
+}
+
 export interface Account {
-  _id: string;
-  name: string;
-  type: string;
-  currency: string;
-  balance: number;
-  balanceStr?: string; 
-  icon?: string;
-  description?: string;
-  isDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
+  _id: string
+  name: string
+  type: string
+  currency: string
+  startingBalance: number,
+  balance: number,
+  icon?: string
+  description?: string
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AccountsContextType {
+  accounts: Account[];
+  refreshAccounts: () => Promise<void>;
 }
 
 export interface AccountSummary {
@@ -99,6 +121,18 @@ export interface MonthlyCategoryStats {
   targetCurrency: string;
   type: "expense" | "income";
   monthlyCategories: MonthlyCategories;
+}
+
+export interface MonthlySummaryItem {
+  totalIncome: number;
+  totalExpense: number;
+  profit: number;
+  e_i_ratio: number | null; 
+}
+
+export interface MonthlySummaryData {
+  targetCurrency: string;
+  monthlySummary: Record<string, MonthlySummaryItem>;
 }
 
 

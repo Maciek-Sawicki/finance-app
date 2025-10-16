@@ -1,19 +1,21 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import React from "react";
 import {
   LayoutDashboard,
   Wallet,
   ChartColumnStacked,
   ArrowRightLeft,
   PiggyBank,
-  CalendarArrowUp,
   ChartNoAxesCombined,
   CircleDollarSign,
-} from "lucide-react"
+  Wrench,
+  FileDown,
+  FileUp,
+} from "lucide-react";
 
-import { NavMain } from "@/components/Navigation/nav-main"
-import { NavUser } from "@/components/Navigation/nav-user"
+import { NavMain } from "@/components/Navigation/NavMain";
+import { NavUser } from "@/components/Navigation/NavUser";
 import {
   Sidebar,
   SidebarContent,
@@ -22,25 +24,21 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { ModeToggle } from "../Theme/mode-toggle"
+} from "@/components/ui/sidebar";
+import { ModeToggle } from "../Theme/mode-toggle";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAccounts } from "@/contexts/AccountsContext";
 
-import { AccountsService } from "@/services/accounts"
-import type { Account } from "@/lib/types"
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {}
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [accounts, setAccounts] = React.useState<Account[]>([])
+export const AppSidebar: React.FC<AppSidebarProps> = (props) => {
+  const { user, loading } = useAuth();
+  const { accounts } = useAccounts(); 
 
-  React.useEffect(() => {
-    AccountsService.getAll().then(setAccounts)
-  }, [])
+  if (loading) return <div className="p-4 text-sm text-muted-foreground">Loading...</div>;
+  if (!user) return <div className="p-4 text-sm text-muted-foreground">Not authenticated</div>;
 
   const data = {
-    user: {
-      name: "shadcn",
-      email: "m@example.com",
-      avatar: "/avatars/shadcn.jpg",
-    },
     navMain: [
       {
         title: "Dashboard",
@@ -51,50 +49,45 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Accounts",
         url: "/accounts",
         icon: Wallet,
-        items: [
-          { title: "All accounts", url: "/accounts/all" },
-          ...accounts.map((acc) => ({
-            title: acc.name,
-            url: `/accounts/${acc._id}`,
-          })),
-        ],
+        items: accounts.map(acc => ({ title: acc.name, url: `/accounts/${acc._id}` })),
       },
       {
         title: "Categories",
         url: "/categories",
         icon: ChartColumnStacked,
-        items: [
-          {
-            title: "All categories",
-            url: "/categories/all",
-          },
-        ],
       },
       {
         title: "Transactions",
         url: "/transactions/all",
         icon: ArrowRightLeft,
-        items: [
-          { title: "History", url: "/transactions/history" },
-          { title: "Add transaction", url: "/transaction/add" },
-        ],
       },
       {
         title: "Budgets",
         url: "/budgets",
         icon: PiggyBank,
+      },
+      {
+        title: "Declarations",
+        url: "/declarations",
+        icon: Wrench,
         items: [
-          { title: "Summary", url: "/budgets/summary" },
-          { title: "Add budget", url: "/budget/add" },
+          { title: "Accounts", url: "/accounts/all" },
+          { title: "Categories", url: "/categories/all" },
+          { title: "Budgets", url: "/budgets/all" },
+          { title: "Recurring Transactions", url: "/recurring-transactions" },
         ],
       },
       {
-        title: "Recurring transactions",
-        url: "/recurring-transactions",
-        icon: CalendarArrowUp,
-        items: [
-          { title: "Add recurring transaction", url: "/recurring-transaction/add" },
-        ],
+        title: "Export Data",
+        url: "/export",
+        icon: FileDown,
+        items: [{ title: "Export", url: "/export" }],
+      },
+      {
+        title: "Import Data",
+        url: "/import",
+        icon: FileUp,
+        items: [{ title: "Import", url: "/import" }],
       },
       {
         title: "Reports",
@@ -104,15 +97,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           { title: "Overview", url: "/reports/overview" },
           { title: "Income & Expenses", url: "/reports/income-expenses" },
           { title: "Categories", url: "/reports/categories" },
-          { title: "Accounts Summary", url: "/reports/accounts" },
-          { title: "Cashflow", url: "/reports/cashflow" },
-          { title: "Trends", url: "/reports/trends" },
-          { title: "Savings", url: "/reports/savings" },
-          { title: "Compare Periods", url: "/reports/compare" },
         ],
       },
     ],
-  }
+  };
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -139,10 +127,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <ModeToggle />
-        <NavUser user={data.user} />
+        <ul>
+          <li className="p-2"><ModeToggle /></li>
+        </ul>
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
-  )
-}
-
+  );
+};

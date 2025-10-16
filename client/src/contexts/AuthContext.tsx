@@ -1,23 +1,35 @@
 import React, { createContext, useEffect, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import api from "../lib/api";
-
-interface AuthContextType {
-  user: any;
-  token: string | null;
-  signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => void;
-}
+import type { AuthContextType } from "../lib/types";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Przy odświeżeniu strony odczytujemy token z localStorage
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  // Dane usera trzymamy w stanie tylko jeśli był signin w tej sesji
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Funkcja logowania
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (token) {
+        try {
+          const res = await api.get("/auth/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          setUser(res.data.user)
+        } catch (err) {
+          console.error("Error fetching user:", err)
+          setToken(null)
+          localStorage.removeItem("token")
+        }
+      }
+      setLoading(false)
+    }
+
+    fetchUser()
+  }, [token])
+
   const signIn = async (email: string, password: string) => {
     const res = await api.post('/auth/signIn', { email, password });
     setUser(res.data.user);
@@ -25,7 +37,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('token', res.data.token);
   };
 
-  // Funkcja wylogowania
   const signOut = () => {
     setUser(null);
     setToken(null);
@@ -33,13 +44,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, token, signIn, signOut, loading }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Hook do korzystania z kontekstu
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within AuthProvider');
