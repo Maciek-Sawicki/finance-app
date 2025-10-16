@@ -17,19 +17,14 @@ import {
 export function ExpensesTable() {
   const [data, setData] = useState<MonthlyCategoryStats | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // zawsze inicjalizujemy hook
   const [selectedYear, setSelectedYear] = useState<string>("");
 
-  // fetch danych
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         const res = await CategoriesService.getTopMonthlyCategories("USD", "expense");
         setData(res);
-
-        // ustawiamy domyślny rok od razu, jeśli brak wybranego
         const years = Object.keys(res.monthlyCategories).map((m) => m.slice(0, 4));
         const maxYear = Math.max(...years.map(Number)).toString();
         setSelectedYear(maxYear);
@@ -42,7 +37,6 @@ export function ExpensesTable() {
     fetchData();
   }, []);
 
-  // wszystkie hooki zawsze są wywołane
   const availableYears = useMemo(() => {
     if (!data) return [];
     const years = Object.keys(data.monthlyCategories).map((m) => m.slice(0, 4));
