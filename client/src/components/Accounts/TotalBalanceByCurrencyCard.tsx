@@ -66,7 +66,7 @@ export function TotalBalanceByCurrencyCard() {
       ) : (
         <>
           <CardHeader>
-            <CardTitle className="text-3xl font-bold">Balances by Currency</CardTitle>
+            <CardTitle className="text-2xl font-bold">Balances by Currency</CardTitle>
             <CardDescription className="text-lg">Summary of balances per currency</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">

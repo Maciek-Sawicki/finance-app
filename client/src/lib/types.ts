@@ -21,6 +21,7 @@ export interface Account {
   type: string
   currency: string
   startingBalance: number,
+  balanceAfterRP: number,
   balance: number,
   icon?: string
   description?: string
@@ -45,6 +46,7 @@ export interface AccountSummary {
 
 export interface TotalBalanceResponse {
   totalBalance: number;
+  totalAfterRP: number;
   currency: string;
 }
 
@@ -134,5 +136,25 @@ export interface MonthlySummaryData {
   targetCurrency: string;
   monthlySummary: Record<string, MonthlySummaryItem>;
 }
+
+export interface AccountSummaryItem {
+  id: string;
+  name: string;
+  type: string;
+  currency: string;
+  originalSettled: number;
+  originalWithRAndP: number;
+  convertedSettled: number;
+  convertedWithRAndP: number;
+  isDefault: boolean;
+}
+
+export interface AccountSummaryResponse {
+  currency: string;
+  accounts: AccountSummaryItem[];
+  total: number;
+  totalAfterRAndP: number;
+}
+
 
 

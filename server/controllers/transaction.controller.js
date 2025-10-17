@@ -245,3 +245,20 @@ export const toggleTransactionSettled = async (req, res) => {
     res.status(500).json({ message: "Internal server error." });
   }
 };
+
+export const getLastTransactions = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const limit = parseInt(req.query.limit, 10) || 5;
+
+    const transactions = await Transaction.find({ userId })
+      .sort({ date: -1 })
+      .limit(limit)
+      .populate("categoryId accountId");
+
+    res.status(200).json(transactions);
+  } catch (error) {
+    console.error("Error fetching last transactions:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+}

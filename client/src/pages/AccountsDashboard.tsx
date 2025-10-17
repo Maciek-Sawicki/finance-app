@@ -9,7 +9,7 @@ import { TopAccountsCard } from "@/components/Accounts/TopAccounts";
 
 export default function Dashboard() {
   return (
-    <div className="grid gap-6 p-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-[250px]">
+    <div className="grid gap-6 p-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-min">
       <div className="col-span-1 row-span-2">
         <TopAccountsCard /> 
       </div>
@@ -31,3 +31,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+

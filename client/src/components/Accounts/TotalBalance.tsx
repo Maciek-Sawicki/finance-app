@@ -51,12 +51,21 @@ export function TotalBalanceCard() {
             <CardTitle className="text-4xl font-semibold tabular-nums @[250px]/card:text-5xl">
               {data?.totalBalance !== undefined && data?.totalBalance !== null
                 ? `${Number(data.totalBalance).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                    useGrouping: true,
+                  })} ${data.currency ?? ""}`
+                : "No data"}
+            </CardTitle>
+            {data?.totalAfterRP !== undefined && data?.totalAfterRP !== null && (
+              <p className="text-sm text-muted-foreground mt-1">
+                After R&P: {Number(data.totalAfterRP).toLocaleString("en-US", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                   useGrouping: true,
-                })} ${data.currency ?? ""}`
-                : "No data"}
-            </CardTitle>
+                })} {data.currency ?? ""}
+              </p>
+            )}
           </CardHeader>
           <CardFooter className="flex-col items-start gap-1.5 text-sm">
             <p className="text-muted-foreground">

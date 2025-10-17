@@ -60,7 +60,7 @@ export default function AccountPage() {
     <div className="w-full h-full flex flex-col p-10">
       <div className="mb-6 w-full flex flex-col md:flex-row md:justify-between md:items-end gap-2">
         <div>
-          <h1 className="text-4xl font-bold">{account?.name || "Loading..."}</h1>
+          <h1 className="text-2xl font-bold">{account?.name || "Loading..."}</h1>
           <p className="text-lg text-muted-foreground mt-1">
             Balance:{" "}
             <span className="font-semibold">

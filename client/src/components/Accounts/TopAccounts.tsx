@@ -46,7 +46,7 @@ export function TopAccountsCard() {
       ) : (
         <>
           <CardHeader>
-            <CardTitle className="text-3xl font-bold">Top Accounts</CardTitle>
+            <CardTitle className="text-2xl font-bold">Top Accounts</CardTitle>
             <CardDescription className="text-lg">
               Accounts with the highest balances
             </CardDescription>

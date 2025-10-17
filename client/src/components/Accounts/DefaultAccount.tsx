@@ -31,6 +31,11 @@ export function DefaultAccountCard() {
     };
   }, []);
 
+  const formatCurrency = (amount: number | undefined, currency?: string) =>
+    amount !== undefined && amount !== null
+      ? `${Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })} ${currency ?? ""}`
+      : "No data";
+
   return (
     <Card className="h-full">
       {loading ? (
@@ -47,19 +52,16 @@ export function DefaultAccountCard() {
         <>
           <CardHeader>
             <CardDescription className="text-xl">Default Account</CardDescription>
-            <CardTitle className="text-4xl font-semibold tabular-nums @[250px]/card:text-5xl">
-              {defaultAccount?.balance !== undefined && defaultAccount?.balance !== null
-                ? `${Number(defaultAccount.balance).toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                  useGrouping: true,
-                })} ${defaultAccount.currency ?? ""}`
-                : "No data"}
+            <CardTitle className="text-4xl font-semibold tabular-nums @[250px]/card:text-5xl flex flex-col gap-1">
+              {formatCurrency(defaultAccount?.balance, defaultAccount?.currency)}
+              <span className="text-sm text-muted-foreground">
+                After R&P: {formatCurrency(defaultAccount?.balanceAfterRP, defaultAccount?.currency)}
+              </span>
             </CardTitle>
           </CardHeader>
           <CardFooter className="flex-col items-start gap-1.5 text-sm">
             <p className="text-muted-foreground">
-              Default Account: {defaultAccount?.name ?? "No data"}
+              Account: {defaultAccount?.name ?? "No data"}
             </p>
           </CardFooter>
         </>
@@ -67,4 +69,3 @@ export function DefaultAccountCard() {
     </Card>
   );
 }
-

@@ -7,7 +7,8 @@ import {
   updateTransaction,
   deleteTransaction,
   getTransactions,
-  toggleTransactionSettled
+  toggleTransactionSettled,
+  getLastTransactions
 } from '../controllers/transaction.controller.js';
 
 const router = express.Router();
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post('/create', authenticate, createTransaction);
 router.post('/transfer', authenticate, createTransfer);
 router.get('/', authenticate, getTransactions);
+router.get('/last', authenticate, getLastTransactions);
 
 router.get('/:id', authenticate, getTransaction);
 router.put('/:id', authenticate, updateTransaction);

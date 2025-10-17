@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import type { Account, TotalBalanceResponse, AccountSummary } from "@/lib/types";
+import type { Account, TotalBalanceResponse, AccountSummaryResponse } from "@/lib/types";
 
 export const AccountsService = {
   getAll: async (): Promise<Account[]> => {
@@ -37,9 +37,9 @@ export const AccountsService = {
     const res = await api.get("/accounts/default");
     return res.data; 
   },
-  getSummary: async (): Promise<AccountSummary[]> => {
-    const res = await api.get("/accounts/summary");
-    return res.data; 
-  }
+  getSummary: async (currency: string = "USD"): Promise<AccountSummaryResponse> => {
+    const res = await api.get(`/accounts/summary?currency=${currency}`);
+    return res.data;
+  },
   
 };

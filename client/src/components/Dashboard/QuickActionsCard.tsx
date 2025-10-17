@@ -20,38 +20,38 @@ export function QuickActionsCard() {
 
   return (
     <>
-      <Card className="w-full max-w-md mx-auto">
+      <Card className="h-full flex flex-col">
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4 flex-1">
           <div className="grid grid-cols-2 gap-4">
-            <Button
-              variant="outline"
-              className="flex items-center justify-center gap-2"
-              onClick={() => setOpenAccountDialog(true)}
-            >
+            <Button variant="outline" className="flex items-center justify-center gap-2" onClick={() => setOpenAccountDialog(true)}>
               <Plus className="w-4 h-4" />
               Add Account
             </Button>
-
             <Button variant="outline" className="flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" />
-              Add Recuring Payment
+              Add Transaction
             </Button>
-
+            <Button variant="outline" className="flex items-center justify-center gap-2">
+              <Plus className="w-4 h-4" />
+              Add Recurring Payment
+            </Button>
             <Button variant="outline" className="flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" />
               Add Budget
             </Button>
-
             <Button variant="outline" className="flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" />
               Add Category
             </Button>
           </div>
+
+          <div className="flex-1" /> 
         </CardContent>
       </Card>
+
 
       <CreateAccountDialog
         open={openAccountDialog}

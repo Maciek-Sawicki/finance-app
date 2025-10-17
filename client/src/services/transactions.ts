@@ -39,5 +39,9 @@ export const TransactionsService = {
   createTransfer: async (transfer: Partial<Transfer>): Promise<Transfer> => {
     const res = await api.post("/transactions/transfer", transfer);
     return res.data;
+  },
+  getLastTransactions: async (limit: number = 5): Promise<Transaction[]> => {
+    const res = await api.get("/transactions/last", { params: { limit } });
+    return res.data;
   }
 };

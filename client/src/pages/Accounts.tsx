@@ -61,7 +61,7 @@ export default function Accounts() {
     <div className="w-full h-full flex flex-col items-center p-10">
       <div className="mb-6 w-full flex flex-col md:flex-row md:justify-between md:items-end gap-2">
         <div>
-          <h1 className="text-4xl font-bold">Your All Accounts</h1>
+          <h1 className="text-2xl font-bold">Your All Accounts</h1>
           <p className="text-lg text-muted-foreground mt-1">
             Total Balance: <span className="font-semibold">{totalBalance}</span>
           </p>
