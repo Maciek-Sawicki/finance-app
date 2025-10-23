@@ -156,5 +156,50 @@ export interface AccountSummaryResponse {
   totalAfterRAndP: number;
 }
 
+export interface Budget {
+  _id: string;
+  userId: string;
+  categoryId: {
+    _id: string;
+    name: string;
+    icon: string;
+    color: string;
+    type: string;
+  };
+  amount: number;
+  currency: string;
+  spent?: number;
+  progress?: number;
+  convertedAmount?: number;
+  targetCurrency?: string;
+  type: "fixed" | "recurring";
+  recurrencePeriod?: "weekly" | "monthly" | "quarterly" | "yearly";
+  carryOver: boolean;
+  status: "active" | "completed";
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EditBudgetDialogProps {
+  budget: Budget | null;
+  open: boolean;
+  onClose: () => void;
+  onSave: (id: string, data: Partial<Budget>) => Promise<void>;
+};
+
+export interface BudgetFormState {
+  categoryId?: string;
+  amount?: number;
+  currency?: string;
+  startDate?: Date;
+  endDate?: Date;
+  type?: string;
+  carryOver?: boolean;
+  status?: string;
+};
+
+
 
 

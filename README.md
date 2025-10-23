@@ -1,27 +1,29 @@
 TODO:
-- Poprawa zmiany kategorii po zmianie typu transakcji
+<!-- - Poprawa zmiany kategorii po zmianie typu transakcji -->
 - ulubione kategorie w listach
+- kolory kategorii na wykresach
 - selecty w komponentach ze zmianą waluty
 - resposnywność dashboardów 
 - chowany panel nawigacji
 - dodawanie wielu transakcji jednocześnie
-- deklaracja kategorii napis header
+<!-- - deklaracja kategorii napis header -->
 - dashboard dla budżetów 
-- deklaracja budżetów
+<!-- - deklaracja budżetów - przycisk do dodawania i dialog do dodawania -->
+- podział budżetów na kategorię w tabeli w dekalaracjach
 - deklaracja transakcji cyklicznych
 - export danych - formularz, logika, wybór danych, 
 - import danych - transakcji, csv excel
-- jakiś raport? chyba wszystko już jest
 - strona rejstracji 
 - strona główna z opisem funkcji
 - resetowanie hasła przez maila
 - potwierdzanie rejestracji przez maila
-- ustawienia konta, wybór waluty domyślnej, wybór ulubionych walut, wybór formatowania waluty - tolocalestring
+- ustawienia konta, wybór waluty domyślnej, wybór ulubionych walut, wybór formatowania waluty - tolocalestring, wybór kraju przy rejestracji
 - porównania 2 miesięcy, tabelka + wykresy
 - balans na koniec miesiąca, wykres czy na + czy na -
 - walidacja formularzy
 - testy jednostkowe
-
+- wszystkie transakcje widoczne w nowym koncie (bug)
+- scroll bary w kolorze ciemnym
 
 # Cashora Financial App
 A modern full-stack personal finance management application built with React, TypeScript, Express, and MongoDB.

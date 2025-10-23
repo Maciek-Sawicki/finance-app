@@ -25,7 +25,6 @@ export default function Dashboard() {
         <AccountSummaryTable />
       </div>
 
-      {/* Prawa kolumna / rząd 3 */}
       <div className="col-span-1">
         <MonthlySummaryTable />
       </div>

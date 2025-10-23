@@ -10,10 +10,12 @@ import Categories from "../pages/Categories";
 import CategoriesDashboard from "../pages/CategoriesDashboard";
 
 import Transactions from "../pages/Transactions";
+import Budgets from "../pages/Budgets";
 
 import SignIn from "../pages/SignIn";
 import PrivateRoute from "../components/PrivateRoute";
 import { ProtectedLayout } from "../layouts/ProtectedLayout";
+
 
 const AppRouter: React.FC = () => (
   <Routes>
@@ -97,6 +99,17 @@ const AppRouter: React.FC = () => (
         <PrivateRoute>
           <ProtectedLayout>
             <Transactions />
+          </ProtectedLayout>
+        </PrivateRoute>
+      }
+    />
+
+    <Route
+      path="/budgets/all/*"
+      element={
+        <PrivateRoute>
+          <ProtectedLayout>
+            <Budgets />
           </ProtectedLayout>
         </PrivateRoute>
       }
