@@ -1,29 +1,32 @@
 TODO:
 <!-- - Poprawa zmiany kategorii po zmianie typu transakcji -->
-- ulubione kategorie w listach
-- kolory kategorii na wykresach
-- selecty w komponentach ze zmianą waluty
-- resposnywność dashboardów 
-- chowany panel nawigacji
-- dodawanie wielu transakcji jednocześnie
+<!-- - ulubione kategorie w listach (1h) -->
+- kolory kategorii na wykresach (3h)
+- selecty w komponentach ze zmianą waluty (2h)
+- resposnywność dashboardów (4h)
+<!-- - chowany panel nawigacji (0.5 h) -->
+- dodawanie wielu transakcji jednocześnie (3h)
 <!-- - deklaracja kategorii napis header -->
-- dashboard dla budżetów 
+- dashboard dla budżetów (4h)
 <!-- - deklaracja budżetów - przycisk do dodawania i dialog do dodawania -->
-- podział budżetów na kategorię w tabeli w dekalaracjach
-- deklaracja transakcji cyklicznych
-- export danych - formularz, logika, wybór danych, 
-- import danych - transakcji, csv excel
-- strona rejstracji 
-- strona główna z opisem funkcji
-- resetowanie hasła przez maila
-- potwierdzanie rejestracji przez maila
-- ustawienia konta, wybór waluty domyślnej, wybór ulubionych walut, wybór formatowania waluty - tolocalestring, wybór kraju przy rejestracji
-- porównania 2 miesięcy, tabelka + wykresy
-- balans na koniec miesiąca, wykres czy na + czy na -
-- walidacja formularzy
-- testy jednostkowe
-- wszystkie transakcje widoczne w nowym koncie (bug)
-- scroll bary w kolorze ciemnym
+<!-- - podział budżetów na kategorię w tabeli w dekalaracjach (1h) -->
+- deklaracja transakcji cyklicznych (6h)
+- export danych - formularz, logika, wybór danych, (8h) 
+- import danych - transakcji, csv excel (16h)
+- strona rejstracji (2h)
+- strona główna z opisem funkcji (3h)
+- resetowanie hasła przez maila (3h)
+- potwierdzanie rejestracji przez maila (3h)
+- ustawienia konta, wybór waluty domyślnej, wybór ulubionych walut, wybór formatowania waluty - tolocalestring, wybór kraju przy rejestracji (8h)
+- porównania 2 miesięcy, tabelka + wykresy (6h)
+- balans na koniec miesiąca, wykres czy na + czy na - (2h)
+- walidacja formularzy (2h)
+- testy jednostkowe (20h)
+<!-- - wszystkie transakcje widoczne w nowym koncie (bug) (1h) -->
+<!-- - scroll bary w kolorze ciemnym (1h) -->
+- cron do sprawdzania czy budżet jest zakończony i przeniesienie go do completed (2h)
+
+(100h) xd na pewno nie 
 
 # Cashora Financial App
 A modern full-stack personal finance management application built with React, TypeScript, Express, and MongoDB.

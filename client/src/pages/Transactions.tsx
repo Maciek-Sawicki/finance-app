@@ -42,7 +42,7 @@ export default function Accounts() {
     <div className="w-full h-full flex-col justify-center items-center p-10">
       <div className="mb-6 w-full flex flex-col md:flex-row md:justify-between md:items-end gap-2">
         <div>
-          <h1 className="text-4xl font-bold">Your All Transactions</h1>
+          <h1 className="text-2xl font-bold">Your All Transactions</h1>
         </div>
 
         <div className="flex justify-end items-center">

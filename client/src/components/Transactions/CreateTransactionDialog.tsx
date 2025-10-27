@@ -32,6 +32,7 @@ import { Switch } from "@/components/ui/switch";
 import * as Tabs from "@radix-ui/react-tabs";
 import type { Account, Category } from "@/lib/types";
 import { RatesService } from "@/services/rates";
+import { Separator } from "@/components/ui/separator";
 
 type CreateTransactionDialogProps = {
   open: boolean;
@@ -214,15 +215,29 @@ export const CreateTransactionDialog = ({
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
-                      <SelectContent className="bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]">
+                      <SelectContent>
                         {categories
-                          .filter((c) => c.type === type)
-                          .map((c) => (
-                            <SelectItem key={c._id} value={c._id}>
-                              {c.name}
+                          .filter((cat) => cat.type === type && cat.favorite)
+                          .map((cat) => (
+                            <SelectItem key={cat._id} value={cat._id}>
+                              {cat.icon && <span className="mr-2">{cat.icon}</span>}
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+
+                        <Separator className="my-1" />
+
+                        {categories
+                          .filter((cat) => cat.type === type && !cat.favorite)
+                          .map((cat) => (
+                            <SelectItem key={cat._id} value={cat._id}>
+                              {cat.icon && <span className="mr-2">{cat.icon}</span>}
+                              {cat.name}
                             </SelectItem>
                           ))}
                       </SelectContent>
+
+
                     </Select>
                   </div>
                   <div>

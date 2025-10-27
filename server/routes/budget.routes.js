@@ -6,7 +6,7 @@ import {
   getBudgetById,
   updateBudget,
   deleteBudget,
-  getActiveBudgets,
+  getBudgetsByType,
   getBudgetHistory
 } from '../controllers/budget.controller.js'
 
@@ -14,7 +14,7 @@ const router = express.Router();
 
 router.get('/', authenticate, getBudgets);
 router.post('/create', authenticate, createBudget);
-router.get('/active', authenticate, getActiveBudgets);
+router.get('/getByType', authenticate, getBudgetsByType);
 
 router.get('/:id', authenticate, getBudgetById);
 router.put('/:id', authenticate, updateBudget);

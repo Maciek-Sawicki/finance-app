@@ -34,7 +34,7 @@ export function QuickActionsCard() {
       const acc = await AccountsService.getAll();
       const cat = await CategoriesService.getAll();
       setAccounts(acc);
-      setCategories(cat.filter(c => c.type === "expense")); 
+      setCategories(cat);
     };
     fetchData();
   }, []);
@@ -105,7 +105,7 @@ export function QuickActionsCard() {
             </Button>
           </div>
 
-          <div className="flex-1" /> 
+          <div className="flex-1" />
         </CardContent>
       </Card>
 

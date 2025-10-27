@@ -5,27 +5,63 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { BudgetsTable } from "@/components/Budgets/BudgetsTable";
 import { CreateBudgetDialog } from "@/components/Budgets/CreateBudgetDialog";
+import { EditBudgetDialog } from "@/components/Budgets/EditBudgetDialog";
 import { BudgetsService } from "@/services/budgets";
 import { CategoriesService } from "@/services/categories";
-import type { Category } from "@/lib/types";
+import type { Category, Budget } from "@/lib/types";
 
-export default function Budgets() {
+export default function BudgetsPage() {
   const [createOpen, setCreateOpen] = useState(false);
-  const [refreshSignal, setRefreshSignal] = useState(0);
+  const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
-  const triggerRefresh = () => setRefreshSignal((prev) => prev + 1);
+  const fetchBudgets = async () => {
+    const active = await BudgetsService.getBudgetsByType("USD", "active");
+    const completed = await BudgetsService.getBudgetsByType("USD", "completed");
+    setBudgets([...active, ...completed]);
+  };
+
   useEffect(() => {
+    fetchBudgets();
     const fetchCategories = async () => {
       const cats = await CategoriesService.getAll();
-      setCategories(cats.filter((c) => c.type === "expense"));
+      setCategories(cats.filter(c => c.type === "expense"));
     };
     fetchCategories();
   }, []);
 
+  const triggerRefresh = async () => {
+    await fetchBudgets();
+  };
+
+  const handleEditOpen = (budget: Budget) => {
+    setEditingBudget(budget);
+    setEditOpen(true);
+  };
+
+  const handleEditSave = async (id: string, data: Partial<Budget>) => {
+    await BudgetsService.update(id, data);
+    setEditOpen(false);
+    triggerRefresh();
+  };
+
+  const activeBudgets = budgets.filter(b => b.status === "active");
+  const completedBudgets = budgets.filter(b => b.status === "completed");
+
+  // Group completed budgets by month and year of endDate
+  const completedGrouped = completedBudgets.reduce<Record<string, Budget[]>>((acc, b) => {
+    const date = new Date(b.endDate);
+    const key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`; // YYYY-MM
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(b);
+    return acc;
+  }, {});
+
   return (
-    <div className="w-full h-full flex-col justify-center items-center p-10">
-      <div className="mb-6 w-full flex flex-col md:flex-row md:justify-between md:items-end gap-2">
+    <div className="w-full h-full flex-col justify-center items-center p-10 space-y-6">
+      <div className="w-full flex flex-col md:flex-row md:justify-between md:items-end gap-2">
         <div>
           <h1 className="text-2xl font-bold">Your Budgets</h1>
           <p>Manage your budgets for different categories here.</p>
@@ -35,9 +71,36 @@ export default function Budgets() {
         </div>
       </div>
 
-      <Card>
-        <BudgetsTable refreshSignal={refreshSignal} />
-      </Card>
+      {activeBudgets.length > 0 && (
+        <>
+          <h2 className="text-xl font-semibold mb-2">Active Budgets</h2>
+          <Card className="mb-6">
+            <BudgetsTable
+              budgets={activeBudgets}
+              onEdit={handleEditOpen}
+              refreshSignal={0}
+            />
+          </Card>
+        </>
+      )}
+
+      <h2 className="text-xl font-semibold mb-2">Completed Budgets</h2>
+      {Object.entries(completedGrouped)
+        .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+        .map(([month, groupBudgets]) => (
+          <div key={month} className="mb-4">
+            <h3 className="text-lg font-semibold mb-2">
+              {new Date(`${month}-01`).toLocaleString("en-US", { month: "long", year: "numeric" })}
+            </h3>
+            <Card>
+              <BudgetsTable
+                budgets={groupBudgets}
+                onEdit={handleEditOpen}
+                refreshSignal={0}
+              />
+            </Card>
+          </div>
+        ))}
 
       <CreateBudgetDialog
         open={createOpen}
@@ -49,6 +112,15 @@ export default function Budgets() {
           triggerRefresh();
         }}
       />
+      {editingBudget && (
+        <EditBudgetDialog
+          budget={editingBudget}
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          onSave={handleEditSave}
+        />
+      )}
     </div>
   );
 }
+

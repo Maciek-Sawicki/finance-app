@@ -81,6 +81,7 @@ const recurringTransactionSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  // po ilu ma się zakończyć
 }, {
   timestamps: true, 
 });

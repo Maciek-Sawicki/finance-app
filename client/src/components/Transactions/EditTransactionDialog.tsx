@@ -6,8 +6,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
-  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { ChevronDownIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import * as Tabs from "@radix-ui/react-tabs";
+import { Separator } from "@/components/ui/separator";
 import type { Account, Category, Transaction } from "@/lib/types";
 
 type EditTransactionDialogProps = {
@@ -63,7 +64,7 @@ export const EditTransactionDialog = ({
         categoryId: transaction.categoryId ?? null,
         amount: transaction.amount,
         description: transaction.description ?? "",
-        date: transaction.date.slice(0, 10), 
+        date: transaction.date.slice(0, 10),
         exclude: transaction.exclude ?? false,
         settled: transaction.settled ?? false,
       });
@@ -77,7 +78,7 @@ export const EditTransactionDialog = ({
   const handleTabChange = (newTab: "income" | "expense") => {
     if (newTab !== tab) {
       setTab(newTab);
-      setForm((prev: any) => ({ ...prev, categoryId: null })); 
+      setForm((prev: any) => ({ ...prev, categoryId: null }));
     }
   };
 
@@ -87,7 +88,7 @@ export const EditTransactionDialog = ({
     if (!transaction || !isValid()) return;
     const payload = {
       accountId: form.accountId,
-      categoryId: form.categoryId._id, 
+      categoryId: form.categoryId._id,
       amount: parseFloat(form.amount),
       description: form.description,
       date: form.date,
@@ -107,13 +108,17 @@ export const EditTransactionDialog = ({
   };
 
   const filteredCategories = categories.filter((c) => c.type === tab);
+  const favorites = filteredCategories.filter((c) => c.favorite);
+  const others = filteredCategories.filter((c) => !c.favorite);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="rounded-xl max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Transaction</DialogTitle>
-          <DialogDescription>Update transaction details below.</DialogDescription>
+          <DialogDescription>
+            Update transaction details below.
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs.Root value={tab} onValueChange={(val) => handleTabChange(val as any)}>
@@ -122,10 +127,11 @@ export const EditTransactionDialog = ({
               <Tabs.Trigger
                 key={t}
                 value={t}
-                className={`p-2 rounded text-center font-medium transition-colors ${tab === t
-                  ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
-                  : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
-                  }`}
+                className={`p-2 rounded text-center font-medium transition-colors ${
+                  tab === t
+                    ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                    : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
+                }`}
               >
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </Tabs.Trigger>
@@ -138,7 +144,7 @@ export const EditTransactionDialog = ({
               <Select
                 value={form.categoryId?._id ?? ""}
                 onValueChange={(val) => {
-                  const selected = filteredCategories.find((c) => c._id === val);
+                  const selected = categories.find((c) => c._id === val);
                   handleChange("categoryId", selected ?? null);
                 }}
               >
@@ -146,9 +152,22 @@ export const EditTransactionDialog = ({
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredCategories.map((c) => (
-                    <SelectItem key={c._id} value={c._id}>
-                      {c.name}
+                  {favorites.length > 0 && (
+                    <>
+                      {favorites.map((cat) => (
+                        <SelectItem key={cat._id} value={cat._id}>
+                          {cat.icon && <span className="mr-2">{cat.icon}</span>}
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                      <Separator className="my-1" />
+                    </>
+                  )}
+
+                  {others.map((cat) => (
+                    <SelectItem key={cat._id} value={cat._id}>
+                      {cat.icon && <span className="mr-2">{cat.icon}</span>}
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

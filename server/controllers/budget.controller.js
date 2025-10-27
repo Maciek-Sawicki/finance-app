@@ -1,5 +1,5 @@
 import Budget from "../models/budget.model.js";
-import Transaction from "../models/transaction.model.js"; 
+import Transaction from "../models/transaction.model.js";
 import Category from "../models/category.model.js";
 import mongoose from "mongoose";
 import { convertCurrency } from "../services/exchangeRate.service.js";
@@ -210,13 +210,18 @@ export const deleteBudget = async (req, res) => {
   }
 };
 
-export const getActiveBudgets = async (req, res) => {
+export const getBudgetsByType = async (req, res) => {
   try {
     const userId = req.user._id;
     const { targetCurrency } = req.query;
+    const { status } = req.query;
 
     if (!targetCurrency)
       return res.status(400).json({ message: "targetCurrency is required." });
+
+    if (status !== "completed" && status !== "active") {
+      return res.status(400).json({ message: "Invalid status parameter." });
+    }
 
     const now = new Date();
 
@@ -224,7 +229,7 @@ export const getActiveBudgets = async (req, res) => {
       userId,
       startDate: { $lte: now },
       endDate: { $gte: now },
-      status: "active",
+      status: status,
     })
       .populate("categoryId", "name icon color type")
       .lean();
@@ -239,7 +244,6 @@ export const getActiveBudgets = async (req, res) => {
     res.status(500).json({ message: "Internal server error." });
   }
 };
-
 
 export const getBudgetHistory = async (req, res) => {
   try {

@@ -9,9 +9,9 @@ export const BudgetsService = {
     return res.data;
   },
 
-  getActive: async (targetCurrency?: string): Promise<Budget[]> => {
-    const res = await api.get("/budgets/active", {
-      params: targetCurrency ? { targetCurrency } : {},
+  getBudgetsByType : async (targetCurrency: string, status: string): Promise<Budget[]> => {
+    const res = await api.get("/budgets/getByType", {
+      params: { targetCurrency, status }
     });
     return res.data;
   },

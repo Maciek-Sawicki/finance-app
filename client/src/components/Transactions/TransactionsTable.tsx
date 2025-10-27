@@ -299,12 +299,48 @@ export const TransactionsTable = ({
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               <Separator className="my-1" />
-              {categories.map((cat) => (
-                <SelectItem key={cat._id} value={cat._id}>
-                  {cat.icon && <span className="mr-2">{cat.icon}</span>}
-                  {cat.name}
-                </SelectItem>
-              ))}
+
+              {categories
+                .filter((cat) => cat.type === "expense" && cat.favorite)
+                .map((cat) => (
+                  <SelectItem key={cat._id} value={cat._id}>
+                    {cat.icon && <span className="mr-2">{cat.icon}</span>}
+                    {cat.name}
+                  </SelectItem>
+                ))}
+
+              <Separator className="my-1" />
+
+              {categories
+                .filter((cat) => cat.type === "income" && cat.favorite)
+                .map((cat) => (
+                  <SelectItem key={cat._id} value={cat._id}>
+                    {cat.icon && <span className="mr-2">{cat.icon}</span>}
+                    {cat.name}
+                  </SelectItem>
+                ))}
+
+              <Separator className="my-1" />
+
+              {categories
+                .filter((cat) => cat.type === "expense" && !cat.favorite)
+                .map((cat) => (
+                  <SelectItem key={cat._id} value={cat._id}>
+                    {cat.icon && <span className="mr-2">{cat.icon}</span>}
+                    {cat.name}
+                  </SelectItem>
+                ))}
+
+              <Separator className="my-1" />
+
+              {categories
+                .filter((cat) => cat.type === "income" && !cat.favorite)
+                .map((cat) => (
+                  <SelectItem key={cat._id} value={cat._id}>
+                    {cat.icon && <span className="mr-2">{cat.icon}</span>}
+                    {cat.name}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
@@ -363,8 +399,8 @@ export const TransactionsTable = ({
                     <TableCell
                       key={cell.id}
                       className={`px-4 py-2 ${cellIndex === 0 && isRecentlyUpdated(row.original.updatedAt)
-                          ? "border-l-4 border-l-primary"
-                          : ""
+                        ? "border-l-4 border-l-primary"
+                        : ""
                         }`}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
