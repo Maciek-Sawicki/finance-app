@@ -24,9 +24,9 @@ const userSchema = new mongoose.Schema({
     required: true,
     minLength: 8,
     select: false, // Exclude password from queries by default
-  }
+  },
 }, {
-    timestamps: true, // Automatically add createdAt and updatedAt fields
+    timestamps: true, 
   }
 );
 

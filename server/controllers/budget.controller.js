@@ -213,24 +213,24 @@ export const deleteBudget = async (req, res) => {
 export const getBudgetsByType = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { targetCurrency } = req.query;
-    const { status } = req.query;
+    const { targetCurrency, status } = req.query;
 
     if (!targetCurrency)
       return res.status(400).json({ message: "targetCurrency is required." });
 
-    if (status !== "completed" && status !== "active") {
+    if (!["completed", "active"].includes(status))
       return res.status(400).json({ message: "Invalid status parameter." });
-    }
 
     const now = new Date();
 
-    const budgets = await Budget.find({
-      userId,
-      startDate: { $lte: now },
-      endDate: { $gte: now },
-      status: status,
-    })
+    const filter = { userId, status };
+
+    if (status === "active") {
+      filter.startDate = { $lte: now };
+      filter.endDate = { $gte: now };
+    }
+
+    const budgets = await Budget.find(filter)
       .populate("categoryId", "name icon color type")
       .lean();
 
@@ -240,10 +240,11 @@ export const getBudgetsByType = async (req, res) => {
 
     res.status(200).json(enriched);
   } catch (error) {
-    console.error("Error fetching active budgets:", error);
+    console.error("Error fetching budgets:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 };
+
 
 export const getBudgetHistory = async (req, res) => {
   try {

@@ -1,11 +1,12 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
+import Settings from "../models/settings.model.js";
 import { generateTokenAndSetCookie } from "../libs/utils/generateToken.js";
 import { initDefaultCategoriesForUser } from "./category.controller.js"; 
 
 export const signUp = async (req, res) => {
   try {
-    const { username, email, firstName, lastName, password } = req.body;
+    const { username, email, firstName, lastName, password, country } = req.body;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
 
@@ -35,6 +36,16 @@ export const signUp = async (req, res) => {
 
     await newUser.save();
     await initDefaultCategoriesForUser(newUser._id);
+
+    await Settings.create({
+      userId: newUser._id,
+      country: country || "US",
+      preferredLocale: "en-US",
+      defaultCurrency: "USD",
+      favoriteCurrencies: [],
+      theme: "system",
+    });
+
     generateTokenAndSetCookie(newUser._id, res);
 
     res.status(201).json({
@@ -114,6 +125,7 @@ export const getCurrentUser = async (req, res) => {
 export const signOut = (req, res) => {
   try {
     res.clearCookie("token", {
+      path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: "Strict",

@@ -1,11 +1,31 @@
-interface User {
+export interface User {
   _id: string
   username: string
   email: string
   firstName: string
   lastName: string
   createdAt: string
+  country: string
 }
+
+export interface UserSettings {
+  _id: string
+  userId: string
+  defaultCurrency: string
+  favoriteCurrencies: string[]
+  currencyFormatLocale: string  
+  theme: "light" | "dark" | "system"
+  dateFormat: string             
+  country: string
+  updatedAt: string
+}
+
+
+export interface UserProfileResponse {
+  user: User
+  settings: UserSettings
+}
+
 
 export interface AuthContextType {
   user: User | null

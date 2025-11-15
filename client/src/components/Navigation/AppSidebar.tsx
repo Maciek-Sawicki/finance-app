@@ -25,17 +25,42 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ModeToggle } from "../Theme/mode-toggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAccounts } from "@/contexts/AccountsContext";
 
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {}
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> { }
 
 export const AppSidebar: React.FC<AppSidebarProps> = (props) => {
   const { user, loading } = useAuth();
-  const { accounts } = useAccounts(); 
+  const { accounts } = useAccounts();
 
-  if (loading) return <div className="p-4 text-sm text-muted-foreground">Loading...</div>;
+  if (loading) {
+    return (
+      <Sidebar variant="inset" {...props}>
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <Skeleton className="h-10 w-full rounded-md animate-pulse" />
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+
+        <SidebarContent className="space-y-2 p-2">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 w-full rounded-md animate-pulse" />
+          ))}
+        </SidebarContent>
+
+        <SidebarFooter className="space-y-2 p-2">
+          <Skeleton className="h-10 w-full rounded-md animate-pulse" />
+          <Skeleton className="h-10 w-full rounded-md animate-pulse" />
+        </SidebarFooter>
+      </Sidebar>
+    );
+  }
+
   if (!user) return <div className="p-4 text-sm text-muted-foreground">Not authenticated</div>;
 
   const data = {

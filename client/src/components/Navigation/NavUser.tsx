@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import api from "@/lib/api"
+import { useNavigate } from "react-router-dom"
 import {
   BadgeCheck,
   ChevronsUpDown,
@@ -34,6 +35,7 @@ export function NavUser() {
   const { token, user: authUser, signOut } = useAuth()
   const { isMobile } = useSidebar()
   const [user, setUser] = useState<any>(authUser)
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -108,9 +110,10 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/profile")}>
+            {/* <DropdownMenuItem> */}
                 <BadgeCheck />
-                Account
+                Profile
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

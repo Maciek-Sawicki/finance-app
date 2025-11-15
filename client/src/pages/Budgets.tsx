@@ -50,6 +50,8 @@ export default function BudgetsPage() {
   const activeBudgets = budgets.filter(b => b.status === "active");
   const completedBudgets = budgets.filter(b => b.status === "completed");
 
+  console.log('completedBudgets', completedBudgets);
+
   // Group completed budgets by month and year of endDate
   const completedGrouped = completedBudgets.reduce<Record<string, Budget[]>>((acc, b) => {
     const date = new Date(b.endDate);
@@ -58,6 +60,8 @@ export default function BudgetsPage() {
     acc[key].push(b);
     return acc;
   }, {});
+
+  console.log('completedGrouped', completedGrouped);
 
   return (
     <div className="w-full h-full flex-col justify-center items-center p-10 space-y-6">

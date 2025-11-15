@@ -13,6 +13,7 @@ import Transactions from "../pages/Transactions";
 import Budgets from "../pages/Budgets";
 
 import SignIn from "../pages/SignIn";
+import Profile from "../pages/Profile";
 import PrivateRoute from "../components/PrivateRoute";
 import { ProtectedLayout } from "../layouts/ProtectedLayout";
 
@@ -20,6 +21,17 @@ import { ProtectedLayout } from "../layouts/ProtectedLayout";
 const AppRouter: React.FC = () => (
   <Routes>
     <Route path="/signin" element={<SignIn />} />
+
+    <Route
+      path="/profile"
+      element={
+        <PrivateRoute>
+          <ProtectedLayout>
+            <Profile />
+          </ProtectedLayout>
+        </PrivateRoute>
+      }
+    />
 
     <Route
       path="/"
