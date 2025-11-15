@@ -7,11 +7,13 @@ import { AccountsService } from "@/services/accounts";
 import { AccountsTable } from "@/components/Accounts/AccountsTable";
 import { Card } from "@/components/ui/card";
 import { useAccounts } from "@/contexts/AccountsContext";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 export default function Accounts() {
   const [openAccountDialog, setOpenAccountDialog] = useState(false);
   const [totalBalance, setTotalBalance] = useState<string>("Loading...");
   const { refreshAccounts } = useAccounts();
+  const { formatNumber } = useCurrencyFormatter();
 
   const handleSaveAccount = async (data: any) => {
     await AccountsService.create(data);
@@ -32,18 +34,7 @@ export default function Accounts() {
           return;
         }
 
-        const amount = Number(res.totalBalance);
-        if (Number.isNaN(amount)) {
-          setTotalBalance("No data");
-          return;
-        }
-
-        const formatted = amount.toLocaleString("en-US", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        });
-
-        setTotalBalance(`${formatted} ${res.currency ?? ""}`);
+        setTotalBalance(`${formatNumber(Number(res.totalBalance))} ${res.currency ?? ""}`);
       } catch (error) {
         console.error("Error fetching total balance:", error);
         if (mounted) setTotalBalance("No data");
@@ -55,7 +46,7 @@ export default function Accounts() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [refreshAccounts, formatNumber]);
 
   return (
     <div className="w-full h-full flex flex-col items-center p-10">
@@ -68,7 +59,7 @@ export default function Accounts() {
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={() => setOpenAccountDialog(true)}  >+ Add Account</Button>
+          <Button onClick={() => setOpenAccountDialog(true)}>+ Add Account</Button>
         </div>
       </div>
 

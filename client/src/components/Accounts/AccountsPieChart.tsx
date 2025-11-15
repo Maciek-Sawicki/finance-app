@@ -18,9 +18,11 @@ import { Spinner } from "@/components/ui/spinner";
 
 import { AccountsService } from "@/services/accounts";
 import type { Account } from "@/lib/types";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 export function AccountsPieChart() {
   const [accounts, setAccounts] = useState<Account[] | null>(null);
+  const { formatNumber } = useCurrencyFormatter();
 
   useEffect(() => {
     let isMounted = true;
@@ -69,12 +71,12 @@ export function AccountsPieChart() {
     })),
     ...(othersSum > 0
       ? [
-        {
-          account: "Other",
-          balance: othersSum,
-          fill: `hsl(var(--chart-5))`,
-        },
-      ]
+          {
+            account: "Other",
+            balance: othersSum,
+            fill: `hsl(var(--chart-5))`,
+          },
+        ]
       : []),
   ];
 
@@ -88,12 +90,6 @@ export function AccountsPieChart() {
       {}
     ),
   };
-
-  const formatCurrency = (value: number) =>
-    value.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
 
   return (
     <Card className="flex flex-col h-full">
@@ -114,7 +110,7 @@ export function AccountsPieChart() {
                       <div className="rounded-m px-2 py-1 shadow bg-card text-card-foreground">
                         <span className="text-sm font-medium">
                           {name}:{" "}
-                          {typeof value === "number" ? formatCurrency(value) : "-"}
+                          {typeof value === "number" ? formatNumber(value) : "-"}
                         </span>
                       </div>
                     );
@@ -135,15 +131,22 @@ export function AccountsPieChart() {
                 align="center"
                 content={({ payload }) => (
                   <div className="flex flex-wrap justify-center gap-4 mt-2">
-                    {payload?.map((entry: any) => (
-                      <div key={entry.value} className="flex items-center gap-2">
-                        <span
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: entry.color }}
-                        />
-                        <span className="text-sm font-medium">{entry.value}</span>
-                      </div>
-                    ))}
+                    {payload?.map((entry: any) => {
+                      const balance =
+                        chartData.find((d) => d.account === entry.value)
+                          ?.balance ?? 0;
+                      return (
+                        <div key={entry.value} className="flex items-center gap-2">
+                          <span
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: entry.color }}
+                          />
+                          <span className="text-sm font-medium">
+                            {entry.value}: {formatNumber(balance)}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               />

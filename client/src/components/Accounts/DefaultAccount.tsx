@@ -5,10 +5,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/comp
 import { Skeleton } from "@/components/ui/skeleton";
 import { AccountsService } from "@/services/accounts";
 import type { Account } from "@/lib/types";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 export function DefaultAccountCard() {
   const [defaultAccount, setDefaultAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
+  const { formatNumber } = useCurrencyFormatter(); 
 
   useEffect(() => {
     let mounted = true;
@@ -32,9 +34,7 @@ export function DefaultAccountCard() {
   }, []);
 
   const formatCurrency = (amount: number | undefined, currency?: string) =>
-    amount !== undefined && amount !== null
-      ? `${Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })} ${currency ?? ""}`
-      : "No data";
+    amount != null ? `${formatNumber(amount)} ${currency ?? ""}` : "No data";
 
   return (
     <Card className="h-full">

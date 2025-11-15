@@ -355,14 +355,15 @@ export const getAccountBalance = async (req, res) => {
 export const getTotalBalance = async (req, res) => {
   try {
     const userId = req.user._id;
-    const baseCurrency = req.query.base || "USD";
+    const baseCurrency = req.query.base;
+    if (!baseCurrency) return res.status(400).json({ message: "Base currency is required" });
 
     const accounts = await Account.find({ userId }).lean();
     if (accounts.length === 0) {
       return res.status(404).json({ message: "No accounts found." });
     }
 
-    const ratesDoc = await ExchangeRate.findOne({ base: baseCurrency }).sort({ createdAt: -1 }).lean();
+    const ratesDoc = await ExchangeRate.findOne({ base: "USD" }).sort({ createdAt: -1 }).lean();
     if (!ratesDoc) throw new Error("No exchange rates found.");
     const rates = ratesDoc.rates;
 
@@ -394,8 +395,9 @@ export const getTotalBalance = async (req, res) => {
       const balanceSettled = startingBalance + (tx.incomeSettled - tx.expenseSettled);
       const balanceAll = startingBalance + (tx.incomeAll - tx.expenseAll);
 
-      const rateFrom = Number(rates[acc.currency]);
-      const rateTo = Number(rates[baseCurrency]);
+      const rateFrom = Number(rates[acc.currency]);      
+      const rateTo = Number(rates[baseCurrency]);       
+
       if (!rateFrom || !rateTo) throw new Error(`Unsupported currency: ${acc.currency} or ${baseCurrency}`);
 
       const convertedSettled = (balanceSettled / rateFrom) * rateTo;

@@ -7,7 +7,7 @@ import { useAuth } from "./AuthContext";
 export interface UserSettings {
   defaultCurrency: string;
   favoriteCurrencies: string[];
-  currencyFormatLocale: string;
+  locale: string;
   country?: string;
   theme?: "light" | "dark" | "system";
   dateFormat?: string;
@@ -36,7 +36,7 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
       setSettings(res.data);
     } catch (err) {
-      console.error("❌ Błąd pobierania ustawień:", err);
+      console.error("❌ Error fetching settings:", err);
     } finally {
       setLoading(false);
     }
@@ -54,9 +54,10 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
       setSettings(res.data);
     } catch (err) {
-      console.error("❌ Błąd aktualizacji ustawień:", err);
+      console.error("❌ Error update settings:", err);
     }
   };
+  
 
   return (
     <SettingsContext.Provider

@@ -5,10 +5,12 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { AccountsService } from "@/services/accounts";
 import type { Account } from "@/lib/types";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 export function TopAccountsCard() {
   const [accounts, setAccounts] = useState<Account[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const { formatNumber } = useCurrencyFormatter();
 
   useEffect(() => {
     let isMounted = true;
@@ -62,11 +64,7 @@ export function TopAccountsCard() {
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-bold">
-                    {a.balance.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{" "}
-                    <span>{a.currency}</span>
+                    {formatNumber(a.balance)} <span>{a.currency}</span>
                   </div>
                 </div>
               </div>

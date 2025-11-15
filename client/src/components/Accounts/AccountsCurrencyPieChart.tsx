@@ -18,9 +18,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { AccountsService } from "@/services/accounts";
 import type { Account } from "@/lib/types";
+import { useUserSettings } from "@/contexts/UserSettingsContext";
 
 export function AccountsCurrencyPieChart() {
   const [accounts, setAccounts] = useState<Account[] | null>(null);
+  const { settings } = useUserSettings();
+
+  const locale = settings?.locale || "en-US";
+  console.log("User locale:", locale);
 
   useEffect(() => {
     let isMounted = true;
@@ -81,22 +86,30 @@ export function AccountsCurrencyPieChart() {
     <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">
         <CardTitle className="text-2xl">Balance by Currency</CardTitle>
-        <CardDescription className="text-xl">Distribution across currencies</CardDescription>
+        <CardDescription className="text-xl">
+          Distribution across currencies
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col items-center justify-center gap-4">
         <ChartContainer config={chartConfig} className="w-full h-full">
+
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
+
               <ChartTooltip
                 content={({ active, payload }) => {
                   if (active && payload && payload.length > 0) {
-                    const { name, value } = payload[0];
+                    const p = payload[0];
+
+                    const name = p.name ?? p.payload?.currency ?? "Unknown";
+                    const value = typeof p.value === "number" ? p.value : 0;
+
                     return (
                       <div className="rounded-md px-2 py-1 shadow bg-card text-card-foreground">
                         <span className="text-sm font-medium">
                           {name}:{" "}
-                          {value?.toLocaleString("en-US", {
+                          {value.toLocaleString(locale, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
@@ -107,6 +120,9 @@ export function AccountsCurrencyPieChart() {
                   return null;
                 }}
               />
+
+
+
               <Pie
                 data={chartData}
                 dataKey="balance"
@@ -115,6 +131,7 @@ export function AccountsCurrencyPieChart() {
                 isAnimationActive
                 animationDuration={1200}
               />
+
               <Legend
                 verticalAlign="bottom"
                 align="center"
@@ -128,15 +145,19 @@ export function AccountsCurrencyPieChart() {
                             className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: entry.color }}
                           />
-                          <span className="text-sm font-medium">{entry.value}</span>
+                          <span className="text-sm font-medium">
+                            {entry.value}
+                          </span>
                         </div>
                       );
                     })}
                   </div>
                 )}
               />
+
             </PieChart>
           </ResponsiveContainer>
+
         </ChartContainer>
       </CardContent>
 

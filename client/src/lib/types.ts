@@ -13,7 +13,7 @@ export interface UserSettings {
   userId: string
   defaultCurrency: string
   favoriteCurrencies: string[]
-  currencyFormatLocale: string  
+  locale: string  
   theme: "light" | "dark" | "system"
   dateFormat: string             
   country: string

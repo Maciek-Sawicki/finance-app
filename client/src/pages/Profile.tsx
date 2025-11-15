@@ -13,8 +13,11 @@ import type { User, UserSettings } from "@/lib/types";
 
 import { currencies } from "@/lib/constants";
 import { countryConfig, type SupportedCountry } from "@/lib/countryConfig";
+import { useUserSettings } from "@/contexts/UserSettingsContext";
 
 export default function ProfilePage() {
+  const { settings: contextSettings, updateSettings: updateContextSettings } = useUserSettings();
+
   const [user, setUser] = useState<User | null>(null);
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +30,7 @@ export default function ProfilePage() {
         const userData = await UserService.getProfile();
         let settingsData = await UserService.getSettings();
 
-        // fallback to user.country
+        // fallback to user.country if settings.country is empty
         if (!settingsData.country && userData.user.country) {
           settingsData = { ...settingsData, country: userData.user.country };
         }
@@ -44,14 +47,14 @@ export default function ProfilePage() {
     fetchData();
   }, []);
 
-
   const handleSave = async () => {
     if (!settings) return;
 
     setIsSaving(true);
     try {
-      const updatedSettings = await UserService.updateSettings(settings);
-      setSettings(updatedSettings);
+      // Update backend and context
+      await updateContextSettings(settings);
+      setSettings({ ...settings }); // refresh local state
     } catch (err) {
       console.error("Error updating settings:", err);
     } finally {
@@ -66,32 +69,33 @@ export default function ProfilePage() {
         <div className="space-y-4 border rounded-lg p-4 animate-pulse">
           <Skeleton className="h-6 w-1/3 mb-2" /> {/* CardTitle */}
           <div className="grid grid-cols-2 gap-4">
-            <Skeleton className="h-10 w-full" /> {/* First Name */}
-            <Skeleton className="h-10 w-full" /> {/* Last Name */}
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
-          <Skeleton className="h-10 w-full" /> {/* Email */}
-          <Skeleton className="h-10 w-full" /> {/* Username */}
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
         </div>
-  
+
         {/* Card: Preferences */}
         <div className="space-y-4 border rounded-lg p-4 animate-pulse">
-          <Skeleton className="h-6 w-1/3 mb-2" /> {/* CardTitle */}
-          <Skeleton className="h-10 w-full" /> {/* Country select */}
-          <Skeleton className="h-10 w-full" /> {/* Default currency select */}
-          <Skeleton className="h-10 w-full" /> {/* Favorite currencies */}
+          <Skeleton className="h-6 w-1/3 mb-2" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
         </div>
-  
-        <Skeleton className="h-10 w-32 rounded-md animate-pulse" /> {/* Save button */}
+
+        <Skeleton className="h-10 w-32 rounded-md animate-pulse" />
       </div>
     );
   }
-  
-  if (!user || !settings)
+
+  if (!user || !settings) {
     return (
       <div className="p-4 text-center text-muted-foreground">
         User data not found.
       </div>
     );
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
@@ -102,30 +106,22 @@ export default function ProfilePage() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* First & Last Name (read-only) */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-muted-foreground mb-1">
-                First Name
-              </label>
+              <label className="block text-sm text-muted-foreground mb-1">First Name</label>
               <Input value={user.firstName} disabled />
             </div>
-
             <div>
-              <label className="block text-sm text-muted-foreground mb-1">
-                Last Name
-              </label>
+              <label className="block text-sm text-muted-foreground mb-1">Last Name</label>
               <Input value={user.lastName} disabled />
             </div>
           </div>
 
-          {/* Email */}
           <div>
             <label className="block text-sm text-muted-foreground mb-1">Email</label>
             <Input value={user.email} disabled />
           </div>
 
-          {/* Username */}
           <div>
             <label className="block text-sm text-muted-foreground mb-1">Username</label>
             <Input value={user.username} disabled />
@@ -149,7 +145,6 @@ export default function ProfilePage() {
                 setSettings({ ...settings, country: value })
               }
             >
-
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select country" />
               </SelectTrigger>
@@ -163,18 +158,15 @@ export default function ProfilePage() {
             </Select>
           </div>
 
-          {/* CURRENCY SELECT */}
+          {/* DEFAULT CURRENCY SELECT */}
           <div>
-            <label className="block text-sm text-muted-foreground mb-1">
-              Default Currency
-            </label>
+            <label className="block text-sm text-muted-foreground mb-1">Default Currency</label>
             <Select
               value={settings.defaultCurrency ?? ""}
               onValueChange={(value) =>
                 setSettings({ ...settings, defaultCurrency: value })
               }
             >
-
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
@@ -188,31 +180,28 @@ export default function ProfilePage() {
             </Select>
           </div>
 
-          {/* Favorite Currencies */}
+          {/* FAVORITE CURRENCIES */}
           <div>
-      <label className="block text-sm text-muted-foreground mb-1">
-        Favorite Currencies
-      </label>
-      <div className="grid grid-cols-3 gap-2">
-        {currencies.map((c) => (
-          <label key={c.code} className="flex items-center gap-2">
-            <Checkbox
-              checked={settings.favoriteCurrencies.includes(c.code)}
-              onCheckedChange={(checked) => {
-                if (!settings) return;
-                const newFavs =
-                  checked === true
-                    ? [...settings.favoriteCurrencies, c.code]
-                    : settings.favoriteCurrencies.filter((v) => v !== c.code);
-                setSettings({ ...settings, favoriteCurrencies: newFavs });
-              }}
-            />
-            {c.code}
-          </label>
-        ))}
-      </div>
-    </div>
-
+            <label className="block text-sm text-muted-foreground mb-1">Favorite Currencies</label>
+            <div className="grid grid-cols-3 gap-2">
+              {currencies.map((c) => (
+                <label key={c.code} className="flex items-center gap-2">
+                  <Checkbox
+                    checked={settings.favoriteCurrencies.includes(c.code)}
+                    onCheckedChange={(checked) => {
+                      if (!settings) return;
+                      const newFavs =
+                        checked === true
+                          ? [...settings.favoriteCurrencies, c.code]
+                          : settings.favoriteCurrencies.filter((v) => v !== c.code);
+                      setSettings({ ...settings, favoriteCurrencies: newFavs });
+                    }}
+                  />
+                  {c.code}
+                </label>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

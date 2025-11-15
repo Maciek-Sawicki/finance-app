@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { AccountsService } from "@/services/accounts";
 import type { Account } from "@/lib/types";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 type CurrencyBalance = {
   currency: string;
@@ -14,6 +15,7 @@ type CurrencyBalance = {
 export function TotalBalanceByCurrencyCard() {
   const [balances, setBalances] = useState<CurrencyBalance[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const { formatNumber } = useCurrencyFormatter();
 
   useEffect(() => {
     let isMounted = true;
@@ -74,7 +76,7 @@ export function TotalBalanceByCurrencyCard() {
               <div key={b.currency} className="flex justify-between items-center border-b last:border-0 pb-2">
                 <span className="text-lg font-semibold">{b.currency}</span>
                 <span className="text-lg font-bold">
-                  {b.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatNumber(b.total)}
                 </span>
               </div>
             ))}

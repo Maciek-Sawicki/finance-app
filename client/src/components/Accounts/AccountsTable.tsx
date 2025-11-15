@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 import { EditAccountDialog } from "@/components/Accounts/EditAccountDialog";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 type AccountsTableProps = {
   refreshSignal?: number;
@@ -39,6 +40,7 @@ export const AccountsTable = ({ refreshSignal }: AccountsTableProps) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { formatNumber } = useCurrencyFormatter();
 
   const fetchAccounts = async () => {
     const data = await AccountsService.getAll();
@@ -71,11 +73,7 @@ export const AccountsTable = ({ refreshSignal }: AccountsTableProps) => {
     {
       accessorKey: "balance",
       header: "Balance",
-      cell: (info) => (
-        <span className="font-bold">
-          {info.getValue<number>().toFixed(2)}
-        </span>
-      ),
+      cell: (info) => <span className="font-bold">{formatNumber(info.getValue<number>())}</span>,
     },
     { accessorKey: "currency", header: "Currency" },
     { accessorKey: "icon", header: "Icon" },
@@ -103,18 +101,14 @@ export const AccountsTable = ({ refreshSignal }: AccountsTableProps) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => startEditing(account)}>
-                Edit
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => startEditing(account)}>Edit</DropdownMenuItem>
               {!account.isDefault && (
                 <DropdownMenuItem onClick={() => handleSetDefault(account._id)}>
                   Set as Default
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleDelete(account._id)}>
-                Delete
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDelete(account._id)}>Delete</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -141,10 +135,7 @@ export const AccountsTable = ({ refreshSignal }: AccountsTableProps) => {
                 <TableHead key={header.id}>
                   {header.isPlaceholder
                     ? null
-                    : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
+                    : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
             </TableRow>
@@ -174,4 +165,3 @@ export const AccountsTable = ({ refreshSignal }: AccountsTableProps) => {
     </>
   );
 };
-

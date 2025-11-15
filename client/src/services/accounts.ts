@@ -29,10 +29,10 @@ export const AccountsService = {
   setDefault: async (id: string): Promise<void> => {
     await api.post(`/accounts/${id}/default`);
   },
-  getTotalBalanceAndCurrency: async (): Promise<TotalBalanceResponse> => {
-    const res = await api.get("/accounts/total-balance");
+  getTotalBalanceAndCurrency: async (currency: string = "USD"): Promise<TotalBalanceResponse> => {
+    const res = await api.get(`/accounts/total-balance?base=${currency}`);
     return res.data;
-  },
+  },  
   getDefaultAccount: async (): Promise<Account> => {
     const res = await api.get("/accounts/default");
     return res.data; 

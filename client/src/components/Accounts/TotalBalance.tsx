@@ -5,17 +5,24 @@ import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/comp
 import { Skeleton } from "@/components/ui/skeleton";
 import { AccountsService } from "@/services/accounts";
 import type { TotalBalanceResponse } from "@/lib/types";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+
+import { useUserSettings } from "@/contexts/UserSettingsContext";
 
 export function TotalBalanceCard() {
   const [data, setData] = useState<TotalBalanceResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const { formatNumber } = useCurrencyFormatter();
+  const { settings } = useUserSettings(); 
+
+  const defaultCurrency = settings?.defaultCurrency ?? "USD";
 
   useEffect(() => {
     let mounted = true;
 
     const fetchBalance = async () => {
       try {
-        const res = await AccountsService.getTotalBalanceAndCurrency();
+        const res = await AccountsService.getTotalBalanceAndCurrency(defaultCurrency);
         if (!mounted) return;
         setData(res ?? null);
       } catch (error) {
@@ -30,7 +37,7 @@ export function TotalBalanceCard() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [defaultCurrency]);
 
   return (
     <Card className="h-full">
@@ -49,21 +56,13 @@ export function TotalBalanceCard() {
           <CardHeader>
             <CardDescription className="text-xl">Total Balance</CardDescription>
             <CardTitle className="text-4xl font-semibold tabular-nums @[250px]/card:text-5xl">
-              {data?.totalBalance !== undefined && data?.totalBalance !== null
-                ? `${Number(data.totalBalance).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                    useGrouping: true,
-                  })} ${data.currency ?? ""}`
+              {data?.totalBalance != null
+                ? `${formatNumber(Number(data.totalBalance))} ${defaultCurrency}`
                 : "No data"}
             </CardTitle>
-            {data?.totalAfterRP !== undefined && data?.totalAfterRP !== null && (
+            {data?.totalAfterRP != null && (
               <p className="text-sm text-muted-foreground mt-1">
-                After R&P: {Number(data.totalAfterRP).toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                  useGrouping: true,
-                })} {data.currency ?? ""}
+                After R&P: {formatNumber(Number(data.totalAfterRP))} {defaultCurrency}
               </p>
             )}
           </CardHeader>

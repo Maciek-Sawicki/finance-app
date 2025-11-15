@@ -8,8 +8,9 @@ import { CreateTransactionDialogAccount } from "@/components/Transactions/Create
 import { AccountsService } from "@/services/accounts";
 import { TransactionsService } from "@/services/transactions";
 import { CategoriesService } from "@/services/categories";
-import { Card, } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import type { Account, Category, Transaction } from "@/lib/types";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 export default function AccountPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,7 @@ export default function AccountPage() {
   const [openDialog, setOpenDialog] = useState(false);
   const [refreshSignal, setRefreshSignal] = useState(0);
   const [loadingAccount, setLoadingAccount] = useState(true);
+  const { formatNumber } = useCurrencyFormatter();
 
   useEffect(() => {
     if (!id) return;
@@ -66,10 +68,9 @@ export default function AccountPage() {
             <span className="font-semibold">
               {loadingAccount
                 ? "..."
-                : account?.balance?.toLocaleString("en-US", {
-                  style: "currency",
-                  currency: account.currency,
-                })}
+                : account?.balance !== undefined && account?.balance !== null
+                  ? `${formatNumber(account.balance)} ${account.currency}`
+                  : "No data"}
             </span>
           </p>
         </div>

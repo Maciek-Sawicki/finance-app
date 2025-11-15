@@ -17,7 +17,7 @@ TODO:
 - strona główna z opisem funkcji (3h)
 - resetowanie hasła przez maila (3h)
 - potwierdzanie rejestracji przez maila (3h)
-- ustawienia konta, wybór waluty domyślnej, wybór ulubionych walut, wybór formatowania waluty - tolocalestring, wybór kraju przy rejestracji (8h) [Pilne]
+<!-- - ustawienia konta, wybór waluty domyślnej, wybór ulubionych walut, wybór formatowania waluty - tolocalestring, wybór kraju przy rejestracji (8h) [Pilne] -->
 - porównania 2 miesięcy, tabelka + wykresy (6h) [Pilne]
 - balans na koniec miesiąca, wykres czy na + czy na - (2h) [Pilne]
 - walidacja formularzy (2h) [Pilne]
