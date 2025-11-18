@@ -13,8 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useUserSettings } from "@/contexts/UserSettingsContext";
 
 export function ExpensesTable() {
+  const { settings } = useUserSettings();
+  const userCurrency = settings?.defaultCurrency ?? "PLN";
+  const locale = settings?.locale ?? "pl-PL";
+
   const [data, setData] = useState<MonthlyCategoryStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<string>("");
@@ -23,7 +28,7 @@ export function ExpensesTable() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await CategoriesService.getTopMonthlyCategories("USD", "expense");
+        const res = await CategoriesService.getTopMonthlyCategories(userCurrency, "expense");
         setData(res);
         const years = Object.keys(res.monthlyCategories).map((m) => m.slice(0, 4));
         const maxYear = Math.max(...years.map(Number)).toString();
@@ -35,7 +40,7 @@ export function ExpensesTable() {
       }
     };
     fetchData();
-  }, []);
+  }, [userCurrency]);
 
   const availableYears = useMemo(() => {
     if (!data) return [];
@@ -77,7 +82,7 @@ export function ExpensesTable() {
   }, [allCategories, months, data]);
 
   const formatCurrency = (v: number) =>
-    v.toLocaleString("en-US", { style: "currency", currency: data?.targetCurrency || "USD", maximumFractionDigits: 2 });
+    v.toLocaleString(locale, { style: "currency", currency: userCurrency, maximumFractionDigits: 2 });
 
   const truncateCategoryName = (name: string, maxLength: number) =>
     name.length <= maxLength ? name : name.slice(0, maxLength) + "...";
@@ -100,7 +105,7 @@ export function ExpensesTable() {
     <Card className="overflow-x-auto">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <CardTitle className="text-2xl font-semibold">
-          Monthly Expenses Breakdown ({data.targetCurrency})
+          Monthly Expenses Breakdown ({userCurrency})
         </CardTitle>
         <Select value={selectedYear} onValueChange={setSelectedYear}>
           <SelectTrigger className="w-[120px]">
@@ -121,7 +126,7 @@ export function ExpensesTable() {
               <TableHead className="sticky left-0 bg-muted z-10">Expenses</TableHead>
               {months.map((m) => (
                 <TableHead key={m} className="text-right">
-                  {new Date(m + "-01").toLocaleString("en-US", { month: "short", year: "2-digit" })}
+                  {new Date(m + "-01").toLocaleString(locale, { month: "short", year: "2-digit" })}
                 </TableHead>
               ))}
               <TableHead className="text-right font-bold">Year</TableHead>

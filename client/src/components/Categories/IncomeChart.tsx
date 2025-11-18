@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { CategoriesService } from "@/services/categories";
 import type { MonthlyCategoryStats } from "@/lib/types";
+import { useUserSettings } from "@/contexts/UserSettingsContext";
 
 const chartColors = [
   "hsl(var(--chart-1))",
@@ -40,6 +41,10 @@ const chartColors = [
 const otherColor = "hsl(var(--chart-other))";
 
 export function StackedIncomeChart() {
+  const { settings } = useUserSettings();
+  const userCurrency = settings?.defaultCurrency ?? "USD";
+  const locale = settings?.locale ?? "en-US";
+
   const [data, setData] = useState<MonthlyCategoryStats | null>(null);
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [loading, setLoading] = useState(true);
@@ -48,7 +53,7 @@ export function StackedIncomeChart() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await CategoriesService.getTopMonthlyCategories("USD", "income");
+        const res = await CategoriesService.getTopMonthlyCategories(userCurrency, "income");
         setData(res);
       } catch (err) {
         console.error("Error fetching chart data:", err);
@@ -57,7 +62,7 @@ export function StackedIncomeChart() {
       }
     };
     fetchData();
-  }, []);
+  }, [userCurrency]);
 
   const years = useMemo(() => {
     if (!data) return [];
@@ -88,7 +93,7 @@ export function StackedIncomeChart() {
 
     const chartData = months.map((month) => {
       const row: Record<string, number | string> = {
-        month: new Date(month + "-01").toLocaleString("en-US", { month: "short" }),
+        month: new Date(month + "-01").toLocaleString(locale, { month: "short" }),
       };
       let otherSum = 0;
       data.monthlyCategories[month].forEach((c) => {
@@ -111,7 +116,10 @@ export function StackedIncomeChart() {
     }
 
     return { chartData, categories };
-  }, [data, year]);
+  }, [data, year, locale]);
+
+  const formatCurrency = (value: number) =>
+    value.toLocaleString(locale, { style: "currency", currency: userCurrency, maximumFractionDigits: 2 });
 
   if (loading) {
     return (
@@ -151,13 +159,13 @@ export function StackedIncomeChart() {
               <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 16, fontWeight: 500 }} />
               <YAxis
                 width={60}
-                tickFormatter={(v) => "$" + v.toLocaleString()}
+                tickFormatter={formatCurrency}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 16, fontWeight: 500 }}
               />
               <Tooltip
-                formatter={(value: number) => "$" + value.toLocaleString()}
+                formatter={(value: number) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.05)" }}
                 contentStyle={{
                   backgroundColor: "hsl(var(--background))",

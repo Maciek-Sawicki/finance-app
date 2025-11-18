@@ -19,10 +19,15 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUserSettings } from "@/contexts/UserSettingsContext";
 
 export function LastTransactionsTable() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const { settings } = useUserSettings();
+  const userCurrency = settings?.defaultCurrency ?? "USD";
+  const locale = settings?.locale ?? "en-GB";
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -38,9 +43,15 @@ export function LastTransactionsTable() {
     fetchTransactions();
   }, []);
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-GB");
-  };
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString(locale);
+
+  const formatAmount = (amount: number, currency?: string) =>
+    amount.toLocaleString(locale, {
+      style: "currency",
+      currency: currency ?? userCurrency,
+      maximumFractionDigits: 2,
+    });
 
   if (loading) {
     return (
@@ -58,7 +69,7 @@ export function LastTransactionsTable() {
     <Card className="overflow-x-auto">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <CardTitle className="text-2xl font-semibold">
-        Recent Transactions 
+          Recent Transactions
         </CardTitle>
       </CardHeader>
 
@@ -106,19 +117,15 @@ export function LastTransactionsTable() {
                   <TableCell
                     className={cn(
                       "text-right font-semibold whitespace-nowrap",
-                      tx.type === "income"
-                        ? "text-green-500"
-                        : "text-red-500"
+                      tx.type === "income" ? "text-green-500" : "text-red-500"
                     )}
                   >
                     {tx.type === "income" ? "+" : "-"}
-                    {tx.amount.toLocaleString("en-US")}{" "}
-                    {tx.accountId?.currency}
+                    {formatAmount(tx.amount, tx.accountId?.currency)}
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
-
           </Table>
         )}
       </CardContent>

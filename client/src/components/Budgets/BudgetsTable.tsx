@@ -33,12 +33,16 @@ type BudgetsTableProps = {
   onEdit?: (budget: Budget) => void;
   onDelete?: (budget: Budget) => void;
   refreshSignal?: number;
+  currency?: string;
+  locale?: string;
 };
 
 export const BudgetsTable = ({
   budgets,
   onEdit,
   onDelete,
+  currency = "USD",
+  locale = "en-US",
 }: BudgetsTableProps) => {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -60,24 +64,25 @@ export const BudgetsTable = ({
       accessorKey: "amount",
       header: "Original Budget",
       cell: (info) => {
-        const { amount, currency } = info.row.original;
-        return `${amount.toFixed(2)} ${currency}`;
+        const { amount, currency: originalCurrency } = info.row.original;
+        return new Intl.NumberFormat(locale, { style: "currency", currency: originalCurrency }).format(amount);
       },
     },
+    
     {
       accessorKey: "convertedAmount",
-      header: "Converted (USD)",
+      header: `Converted (${currency})`,
       cell: (info) => {
-        const { convertedAmount } = info.row.original;
-        return convertedAmount ? `${convertedAmount.toFixed(2)} USD` : "-";
+        const converted = info.row.original.convertedAmount ?? info.row.original.amount;
+        return new Intl.NumberFormat(locale, { style: "currency", currency }).format(converted);
       },
     },
     {
       accessorKey: "spent",
       header: "Spent",
       cell: (info) => {
-        const { spent } = info.row.original;
-        return `${(spent ?? 0).toFixed(2)} USD`;
+        const spent = info.row.original.spent ?? 0;
+        return new Intl.NumberFormat(locale, { style: "currency", currency }).format(spent);
       },
     },
     {
@@ -86,11 +91,7 @@ export const BudgetsTable = ({
       cell: (info) => {
         const progress = info.getValue<number>() ?? 0;
         const color =
-          progress < 70
-            ? "text-green-500"
-            : progress < 100
-              ? "text-yellow-500"
-              : "text-red-500";
+          progress < 70 ? "text-green-500" : progress < 100 ? "text-yellow-500" : "text-red-500";
         return <span className={`${color} font-medium`}>{progress.toFixed(0)}%</span>;
       },
     },
@@ -114,11 +115,7 @@ export const BudgetsTable = ({
       cell: (info) => {
         const status = info.getValue<string>();
         const color =
-          status === "active"
-            ? "text-blue-600"
-            : status === "completed"
-              ? "text-gray-500"
-              : "text-orange-500";
+          status === "active" ? "text-blue-600" : status === "completed" ? "text-gray-500" : "text-orange-500";
         return <span className={`${color} capitalize`}>{status}</span>;
       },
     },
@@ -129,7 +126,7 @@ export const BudgetsTable = ({
         const { startDate, endDate } = info.row.original;
         return (
           <span className="text-sm text-muted-foreground">
-            {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
+            {new Date(startDate).toLocaleDateString(locale)} - {new Date(endDate).toLocaleDateString(locale)}
           </span>
         );
       },
@@ -148,9 +145,7 @@ export const BudgetsTable = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              {onEdit && (
-                <DropdownMenuItem onClick={() => onEdit(budget)}>Edit</DropdownMenuItem>
-              )}
+              {onEdit && <DropdownMenuItem onClick={() => onEdit(budget)}>Edit</DropdownMenuItem>}
               {onDelete && (
                 <>
                   <DropdownMenuSeparator />
@@ -171,6 +166,7 @@ export const BudgetsTable = ({
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    meta: { currency, locale },
   });
 
   return (
@@ -202,4 +198,3 @@ export const BudgetsTable = ({
     </Table>
   );
 };
-

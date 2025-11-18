@@ -35,33 +35,52 @@ export const createAccount = async (req, res) => {
   }
 };
 
-
 export const getAccounts = async (req, res) => {
   try {
     const userId = req.user._id;
+    const targetCurrency = req.query.currency ?? "USD"; // waluta docelowa
+
     const accounts = await Account.find({ userId }).sort({ createdAt: -1 });
 
     if (accounts.length === 0) {
       return res.status(404).json({ message: "No accounts found." });
     }
 
-    const accountsWithBalance = await Promise.all(accounts.map(async (account) => {
-      const result = await Transaction.aggregate([
-        { $match: { accountId: account._id, userId, settled: true } },
-        {
-          $group: {
-            _id: null,
-            income: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
-            expense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } },
-          }
-        }
-      ]);
+    const accountsWithBalance = await Promise.all(
+      accounts.map(async (account) => {
+        const result = await Transaction.aggregate([
+          { $match: { accountId: account._id, userId, settled: true } },
+          {
+            $group: {
+              _id: null,
+              income: {
+                $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] },
+              },
+              expense: {
+                $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] },
+              },
+            },
+          },
+        ]);
 
-      let balance = account.startingBalance || 0;
-      if (result.length > 0) balance += result[0].income - result[0].expense;
+        let balance = account.startingBalance || 0;
+        if (result.length > 0) balance += result[0].income - result[0].expense;
 
-      return { ...account.toObject(), balance };
-    }));
+        // przelicz na walutę docelową
+        const convertedBalance = await convertCurrency(
+          balance,
+          account.currency, // zakładam, że masz pole currency w koncie
+          targetCurrency
+        );
+
+        return {
+          ...account.toObject(),
+          balance,
+          convertedBalance,
+          convertedCurrency: targetCurrency,
+        };
+      })
+    );
 
     res.status(200).json(accountsWithBalance);
   } catch (error) {

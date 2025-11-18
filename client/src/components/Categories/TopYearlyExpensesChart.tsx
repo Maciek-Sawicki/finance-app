@@ -25,8 +25,13 @@ import {
 
 import { CategoriesService } from "@/services/categories";
 import type { YearlyCategoryStats } from "@/lib/types";
+import { useUserSettings } from "@/contexts/UserSettingsContext";
 
 export function TopYearlyExpensesChart() {
+  const { settings } = useUserSettings();
+  const userCurrency = settings?.defaultCurrency ?? "PLN";
+  const locale = settings?.locale ?? "pl-PL";
+
   const [data, setData] = useState<YearlyCategoryStats | null>(null);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +41,8 @@ export function TopYearlyExpensesChart() {
 
     const fetchData = async () => {
       setLoading(true);
-      const res = await CategoriesService.getTopYearlyCategories("USD", "expense");
+      // Przesyłamy domyślną walutę użytkownika do API
+      const res = await CategoriesService.getTopYearlyCategories(userCurrency, "expense");
       if (!isMounted) return;
 
       setData(res);
@@ -53,7 +59,7 @@ export function TopYearlyExpensesChart() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [userCurrency]);
 
   const handleYearChange = (year: string) => {
     setSelectedYear(year);
@@ -95,16 +101,16 @@ export function TopYearlyExpensesChart() {
     })),
     ...(othersSum > 0
       ? [
-        {
-          categoryId: "other",
-          name: "Other",
-          icon: "➕",
-          color: "#999999",
-          total: othersSum,
-          percent: parseFloat(((othersSum / totalSum) * 100).toFixed(2)),
-          fill: `hsl(var(--chart-other))`,
-        },
-      ]
+          {
+            categoryId: "other",
+            name: "Other",
+            icon: "➕",
+            color: "#999999",
+            total: othersSum,
+            percent: parseFloat(((othersSum / totalSum) * 100).toFixed(2)),
+            fill: `hsl(var(--chart-other))`,
+          },
+        ]
       : []),
   ];
 
@@ -119,16 +125,13 @@ export function TopYearlyExpensesChart() {
     ),
   };
 
-  const formatCurrency = (value: number) =>
-    value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
   return (
     <Card className="flex flex-col h-full overflow-hidden">
       <CardHeader className="pb-4 flex justify-between items-center">
         <div>
           <CardTitle className="text-2xl">Expenses Breakdown</CardTitle>
           <CardDescription className="text-xl text-center">
-            {selectedYear} • {data.targetCurrency}
+            {selectedYear} • {userCurrency}
           </CardDescription>
         </div>
         <div className="flex items-start justify-end gap-2 w-full">
@@ -178,7 +181,7 @@ export function TopYearlyExpensesChart() {
                 <LabelList
                   dataKey="total"
                   content={({ x, y, width, value }: any) => {
-                    const isShort = width < 60;
+                    const isShort = width < 150;
                     const posX = isShort ? x + width + 6 : x + width - 6;
                     const textAnchor = isShort ? "start" : "end";
                     const fill = isShort
@@ -194,7 +197,12 @@ export function TopYearlyExpensesChart() {
                         fontSize={16}
                         fontWeight={500}
                       >
-                        ${formatCurrency(value)}
+                        {Number(value).toLocaleString(locale, {
+                          style: "currency",
+                          currency: userCurrency,
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </text>
                     );
                   }}
@@ -214,6 +222,5 @@ export function TopYearlyExpensesChart() {
         </div>
       </CardFooter>
     </Card>
-
   );
 }

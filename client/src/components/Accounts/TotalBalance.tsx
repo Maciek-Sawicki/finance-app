@@ -13,15 +13,18 @@ export function TotalBalanceCard() {
   const [data, setData] = useState<TotalBalanceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const { formatNumber } = useCurrencyFormatter();
-  const { settings } = useUserSettings(); 
+  const { settings, loading: settingsLoading } = useUserSettings(); 
 
   const defaultCurrency = settings?.defaultCurrency ?? "USD";
 
   useEffect(() => {
+    if (settingsLoading) return; 
+
     let mounted = true;
 
     const fetchBalance = async () => {
       try {
+        setLoading(true);
         const res = await AccountsService.getTotalBalanceAndCurrency(defaultCurrency);
         if (!mounted) return;
         setData(res ?? null);
@@ -37,11 +40,11 @@ export function TotalBalanceCard() {
     return () => {
       mounted = false;
     };
-  }, [defaultCurrency]);
+  }, [defaultCurrency, settingsLoading]);
 
   return (
     <Card className="h-full">
-      {loading ? (
+      {loading || settingsLoading ? (
         <>
           <CardHeader>
             <Skeleton className="h-6 w-1/3 rounded-md" />

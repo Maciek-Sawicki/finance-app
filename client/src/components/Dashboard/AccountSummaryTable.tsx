@@ -14,15 +14,46 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { useUserSettings } from "@/contexts/UserSettingsContext";
+
 export function AccountSummaryTable() {
   const [data, setData] = useState<AccountSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedCurrency, setSelectedCurrency] = useState("USD");
+
+  const { settings } = useUserSettings();
+
+  const favoriteCurrencies = settings?.favoriteCurrencies ?? ["USD", "EUR", "PLN"];
+  const locale = settings?.locale ?? "en-US";
+  const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
+
+  const formatCurrency = (value: number, currency: string) => {
+    try {
+      return value.toLocaleString(locale, {
+        style: "currency",
+        currency,
+      });
+    } catch {
+      return `${currency} ${value.toFixed(2)}`;
+    }
+  };
 
   useEffect(() => {
+    if (!settings) return;
+
+    const preferred =
+      settings.defaultCurrency ??
+      settings.favoriteCurrencies?.[0] ??
+      "USD";
+
+    setSelectedCurrency(preferred);
+  }, [settings]);
+
+  useEffect(() => {
+    if (!selectedCurrency) return; 
+
     const fetchData = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
         const res = await AccountsService.getSummary(selectedCurrency);
         setData(res);
       } catch (err) {
@@ -31,15 +62,44 @@ export function AccountSummaryTable() {
         setLoading(false);
       }
     };
+
     fetchData();
   }, [selectedCurrency]);
 
-  if (loading) {
+  if (!selectedCurrency || loading) {
     return (
-      <Card className="p-4">
+      <Card className="overflow-x-auto max-w-4xl mx-auto p-4">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <CardTitle className="text-2xl font-semibold">
+            Accounts Summary ({selectedCurrency ?? "..."})
+          </CardTitle>
+
+          {selectedCurrency && (
+            <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+
+              <SelectContent>
+                {favoriteCurrencies.map((cur) => (
+                  <SelectItem key={cur} value={cur}>
+                    {cur}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </CardHeader>
+
         <CardContent className="space-y-2">
           {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-6 w-full" />
+            <div key={i} className="flex justify-between items-center">
+              <Skeleton className="h-5 w-[160px]" />
+
+              <span className="font-medium text-muted-foreground">
+                {selectedCurrency ? formatCurrency(0, selectedCurrency) : "..."}
+              </span>
+            </div>
           ))}
         </CardContent>
       </Card>
@@ -56,13 +116,16 @@ export function AccountSummaryTable() {
         </CardTitle>
 
         <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-          <SelectTrigger className="w-[120px]">
+          <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Select currency" />
           </SelectTrigger>
+
           <SelectContent>
-            <SelectItem value="USD">USD</SelectItem>
-            <SelectItem value="EUR">EUR</SelectItem>
-            <SelectItem value="PLN">PLN</SelectItem>
+            {favoriteCurrencies.map((cur) => (
+              <SelectItem key={cur} value={cur}>
+                {cur}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </CardHeader>
@@ -88,40 +151,28 @@ export function AccountSummaryTable() {
                   </div>
                 </TableCell>
 
-
                 <TableCell className="text-right text-muted-foreground">
-                  {acc.originalSettled.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: acc.currency,
-                  })}
+                  {formatCurrency(acc.originalSettled, acc.currency)}
                 </TableCell>
 
                 <TableCell className="text-right text-muted-foreground">
-                  {acc.originalWithRAndP.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: acc.currency,
-                  })}
+                  {formatCurrency(acc.originalWithRAndP, acc.currency)}
                 </TableCell>
 
                 <TableCell className="text-right font-semibold">
-                  {acc.convertedSettled.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: data.currency,
-                  })}
+                  {formatCurrency(acc.convertedSettled, data.currency)}
                 </TableCell>
 
                 <TableCell
-                  className={`text-right font-semibold ${acc.convertedWithRAndP > acc.convertedSettled
+                  className={`text-right font-semibold ${
+                    acc.convertedWithRAndP > acc.convertedSettled
                       ? "text-green-500"
                       : acc.convertedWithRAndP < acc.convertedSettled
                         ? "text-red-500"
                         : ""
-                    }`}
+                  }`}
                 >
-                  {acc.convertedWithRAndP.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: data.currency,
-                  })}
+                  {formatCurrency(acc.convertedWithRAndP, data.currency)}
                 </TableCell>
               </TableRow>
             ))}
@@ -131,16 +182,10 @@ export function AccountSummaryTable() {
               <TableCell />
               <TableCell />
               <TableCell className="text-right">
-                {data.total.toLocaleString("en-US", {
-                  style: "currency",
-                  currency: data.currency,
-                })}
+                {formatCurrency(data.total, data.currency)}
               </TableCell>
               <TableCell className="text-right">
-                {data.totalAfterRAndP.toLocaleString("en-US", {
-                  style: "currency",
-                  currency: data.currency,
-                })}
+                {formatCurrency(data.totalAfterRAndP, data.currency)}
               </TableCell>
             </TableRow>
           </TableBody>

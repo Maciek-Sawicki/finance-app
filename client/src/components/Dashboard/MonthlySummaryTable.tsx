@@ -14,17 +14,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { useUserSettings } from "@/contexts/UserSettingsContext";
+
 export function MonthlySummaryTable() {
+  const { settings } = useUserSettings();
+
+  const userCurrency = settings?.defaultCurrency ?? "USD";
+  const locale = settings?.locale ?? "en-US";
+
   const [data, setData] = useState<MonthlySummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<string>("");
 
   useEffect(() => {
+    if (!userCurrency) return;
+
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await DashboardService.getMonthlySummary("USD");
+        const res = await DashboardService.getMonthlySummary(userCurrency);
         setData(res);
+
         const years = Object.keys(res.monthlySummary).map((m) => m.slice(0, 4));
         const maxYear = Math.max(...years.map(Number)).toString();
         setSelectedYear(maxYear);
@@ -34,8 +44,9 @@ export function MonthlySummaryTable() {
         setLoading(false);
       }
     };
+
     fetchData();
-  }, []);
+  }, [userCurrency]);
 
   const availableYears = useMemo(() => {
     if (!data) return [];
@@ -53,16 +64,25 @@ export function MonthlySummaryTable() {
   const metrics = ["totalIncome", "totalExpense", "profit", "e_i_ratio"];
 
   const formatCurrency = (v: number) =>
-    v.toLocaleString("en-US", { style: "currency", currency: data?.targetCurrency || "USD", maximumFractionDigits: 2 });
+    v.toLocaleString(locale, {
+      style: "currency",
+      currency: userCurrency,
+      maximumFractionDigits: 2,
+    });
 
   const formatPercent = (v: number | null) => (v !== null ? `${v.toFixed(2)}%` : "—");
 
-  if (loading) {
+  if (loading || !selectedYear) {
     return (
       <Card className="p-4">
         <CardContent className="space-y-2">
           {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-6 w-full" />
+            <div key={i} className="flex justify-between items-center">
+              <Skeleton className="h-5 w-[160px]" />
+              <span className="font-medium text-muted-foreground">
+                {formatCurrency(0)}
+              </span>
+            </div>
           ))}
         </CardContent>
       </Card>
@@ -75,15 +95,18 @@ export function MonthlySummaryTable() {
     <Card className="overflow-x-auto">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <CardTitle className="text-2xl font-semibold">
-          Monthly Financial Summary ({data.targetCurrency})
+          Monthly Financial Summary ({userCurrency})
         </CardTitle>
+
         <Select value={selectedYear} onValueChange={setSelectedYear}>
           <SelectTrigger className="w-[120px]">
             <SelectValue placeholder="Select year" />
           </SelectTrigger>
           <SelectContent>
             {availableYears.map((y) => (
-              <SelectItem key={y} value={y}>{y}</SelectItem>
+              <SelectItem key={y} value={y}>
+                {y}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -108,19 +131,29 @@ export function MonthlySummaryTable() {
               return (
                 <TableRow key={month}>
                   <TableCell className="font-medium sticky left-0 bg-background z-10">
-                    {new Date(month + "-01").toLocaleString("en-US", { month: "short", year: "2-digit" })}
+                    {new Date(month + "-01").toLocaleString(locale, {
+                      month: "short",
+                      year: "2-digit",
+                    })}
                   </TableCell>
+
                   {metrics.map((metric) => {
-                    if (!item) return <TableCell key={metric} className="text-right">—</TableCell>;
-                    let content: string = "";
+                    if (!item)
+                      return <TableCell key={metric} className="text-right">—</TableCell>;
+
+                    let content = "";
                     let className = "text-right";
 
                     if (metric === "e_i_ratio") content = formatPercent(item.e_i_ratio);
                     else content = formatCurrency(item[metric as keyof MonthlySummaryItem] as number);
 
                     if (metric === "profit") {
-                      const profitValue = item.profit;
-                      className += profitValue > 0 ? " text-green-500 font-semibold" : profitValue < 0 ? " text-red-500 font-semibold" : "";
+                      const p = item.profit;
+                      className += p > 0
+                        ? " text-green-500 font-semibold"
+                        : p < 0
+                        ? " text-red-500 font-semibold"
+                        : "";
                     }
 
                     return (

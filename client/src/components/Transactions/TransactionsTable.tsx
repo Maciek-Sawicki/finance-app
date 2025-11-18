@@ -47,6 +47,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { EditTransactionDialog } from "@/components/Transactions/EditTransactionDialog";
+import { useUserSettings } from "@/contexts/UserSettingsContext";
 
 type TransactionsTableProps = {
   refreshSignal?: number;
@@ -77,6 +78,10 @@ export const TransactionsTable = ({
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const { settings } = useUserSettings();
+  const userCurrency = settings?.defaultCurrency ?? "USD";
+  const locale = settings?.locale ?? "pl-PL"; 
 
   const fetchTransactions = async () => {
     try {
@@ -178,16 +183,16 @@ export const TransactionsTable = ({
       cell: ({ row }) => {
         const value = row.getValue<number>("amount");
         const type = row.original.type;
-        const currency = row.original.accountId?.currency ?? "USD";
         const isIncome = type === "income";
         const colorClass = isIncome ? "text-green-500" : "text-red-500";
-
+    
         return (
           <div className={`font-semibold ${colorClass}`}>
             {isIncome ? "+" : "-"}
-            {Math.abs(value).toLocaleString("en-US", {
+            {Math.abs(value).toLocaleString(locale, {
               style: "currency",
-              currency,
+              currency: userCurrency,
+              maximumFractionDigits: 2,
             })}
           </div>
         );

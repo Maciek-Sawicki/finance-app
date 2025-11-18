@@ -2,8 +2,12 @@ import api from "@/lib/api";
 import type { Account, TotalBalanceResponse, AccountSummaryResponse } from "@/lib/types";
 
 export const AccountsService = {
-  getAll: async (): Promise<Account[]> => {
-    const res = await api.get("/accounts");
+  getAll: async (currency?: string): Promise<Account[]> => {
+    const res = await api.get("/accounts", {
+      params: {
+        currency: currency ?? undefined, 
+      },
+    });
     return res.data;
   },
 

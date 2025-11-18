@@ -43,6 +43,8 @@ export interface Account {
   startingBalance: number,
   balanceAfterRP: number,
   balance: number,
+  convertedBalance?: number,
+  convertedCurrency?: string,
   icon?: string
   description?: string
   isDefault: boolean

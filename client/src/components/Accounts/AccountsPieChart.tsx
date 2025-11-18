@@ -18,17 +18,20 @@ import { Spinner } from "@/components/ui/spinner";
 
 import { AccountsService } from "@/services/accounts";
 import type { Account } from "@/lib/types";
-import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { useUserSettings } from "@/contexts/UserSettingsContext";
 
 export function AccountsPieChart() {
   const [accounts, setAccounts] = useState<Account[] | null>(null);
-  const { formatNumber } = useCurrencyFormatter();
+  const { settings } = useUserSettings();
+
+  const userCurrency = settings?.defaultCurrency ?? "USD";
+  const locale = settings?.locale ?? "en-US";
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchData = async () => {
-      const data = await AccountsService.getAll();
+      const data = await AccountsService.getAll(userCurrency); 
       if (!isMounted) return;
       setAccounts(data);
     };
@@ -37,7 +40,7 @@ export function AccountsPieChart() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [userCurrency]);
 
   if (!accounts)
     return (
@@ -56,17 +59,19 @@ export function AccountsPieChart() {
       </Card>
     );
 
-  const sorted = [...accounts].sort((a, b) => b.balance - a.balance);
+  const sorted = [...accounts].sort(
+    (a, b) => (b.convertedBalance ?? 0) - (a.convertedBalance ?? 0)
+  );
   const top4 = sorted.slice(0, 4);
   const others = sorted.slice(4);
   const othersSum = parseFloat(
-    others.reduce((acc, a) => acc + a.balance, 0).toFixed(2)
+    others.reduce((acc, a) => acc + (a.convertedBalance ?? 0), 0).toFixed(2)
   );
 
   const chartData = [
     ...top4.map((a, i) => ({
       account: a.name,
-      balance: a.balance,
+      balance: a.convertedBalance ?? 0,
       fill: `hsl(var(--chart-${(i % 12) + 1}))`,
     })),
     ...(othersSum > 0
@@ -110,7 +115,13 @@ export function AccountsPieChart() {
                       <div className="rounded-m px-2 py-1 shadow bg-card text-card-foreground">
                         <span className="text-sm font-medium">
                           {name}:{" "}
-                          {typeof value === "number" ? formatNumber(value) : "-"}
+                          {typeof value === "number"
+                            ? value.toLocaleString(locale, {
+                                style: "currency",
+                                currency: userCurrency,
+                                maximumFractionDigits: 2,
+                              })
+                            : "-"}
                         </span>
                       </div>
                     );
@@ -133,8 +144,7 @@ export function AccountsPieChart() {
                   <div className="flex flex-wrap justify-center gap-4 mt-2">
                     {payload?.map((entry: any) => {
                       const balance =
-                        chartData.find((d) => d.account === entry.value)
-                          ?.balance ?? 0;
+                        chartData.find((d) => d.account === entry.value)?.balance ?? 0;
                       return (
                         <div key={entry.value} className="flex items-center gap-2">
                           <span
@@ -142,7 +152,12 @@ export function AccountsPieChart() {
                             style={{ backgroundColor: entry.color }}
                           />
                           <span className="text-sm font-medium">
-                            {entry.value}: {formatNumber(balance)}
+                            {entry.value}:{" "}
+                            {balance.toLocaleString(locale, {
+                              style: "currency",
+                              currency: userCurrency,
+                              maximumFractionDigits: 2,
+                            })}
                           </span>
                         </div>
                       );

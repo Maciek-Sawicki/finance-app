@@ -2,7 +2,7 @@ TODO:
 <!-- - Poprawa zmiany kategorii po zmianie typu transakcji -->
 <!-- - ulubione kategorie w listach (1h) -->
 - kolory kategorii na wykresach (3h) [Pilne]
-- selecty w komponentach ze zmianą waluty (2h) [Pilne]
+<!-- - selecty w komponentach ze zmianą waluty (2h) [Pilne] -->
 - resposnywność dashboardów (4h) [Pilne]
 <!-- - chowany panel nawigacji (0.5 h) -->
 - dodawanie wielu transakcji jednocześnie (3h) [Pilne]
@@ -14,9 +14,9 @@ TODO:
 - export danych - formularz, logika, wybór danych, (8h) [Pilne] 
 - import danych - transakcji, csv excel (16h) [Pilne]
 - strona rejstracji (2h) [Pilne]
-- strona główna z opisem funkcji (3h)
-- resetowanie hasła przez maila (3h)
-- potwierdzanie rejestracji przez maila (3h)
+<!-- - strona główna z opisem funkcji (3h) -->
+<!-- - resetowanie hasła przez maila (3h) -->
+<!-- - potwierdzanie rejestracji przez maila (3h) -->
 <!-- - ustawienia konta, wybór waluty domyślnej, wybór ulubionych walut, wybór formatowania waluty - tolocalestring, wybór kraju przy rejestracji (8h) [Pilne] -->
 - porównania 2 miesięcy, tabelka + wykresy (6h) [Pilne]
 - balans na koniec miesiąca, wykres czy na + czy na - (2h) [Pilne]
@@ -26,6 +26,7 @@ TODO:
 <!-- - scroll bary w kolorze ciemnym (1h) -->
 - cron do sprawdzania czy budżet jest zakończony i przeniesienie go do completed (2h)
 - kategorie domyślne przy rejestracji
+- [bug] Konto po dodaniu nie pojawia sie na liście dopiero po odświeżeniu 
 
 (100h) xd na pewno nie 
 
