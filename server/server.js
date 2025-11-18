@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
-import cron from 'node-cron';
 
 import authRoutes from './routes/auth.routes.js';
 import accountRoutes from './routes/account.routes.js';
@@ -13,8 +12,10 @@ import summaryRoutes from './routes/summary.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import categoryBreakdownRoutes from './routes/categoryBreakdown.routes.js';
 import budgetRoutes from './routes/budget.routes.js';
+import RecurringTransactionRoutes from './routes/recurringTransaction.routes.js';
 
-import { fetchAndSaveRates } from './services/exchangeRate.service.js';
+import { fetchRatesJob } from "./cron/fetchRatesJob.js";
+import { startRecurringTransactionJob } from "./cron/recurringTransactionsJob.js";
 
 import connectMongoDB from './db/connectMongoDB.js';
 
@@ -41,13 +42,12 @@ app.use('/api/summary', summaryRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/category-breakdown', categoryBreakdownRoutes);
 app.use('/api/budgets', budgetRoutes);
+app.use('/api/recurring-transactions', RecurringTransactionRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server works on port ${PORT}`);
   connectMongoDB();
 
-  cron.schedule('0 0 * * *', async () => {
-    console.log('Cron: updating exchange rates...');
-    await fetchAndSaveRates("USD");
-  });
+  fetchRatesJob();
+  startRecurringTransactionJob();
 }); 

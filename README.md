@@ -28,7 +28,7 @@ TODO:
 - kategorie domyślne przy rejestracji
 - [bug] Konto po dodaniu nie pojawia sie na liście dopiero po odświeżeniu 
 
-(100h) xd na pewno nie 
+(80h) xd na pewno nie 
 
 # Cashora Financial App
 A modern full-stack personal finance management application built with React, TypeScript, Express, and MongoDB.
