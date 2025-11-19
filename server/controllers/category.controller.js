@@ -104,28 +104,3 @@ export const getFavoriteCategories = async (req, res) => {
   }
 }
 
-export const initDefaultCategoriesForUser = async (userId) => {
-  try {
-    const defaultCategories = await Category.find({ isDefault: true });
-
-    if (!defaultCategories.length) {
-      console.log("No default categories found.");
-      return;
-    }
-
-    const userCategories = defaultCategories.map(cat => ({
-      userId,
-      name: cat.name,
-      type: cat.type,
-      icon: cat.icon,
-      color: cat.color,
-      isDefault: false,
-      favorite: false
-    }));
-
-    await Category.insertMany(userCategories);
-    console.log(`Default categories initialized for user ${userId}`);
-  } catch (error) {
-    console.error("Error initializing default categories:", error);
-  }
-};

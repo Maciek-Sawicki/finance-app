@@ -10,8 +10,8 @@ TODO:
 - dashboard dla budżetów (4h) [Pilne]
 <!-- - deklaracja budżetów - przycisk do dodawania i dialog do dodawania -->
 <!-- - podział budżetów na kategorię w tabeli w dekalaracjach (1h) -->
-- deklaracja transakcji cyklicznych (6h) [Pilne]
-- export danych - formularz, logika, wybór danych, (8h) [Pilne] 
+<!-- - deklaracja transakcji cyklicznych (6h) [Pilne] -->
+<!-- - export danych - formularz, logika, wybór danych, (8h) [Pilne]  -->
 - import danych - transakcji, csv excel (16h) [Pilne]
 - strona rejstracji (2h) [Pilne]
 <!-- - strona główna z opisem funkcji (3h) -->
@@ -25,8 +25,9 @@ TODO:
 <!-- - wszystkie transakcje widoczne w nowym koncie (bug) (1h) -->
 <!-- - scroll bary w kolorze ciemnym (1h) -->
 - cron do sprawdzania czy budżet jest zakończony i przeniesienie go do completed (2h)
-- kategorie domyślne przy rejestracji
+<!-- - kategorie domyślne przy rejestracji -->
 - [bug] Konto po dodaniu nie pojawia sie na liście dopiero po odświeżeniu 
+- [bug] Naprawa dat - wybiera się dzień poprzedni
 
 (80h) xd na pewno nie 
 

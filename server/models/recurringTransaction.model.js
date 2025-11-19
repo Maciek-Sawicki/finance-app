@@ -6,7 +6,6 @@ const recurringTransactionSchema = new mongoose.Schema({
   categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
   accountId: { type: mongoose.Schema.Types.ObjectId, ref: "Account", required: true },
   amount: { type: Number, required: true, min: 0 },
-  currency: { type: String, required: true },
   frequency: {
     type: String,
     enum: ['daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'yearly', 'custom'],

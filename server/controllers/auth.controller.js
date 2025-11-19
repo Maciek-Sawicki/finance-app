@@ -2,7 +2,7 @@ import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import Settings from "../models/settings.model.js";
 import { generateTokenAndSetCookie } from "../libs/utils/generateToken.js";
-import { initDefaultCategoriesForUser } from "./category.controller.js"; 
+import { initDefaultCategoriesForUser } from "../libs/utils/createCategories.js";
 
 export const signUp = async (req, res) => {
   try {

@@ -40,7 +40,6 @@ export const RecurringTransactionsTable: FC<Props> = ({ onEdit, onDelete, onTogg
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Amount</TableHead>
-          <TableHead>Currency</TableHead>
           <TableHead>Account</TableHead>
           <TableHead>Category</TableHead>
           <TableHead>Frequency</TableHead>
@@ -55,8 +54,8 @@ export const RecurringTransactionsTable: FC<Props> = ({ onEdit, onDelete, onTogg
         {transactions.map(t => (
           <TableRow key={t._id}>
             <TableCell>{t.name}</TableCell>
-            <TableCell>{t.amount}</TableCell>
-            <TableCell>{t.currency}</TableCell>
+            <TableCell>{t.amount} {accounts.find(a => a._id === t.accountId)?.currency ?? ""}</TableCell>
+            {/* <TableCell>{accounts.find(a => a._id === t.accountId)?.name ?? "-"}</TableCell> */}
             <TableCell>{getAccountName(t.accountId)}</TableCell>
             <TableCell>{getCategoryName(t.categoryId)}</TableCell>
             <TableCell>{t.frequency}</TableCell>
