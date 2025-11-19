@@ -99,7 +99,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = (props) => {
           { title: "Accounts", url: "/accounts/all" },
           { title: "Categories", url: "/categories/all" },
           { title: "Budgets", url: "/budgets/all" },
-          { title: "Recurring Transactions", url: "/recurring-transactions" },
+          { title: "Recurring Transactions", url: "/recurring-transactions/all" },
         ],
       },
       {

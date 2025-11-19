@@ -11,6 +11,7 @@ import CategoriesDashboard from "../pages/CategoriesDashboard";
 
 import Transactions from "../pages/Transactions";
 import Budgets from "../pages/Budgets";
+import RecurringTransactionsPage from "../pages/RecurringTransactions";
 
 import SignIn from "../pages/SignIn";
 import Profile from "../pages/Profile";
@@ -122,6 +123,17 @@ const AppRouter: React.FC = () => (
         <PrivateRoute>
           <ProtectedLayout>
             <Budgets />
+          </ProtectedLayout>
+        </PrivateRoute>
+      }
+    />
+
+    <Route
+      path="/recurring-transactions/all/*"
+      element={
+        <PrivateRoute>
+          <ProtectedLayout>
+            <RecurringTransactionsPage />
           </ProtectedLayout>
         </PrivateRoute>
       }

@@ -222,6 +222,59 @@ export interface BudgetFormState {
   status?: string;
 };
 
+export type RecurringFrequency =
+  | "daily"
+  | "weekly"
+  | "biweekly"
+  | "monthly"
+  | "quarterly"
+  | "yearly"
+  | "custom";
+
+export type CustomInterval = {
+  everyXDays?: number | null;
+  everyXWeeks?: number | null;
+  everyXMonths?: number | null;
+  dayOfMonth?: number | null;
+  dayOfWeek?: 
+    | "Sunday"
+    | "Monday"
+    | "Tuesday"
+    | "Wednesday"
+    | "Thursday"
+    | "Friday"
+    | "Saturday"
+    | null;
+  weekOfMonth?: "First" | "Second" | "Third" | "Fourth" | "Last" | null;
+};
+
+export interface RecurringTransaction {
+  _id: string;
+  userId: string;
+  name: string;
+  categoryId: any; // populated object OR id
+  accountId: any; // populated object OR id
+  amount: number;
+  currency: string;
+
+  frequency: RecurringFrequency;
+  customInterval: CustomInterval;
+
+  nextDueDate: string;
+  endDate?: string | null;
+
+  repeatCount: number;
+  maxRepeats?: number | null;
+
+  description?: string;
+  isActive: boolean;
+  settled: boolean;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+
 
 
 

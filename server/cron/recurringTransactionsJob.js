@@ -1,7 +1,7 @@
 import cron from "node-cron";
-import RecurringTransaction from "../models/RecurringTransaction.js";
-import Transaction from "../models/Transaction.js";
-import Category from "../models/Category.js";
+import RecurringTransaction from "../models/recurringTransaction.model.js";
+import Transaction from "../models/transaction.model.js";
+import Category from "../models/category.model.js";
 
 const isDue = (nextDueDate) => new Date(nextDueDate) <= new Date();
 
@@ -57,7 +57,7 @@ const calculateNextDate = (r) => {
 };
 
 export const startRecurringTransactionJob = () => {
-  cron.schedule("0 0 * * *", async () => {
+  cron.schedule("0 */6 * * *", async () => {
     console.log("Checking recurring transactions...");
     const recurringTransactions = await RecurringTransaction.find({ isActive: true });
 
