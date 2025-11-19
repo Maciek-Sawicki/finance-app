@@ -9,6 +9,7 @@ import { Select, SelectTrigger, SelectContent, SelectValue, SelectItem } from "@
 import { useAccounts } from "@/contexts/AccountsContext";
 import { useCategories } from "@/contexts/CategoriesContext";
 import type { RecurringTransaction } from "@/lib/types";
+import { CustomIntervalEditor } from "./CustomIntervalEditor";
 
 interface Props {
   open: boolean;
@@ -47,37 +48,59 @@ export const EditRecurringTransactionDialog: React.FC<Props> = ({ open, onClose,
         <div className="space-y-4">
           <div>
             <Label>Name</Label>
-            <Input value={form.name} onChange={(e) => handleChange("name", e.target.value)} />
+            <Input value={form.name} onChange={e => handleChange("name", e.target.value)} />
           </div>
 
           <div>
             <Label>Account</Label>
-            <Select value={form.accountId} onValueChange={(val) => handleChange("accountId", val)}>
+            <Select value={form.accountId} onValueChange={val => handleChange("accountId", val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select account" />
               </SelectTrigger>
               <SelectContent>
-                {accounts.map((a) => <SelectItem key={a._id} value={a._id}>{a.name}</SelectItem>)}
+                {accounts.map(a => <SelectItem key={a._id} value={a._id}>{a.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
           <div>
             <Label>Category</Label>
-            <Select value={form.categoryId} onValueChange={(val) => handleChange("categoryId", val)}>
+            <Select value={form.categoryId} onValueChange={val => handleChange("categoryId", val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((c) => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
+                {categories.map(c => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
           <div>
             <Label>Amount</Label>
-            <Input type="number" value={form.amount} onChange={(e) => handleChange("amount", e.target.value)} />
+            <Input type="number" value={form.amount} onChange={e => handleChange("amount", e.target.value)} />
           </div>
+
+          <div>
+            <Label>Frequency</Label>
+            <Select value={form.frequency} onValueChange={val => handleChange("frequency", val)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select frequency" />
+              </SelectTrigger>
+              <SelectContent>
+                {["daily", "weekly", "biweekly", "monthly", "quarterly", "yearly", "custom"].map(f => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {form.frequency === "custom" && (
+            <CustomIntervalEditor
+              value={form.customInterval ?? {}}
+              onChange={val => handleChange("customInterval", val)}
+            />
+          )}
+
         </div>
 
         <DialogFooter>
@@ -88,4 +111,3 @@ export const EditRecurringTransactionDialog: React.FC<Props> = ({ open, onClose,
     </Dialog>
   );
 };
-

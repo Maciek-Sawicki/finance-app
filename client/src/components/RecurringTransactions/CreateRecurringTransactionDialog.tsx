@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectValue, SelectItem } from "@/components/ui/select";
 import { useAccounts } from "@/contexts/AccountsContext";
 import { useCategories } from "@/contexts/CategoriesContext";
+import { CustomIntervalEditor } from "./CustomIntervalEditor";
 
 interface Props {
   open: boolean;
@@ -28,9 +29,16 @@ export const CreateRecurringTransactionDialog: React.FC<Props> = ({ open, onClos
     frequency: "monthly",
     nextDueDate: new Date().toISOString().slice(0, 10),
     isActive: true,
+    customInterval: {} as any,
   });
 
-  const handleChange = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (field: string, value: any) => {
+    if (field === "frequency" && value === "custom" && !form.customInterval) {
+      setForm(prev => ({ ...prev, frequency: value, customInterval: {} }));
+    } else {
+      setForm(prev => ({ ...prev, [field]: value }));
+    }
+  };
 
   const handleSubmit = async () => {
     await onSave(form);
@@ -48,37 +56,58 @@ export const CreateRecurringTransactionDialog: React.FC<Props> = ({ open, onClos
         <div className="space-y-4">
           <div>
             <Label>Name</Label>
-            <Input value={form.name} onChange={(e) => handleChange("name", e.target.value)} />
+            <Input value={form.name} onChange={e => handleChange("name", e.target.value)} />
           </div>
 
           <div>
             <Label>Account</Label>
-            <Select value={form.accountId} onValueChange={(val) => handleChange("accountId", val)}>
+            <Select value={form.accountId} onValueChange={val => handleChange("accountId", val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select account" />
               </SelectTrigger>
               <SelectContent>
-                {accounts.map((a) => <SelectItem key={a._id} value={a._id}>{a.name}</SelectItem>)}
+                {accounts.map(a => <SelectItem key={a._id} value={a._id}>{a.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
           <div>
             <Label>Category</Label>
-            <Select value={form.categoryId} onValueChange={(val) => handleChange("categoryId", val)}>
+            <Select value={form.categoryId} onValueChange={val => handleChange("categoryId", val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((c) => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
+                {categories.map(c => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
           <div>
             <Label>Amount</Label>
-            <Input type="number" value={form.amount} onChange={(e) => handleChange("amount", e.target.value)} />
+            <Input type="number" value={form.amount} onChange={e => handleChange("amount", e.target.value)} />
           </div>
+
+          <div>
+            <Label>Frequency</Label>
+            <Select value={form.frequency} onValueChange={val => handleChange("frequency", val)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select frequency" />
+              </SelectTrigger>
+              <SelectContent>
+                {["daily","weekly","biweekly","monthly","quarterly","yearly","custom"].map(f => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {form.frequency === "custom" && (
+            <CustomIntervalEditor
+              value={form.customInterval ?? {}}
+              onChange={val => handleChange("customInterval", val)}
+            />
+          )}
         </div>
 
         <DialogFooter>
@@ -89,4 +118,3 @@ export const CreateRecurringTransactionDialog: React.FC<Props> = ({ open, onClos
     </Dialog>
   );
 };
-
