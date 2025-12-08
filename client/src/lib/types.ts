@@ -32,6 +32,7 @@ export interface AuthContextType {
   token: string | null
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => void
+  signUp: (data: any) => Promise<any>;
   loading: boolean
 }
 
@@ -77,7 +78,7 @@ export interface Category {
   name: string;
   type: "income" | "expense" | "exclude" | "transfer";
   icon?: string;
-  color?: string;
+  // color?: string;
   favorite: boolean;
   createdAt: string;
   updatedAt: string;
@@ -252,8 +253,8 @@ export interface RecurringTransaction {
   _id: string;
   userId: string;
   name: string;
-  categoryId: any; // populated object OR id
-  accountId: any; // populated object OR id
+  categoryId: any; 
+  accountId: any; 
   amount: number;
   currency: string;
 

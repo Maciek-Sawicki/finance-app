@@ -30,6 +30,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchUser()
   }, [token])
 
+  const signUp = async (data: any) => {
+    const res = await api.post("/auth/signup", data)
+    return res.data
+  }
+  
   const signIn = async (email: string, password: string) => {
     const res = await api.post('/auth/signIn', { email, password });
     setUser(res.data.user);
@@ -44,7 +49,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, signIn, signOut, loading }}>
+    <AuthContext.Provider value={{ user, token, signIn, signOut, signUp, loading }}>
       {children}
     </AuthContext.Provider>
   );

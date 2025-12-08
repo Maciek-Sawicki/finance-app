@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import type { Category } from "@/lib/types";
-import { categoryIcons, categoryColors } from "@/lib/constants";
+import { categoryIcons } from "@/lib/constants";
 
 const categoryTypes = [
   { code: "income" },
@@ -43,7 +43,7 @@ export const CreateCategoryDialog = ({
     name: "",
     type: undefined,
     icon: "",
-    color: categoryColors[0],
+    // color: categoryColors[0],
     favorite: false,
   });
 
@@ -63,7 +63,7 @@ export const CreateCategoryDialog = ({
       name: "",
       type: undefined,
       icon: "",
-      color: categoryColors[0],
+      // color: categoryColors[0],
       favorite: false,
     });
   };
@@ -125,7 +125,7 @@ export const CreateCategoryDialog = ({
             </Select>
           </div>
 
-          <div>
+          {/* <div>
             <Label>Color</Label>
             <div className="flex flex-wrap gap-2 mt-1">
               {categoryColors.map((color) => {
@@ -145,7 +145,7 @@ export const CreateCategoryDialog = ({
                 );
               })}
             </div>
-          </div>
+          </div> */}
 
           <div className="flex items-center space-x-2">
             <Switch

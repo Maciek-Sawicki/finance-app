@@ -71,16 +71,6 @@ export const CategoriesTable = ({ refreshSignal }: CategoriesTableProps) => {
       cell: (info) => info.getValue<string>() || "-",
     },
     {
-      accessorKey: "color",
-      header: "Color",
-      cell: (info) => (
-        <div
-          className="w-4 h-4 rounded-full"
-          style={{ backgroundColor: info.getValue<string>() || "transparent" }}
-        />
-      ),
-    },
-    {
       accessorKey: "favorite",
       header: "Favorite",
       cell: (info) => (info.getValue<boolean>() ? "⭐" : ""),

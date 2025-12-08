@@ -91,7 +91,7 @@ export const BudgetsTable = ({
       cell: (info) => {
         const progress = info.getValue<number>() ?? 0;
         const color =
-          progress < 70 ? "text-green-500" : progress < 100 ? "text-yellow-500" : "text-red-500";
+          progress < 70 ? "progress-bar-low" : progress < 100 ? "progress-bar-medium" : "progress-bar-high";
         return <span className={`${color} font-medium`}>{progress.toFixed(0)}%</span>;
       },
     },

@@ -9,11 +9,14 @@ import AccountPage from "../pages/AccountPage";
 import Categories from "../pages/Categories";
 import CategoriesDashboard from "../pages/CategoriesDashboard";
 
+import BudgetsDashboardPage from "../pages/BudgetsDashboard";
+
 import Transactions from "../pages/Transactions";
 import Budgets from "../pages/Budgets";
 import RecurringTransactionsPage from "../pages/RecurringTransactions";
 
 import SignIn from "../pages/SignIn";
+import SignUp from "../pages/SignUp";
 import Profile from "../pages/Profile";
 import PrivateRoute from "../components/PrivateRoute";
 import { ProtectedLayout } from "../layouts/ProtectedLayout";
@@ -22,6 +25,7 @@ import { ProtectedLayout } from "../layouts/ProtectedLayout";
 const AppRouter: React.FC = () => (
   <Routes>
     <Route path="/signin" element={<SignIn />} />
+    <Route path="/signup" element={<SignUp />} />
 
     <Route
       path="/profile"
@@ -123,6 +127,17 @@ const AppRouter: React.FC = () => (
         <PrivateRoute>
           <ProtectedLayout>
             <Budgets />
+          </ProtectedLayout>
+        </PrivateRoute>
+      }
+    />
+
+    <Route
+      path="/budgets/*"
+      element={
+        <PrivateRoute>
+          <ProtectedLayout>
+            <BudgetsDashboardPage />
           </ProtectedLayout>
         </PrivateRoute>
       }

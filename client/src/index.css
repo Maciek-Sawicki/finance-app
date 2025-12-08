@@ -35,6 +35,9 @@
     --chart-9: 30 80% 55%;
     --chart-10: 280 65% 60%;
     --chart-other: 0 0% 50%;
+    --progress-bar-low: 120 100% 40%;
+    --progress-bar-medium: 48 100% 50%;
+    --progress-bar-high: 0 100% 60%;
   }
 
   .dark {
@@ -68,6 +71,9 @@
     --chart-9: 43 74% 66%;
     --chart-10: 27 87% 67%;
     --chart-other: 0 0% 50%;
+    --progress-bar-low: 120 100% 40%;
+    --progress-bar-medium: 48 100% 50%;
+    --progress-bar-high: 0 100% 60%;
   }
 }
 

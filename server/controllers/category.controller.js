@@ -2,7 +2,7 @@ import Category from '../models/category.model.js';
 
 export const createCategory = async (req, res) => {
   try {
-    const { name, type, icon, color, isDefault } = req.body;
+    const { name, type, icon, isDefault } = req.body;
     const userId = req.user._id;
 
     if (!name || !type) {
@@ -19,7 +19,6 @@ export const createCategory = async (req, res) => {
       name,
       type,
       icon,
-      color,
       isDefault
     });
 
@@ -43,6 +42,7 @@ export const getCategories = async (req, res) => {
     res.status(500).json({ message: 'Internal server error.' });
   }
 };
+
 
 
 export const getCategory = async (req, res) => {

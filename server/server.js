@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import fs from "fs";
+import https from "https";
+import http from "http";
 
 import authRoutes from './routes/auth.routes.js';
 import accountRoutes from './routes/account.routes.js';
@@ -51,3 +54,22 @@ app.listen(PORT, () => {
   fetchRatesJob();
   startRecurringTransactionJob();
 }); 
+
+// const httpsOptions = {
+//   key: fs.readFileSync("./certs/server.key"),
+//   cert: fs.readFileSync("./certs/server.cert"),
+// };
+
+// // Serwer HTTPS
+// https.createServer(httpsOptions, app).listen(8443, () => {
+//   console.log("HTTPS server running on port 8443");
+//   connectMongoDB();
+
+//   fetchRatesJob();
+//   startRecurringTransactionJob();
+// });
+
+// http.createServer((req, res) => {
+//   res.writeHead(301, { Location: "https://" + req.headers.host + req.url });
+//   res.end();
+// }).listen(PORT);

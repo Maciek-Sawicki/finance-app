@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -8,7 +7,7 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
-import { AccountsService } from "@/services/accounts";
+import { useState } from "react";
 import type { Account } from "@/lib/types";
 import {
   Table,
@@ -30,36 +29,25 @@ import {
 import { MoreHorizontal } from "lucide-react";
 import { EditAccountDialog } from "@/components/Accounts/EditAccountDialog";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { useAccounts } from "@/contexts/AccountsContext";
+import { AccountsService } from "@/services/accounts";
 
-type AccountsTableProps = {
-  refreshSignal?: number;
-};
-
-export const AccountsTable = ({ refreshSignal }: AccountsTableProps) => {
-  const [accounts, setAccounts] = useState<Account[]>([]);
+export const AccountsTable = () => {
+  const { accounts, refreshAccounts } = useAccounts();  
   const [sorting, setSorting] = useState<SortingState>([]);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { formatNumber } = useCurrencyFormatter();
 
-  const fetchAccounts = async () => {
-    const data = await AccountsService.getAll();
-    setAccounts(data);
-  };
-
-  useEffect(() => {
-    fetchAccounts();
-  }, [refreshSignal]);
-
   const handleDelete = async (id: string) => {
     if (!confirm("Are you really want to delete this account?")) return;
     await AccountsService.delete(id);
-    fetchAccounts();
+    refreshAccounts(); 
   };
 
   const handleSetDefault = async (id: string) => {
     await AccountsService.setDefault(id);
-    fetchAccounts();
+    refreshAccounts(); 
   };
 
   const startEditing = (account: Account) => {
@@ -153,13 +141,14 @@ export const AccountsTable = ({ refreshSignal }: AccountsTableProps) => {
           ))}
         </TableBody>
       </Table>
+
       <EditAccountDialog
         account={editingAccount}
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         onSave={async (id, data) => {
           await AccountsService.update(id, data);
-          fetchAccounts();
+          refreshAccounts();
         }}
       />
     </>

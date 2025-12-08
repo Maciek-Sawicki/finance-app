@@ -11,14 +11,7 @@ import { useCategories } from "@/contexts/CategoriesContext";
 import { CustomIntervalEditor } from "./CustomIntervalEditor";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-const formatLocalDate = (dateStr?: string) => {
-  if (!dateStr) return "Select date";
-  const [year, month, day] = dateStr.split("-").map(Number);
-  return format(new Date(year, month - 1, day), "yyyy-MM-dd");
-};
-
-
+import { ChevronDownIcon } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -41,6 +34,15 @@ export const CreateRecurringTransactionDialog: React.FC<Props> = ({ open, onClos
     isActive: true,
   });
 
+  const [openDate, setOpenDate] = useState(false);
+
+  const localDateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const handleChange = (field: string, val: any) =>
     setForm((prev: any) => ({ ...prev, [field]: val }));
 
@@ -53,7 +55,7 @@ export const CreateRecurringTransactionDialog: React.FC<Props> = ({ open, onClos
       frequency: form.frequency,
       nextDueDate: new Date(form.nextDueDate).toISOString(),
       isActive: form.isActive,
-      repeatCount: 0, // domyślnie
+      repeatCount: 0,
     };
 
     if (form.frequency === "custom") {
@@ -63,7 +65,6 @@ export const CreateRecurringTransactionDialog: React.FC<Props> = ({ open, onClos
     await onSave(payload);
     onClose();
   };
-
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -134,18 +135,24 @@ export const CreateRecurringTransactionDialog: React.FC<Props> = ({ open, onClos
 
           <div>
             <Label>Start Date</Label>
-            <Popover>
+            <Popover open={openDate} onOpenChange={setOpenDate}>
               <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full text-left">
-  {formatLocalDate(form.nextDueDate)}
-</Button>
-
+                <Button variant="outline" className="w-full justify-between font-normal rounded">
+                  {form.nextDueDate
+                    ? new Date(form.nextDueDate).toLocaleDateString()
+                    : "Select date"}
+                  <ChevronDownIcon />
+                </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto overflow-hidden p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={form.nextDueDate ? new Date(form.nextDueDate) : undefined}
-                  onSelect={date => handleChange("nextDueDate", date?.toISOString().slice(0, 10))}
+                  captionLayout="dropdown"
+                  onSelect={(date) => {
+                    if (date) handleChange("nextDueDate", localDateString(date));
+                    setOpenDate(false);
+                  }}
                 />
               </PopoverContent>
             </Popover>

@@ -93,7 +93,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = (props) => {
       },
       {
         title: "Declarations",
-        url: "/declarations",
         icon: Wrench,
         items: [
           { title: "Accounts", url: "/accounts/all" },
@@ -103,26 +102,9 @@ export const AppSidebar: React.FC<AppSidebarProps> = (props) => {
         ],
       },
       {
-        title: "Export Data",
-        url: "/export",
-        icon: FileDown,
-        items: [{ title: "Export", url: "/export" }],
-      },
-      {
         title: "Import Data",
         url: "/import",
         icon: FileUp,
-        items: [{ title: "Import", url: "/import" }],
-      },
-      {
-        title: "Reports",
-        url: "/reports",
-        icon: ChartNoAxesCombined,
-        items: [
-          { title: "Overview", url: "/reports/overview" },
-          { title: "Income & Expenses", url: "/reports/income-expenses" },
-          { title: "Categories", url: "/reports/categories" },
-        ],
       },
     ],
   };

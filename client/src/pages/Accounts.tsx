@@ -3,50 +3,41 @@
 import { useState, useEffect } from "react";
 import { CreateAccountDialog } from "@/components/Accounts/CreateAccountDialog";
 import { Button } from "@/components/ui/button";
-import { AccountsService } from "@/services/accounts";
-import { AccountsTable } from "@/components/Accounts/AccountsTable";
 import { Card } from "@/components/ui/card";
+import { AccountsTable } from "@/components/Accounts/AccountsTable";
 import { useAccounts } from "@/contexts/AccountsContext";
+import { AccountsService } from "@/services/accounts";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { useUserSettings } from "@/contexts/UserSettingsContext";
 
 export default function Accounts() {
   const [openAccountDialog, setOpenAccountDialog] = useState(false);
   const [totalBalance, setTotalBalance] = useState<string>("Loading...");
   const { refreshAccounts } = useAccounts();
+  const { settings, loading: settingsLoading } = useUserSettings(); 
   const { formatNumber } = useCurrencyFormatter();
+
+  const fetchTotalBalance = async () => {
+    if (!settings) return;
+    try {
+      const res = await AccountsService.getTotalBalanceAndCurrency(settings.defaultCurrency);
+      setTotalBalance(`${formatNumber(res.totalBalance)} ${res.currency}`);
+    } catch (err) {
+      console.error("Error fetching total balance:", err);
+      setTotalBalance("No data");
+    }
+  };
 
   const handleSaveAccount = async (data: any) => {
     await AccountsService.create(data);
-    await refreshAccounts();
+    await refreshAccounts();    
+    await fetchTotalBalance(); 
     setOpenAccountDialog(false);
   };
 
   useEffect(() => {
-    let mounted = true;
-
-    const fetchBalance = async () => {
-      try {
-        const res = await AccountsService.getTotalBalanceAndCurrency();
-        if (!mounted) return;
-
-        if (!res || res.totalBalance == null) {
-          setTotalBalance("No data");
-          return;
-        }
-
-        setTotalBalance(`${formatNumber(Number(res.totalBalance))} ${res.currency ?? ""}`);
-      } catch (error) {
-        console.error("Error fetching total balance:", error);
-        if (mounted) setTotalBalance("No data");
-      }
-    };
-
-    fetchBalance();
-
-    return () => {
-      mounted = false;
-    };
-  }, [refreshAccounts, formatNumber]);
+    if (!settingsLoading) fetchTotalBalance();
+  }, [settings, settingsLoading, refreshAccounts]);
 
   return (
     <div className="w-full h-full flex flex-col items-center p-10">

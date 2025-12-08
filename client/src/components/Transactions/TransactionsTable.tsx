@@ -80,7 +80,7 @@ export const TransactionsTable = ({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const { settings } = useUserSettings();
-  const userCurrency = settings?.defaultCurrency ?? "USD";
+  // const userCurrency = settings?.defaultCurrency ?? "USD";
   const locale = settings?.locale ?? "pl-PL"; 
 
   const fetchTransactions = async () => {
@@ -185,13 +185,14 @@ export const TransactionsTable = ({
         const type = row.original.type;
         const isIncome = type === "income";
         const colorClass = isIncome ? "text-green-500" : "text-red-500";
+        const currency = row.original.accountId?.currency;
     
         return (
           <div className={`font-semibold ${colorClass}`}>
             {isIncome ? "+" : "-"}
             {Math.abs(value).toLocaleString(locale, {
               style: "currency",
-              currency: userCurrency,
+              currency: currency,
               maximumFractionDigits: 2,
             })}
           </div>

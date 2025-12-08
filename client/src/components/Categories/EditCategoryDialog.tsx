@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch"
 import type { Category } from "@/lib/types";
-import { categoryIcons, categoryColors } from "@/lib/constants";
+import { categoryIcons } from "@/lib/constants";
 
 const categoryTypes = [
   { code: "income" },
@@ -48,7 +48,7 @@ export const EditCategoryDialog = ({
         name: category.name,
         type: category.type,
         icon: category.icon,
-        color: category.color,
+        // color: category.color,
         favorite: category.favorite,
       });
     }
@@ -115,7 +115,7 @@ export const EditCategoryDialog = ({
             </Select>
           </div>
 
-          <div>
+          {/* <div>
             <Label>Color</Label>
             <div className="flex flex-wrap gap-2 mt-1">
               {categoryColors.map((color) => {
@@ -135,7 +135,7 @@ export const EditCategoryDialog = ({
                 );
               })}
             </div>
-          </div>
+          </div> */}
 
 
           <div className="flex items-center space-x-2">
