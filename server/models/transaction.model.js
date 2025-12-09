@@ -9,7 +9,11 @@ const transactionSchema = new mongoose.Schema({
   categoryId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category",
-    required: true,
+    default: null,
+    required: function () {
+      // only required if not part of an import
+      return this.importId === null;
+    }
   },
   accountId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -47,6 +51,11 @@ const transactionSchema = new mongoose.Schema({
     ref: "Transfer",
     default: null,
   },
+  importId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Import",
+    default: null,
+  }  
 }, {
   timestamps: true, 
 });

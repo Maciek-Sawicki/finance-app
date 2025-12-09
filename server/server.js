@@ -6,6 +6,7 @@ import fs from "fs";
 import https from "https";
 import http from "http";
 
+
 import authRoutes from './routes/auth.routes.js';
 import accountRoutes from './routes/account.routes.js';
 import categoryRoutes from './routes/category.routes.js';
@@ -16,6 +17,7 @@ import settingsRoutes from './routes/settings.routes.js';
 import categoryBreakdownRoutes from './routes/categoryBreakdown.routes.js';
 import budgetRoutes from './routes/budget.routes.js';
 import RecurringTransactionRoutes from './routes/recurringTransaction.routes.js';
+import importRoutes from './routes/import.routes.js';
 
 import { fetchRatesJob } from "./cron/fetchRatesJob.js";
 import { startRecurringTransactionJob } from "./cron/recurringTransactionsJob.js";
@@ -46,6 +48,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/category-breakdown', categoryBreakdownRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/recurring-transactions', RecurringTransactionRoutes);
+app.use('/api/imports', importRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server works on port ${PORT}`);
