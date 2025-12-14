@@ -14,6 +14,7 @@ import BudgetsDashboardPage from "../pages/BudgetsDashboard";
 import Transactions from "../pages/Transactions";
 import Budgets from "../pages/Budgets";
 import RecurringTransactionsPage from "../pages/RecurringTransactions";
+import ImportsPage from "../pages/Imports";
 
 import SignIn from "../pages/SignIn";
 import SignUp from "../pages/SignUp";
@@ -149,6 +150,17 @@ const AppRouter: React.FC = () => (
         <PrivateRoute>
           <ProtectedLayout>
             <RecurringTransactionsPage />
+          </ProtectedLayout>
+        </PrivateRoute>
+      }
+    />
+
+    <Route
+      path="/import/*"
+      element={
+        <PrivateRoute>
+          <ProtectedLayout>
+            <ImportsPage />
           </ProtectedLayout>
         </PrivateRoute>
       }

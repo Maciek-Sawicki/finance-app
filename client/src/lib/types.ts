@@ -275,6 +275,25 @@ export interface RecurringTransaction {
   updatedAt: string;
 }
 
+export interface ImportRecord {
+  _id: string;
+  accountId: string;
+  fileName: string;
+  status: "pending" | "completed";
+  rowCount: number;
+  importedCount: number;
+  skippedCount: number;
+  uploadDate: string;
+}
+
+export interface ImportTransaction {
+  _id: string;
+  date: string;
+  amount: number;
+  type: "income" | "expense";
+  description: string;
+  categoryId: string | null;
+}
 
 
 

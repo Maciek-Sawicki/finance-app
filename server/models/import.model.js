@@ -19,7 +19,7 @@ const importSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'processing', 'completed', 'failed'],
+    enum: ['pending', 'completed', 'failed'],
     required: true,
     default: 'pending',
   },

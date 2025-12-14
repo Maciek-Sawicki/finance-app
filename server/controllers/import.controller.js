@@ -6,7 +6,6 @@ import { v4 as uuid } from "uuid";
 export const createImport = async (req, res) => {
   try {
     const { accountId } = req.body;
-
     if (!accountId) return res.status(400).json({ message: "Missing accountId" });
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
@@ -15,7 +14,7 @@ export const createImport = async (req, res) => {
       accountId,
       fileName: req.file.originalname,
       importIdToken: uuid(),
-      status: "processing",
+      status: "pending",
       rowCount: 0,
       importedCount: 0,
       skippedCount: 0,
@@ -24,12 +23,17 @@ export const createImport = async (req, res) => {
 
     const csvText = req.file.buffer.toString("utf-8");
 
-    const delimiter = csvText.includes(";") ? ";" : ",";
+    // Delimiter detection
+    const firstLine = csvText.split(/\r?\n/)[0];
+    const delimiter = firstLine.includes(";") ? ";" : ",";
 
+    // CSV Parse
     const parsed = Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,
       delimiter,
+      transformHeader: (h) => h.trim().replace(/"/g, "").toLowerCase(),
+      transform: (value) => value?.trim().replace(/"/g, "") || "",
     });
 
     const rows = parsed.data;
@@ -37,34 +41,40 @@ export const createImport = async (req, res) => {
     let skipped = 0;
     const txToInsert = [];
 
-    rows.forEach((row, index) => {
-      const cleanRow = {};
-      Object.keys(row).forEach(k => {
-        cleanRow[k.trim()] = row[k] ? row[k].trim() : "";
-      });
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
 
-      const dateStr = cleanRow["Data"] || cleanRow["Date"];
-      let amountStr = cleanRow["Kwota"] || cleanRow["Amount"];
-      const description = cleanRow["Opis"] || cleanRow["Description"] || "";
-
-      if (!dateStr || !amountStr) {
-        importRecord.errors.push({ rowNumber: index + 1, message: "No date or amount" });
-        skipped++;
-        return;
+      if (!row || Object.values(row).every(v => v === "")) {
+        continue;
       }
 
-      amountStr = amountStr.replace(",", "."); 
+      // Keys name normalization
+      const dateStr = row["date"] || row["data"];
+      let amountStr = row["amount"] || row["kwota"];
+      const description = row["description"] || row["opis"] || "";
+
+      if (!dateStr || !amountStr) {
+        importRecord.errors.push({
+          rowNumber: i + 1,
+          message: "Missing date or amount"
+        });
+        skipped++;
+        continue;
+      }
+
+      // Normalize amount string
+      amountStr = amountStr.replace(",", ".");
       const amountNum = Number(amountStr);
 
       const date = new Date(dateStr);
 
       if (!date.getTime() || isNaN(amountNum)) {
         importRecord.errors.push({
-          rowNumber: index + 1,
-          message: "Invalid date or amount format",
+          rowNumber: i + 1,
+          message: "Invalid date or amount format"
         });
         skipped++;
-        return;
+        continue;
       }
 
       const type = amountNum < 0 ? "expense" : "income";
@@ -81,9 +91,11 @@ export const createImport = async (req, res) => {
       });
 
       imported++;
-    });
+    }
 
-    if (txToInsert.length > 0) await Transaction.insertMany(txToInsert);
+    if (txToInsert.length > 0) {
+      await Transaction.insertMany(txToInsert);
+    }
 
     importRecord.status = "completed";
     importRecord.rowCount = rows.length;
@@ -99,6 +111,26 @@ export const createImport = async (req, res) => {
   }
 };
 
+export const getUserImports = async (req, res) => {
+  try {
+    const imports = await Import.find({
+      userId: req.user._id,
+    })
+      .sort({ createdAt: -1 }) 
+      .select(
+        "_id accountId fileName status rowCount importedCount skippedCount createdAt uploadDate"
+      );
+
+    res.json(imports);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "Error fetching user imports",
+    });
+  }
+};
+
+
 export const getImportTransactions = async (req, res) => {
   try {
     const { id } = req.params;
@@ -107,39 +139,31 @@ export const getImportTransactions = async (req, res) => {
 
     res.json(tx);
   } catch (err) {
-    res.status(500).json({ message: "Błąd przy pobieraniu transakcji importu" });
+    res.status(500).json({ message: "Error fetching import transactions" });
   }
 };
 
 export const updateTransactionCategory = async (req, res) => {
-  try {
-    const { transactionId } = req.params;
-    const { categoryId } = req.body;
+  const { transactionId } = req.params;
+  const { categoryId } = req.body;
 
-    if (!categoryId) {
-      return res.status(400).json({ message: "Brak categoryId" });
-    }
-
-    const tx = await Transaction.findOneAndUpdate(
-      { _id: transactionId, userId: req.user._id },
-      { $set: { categoryId } },
-      { new: true }
-    );
-
-    if (!tx) {
-      return res.status(404).json({ message: "Nie znaleziono transakcji" });
-    }
-
-    res.json({
-      message: "Kategoria zaktualizowana",
-      transaction: tx,
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Błąd podczas aktualizacji kategorii" });
+  if (!categoryId) {
+    return res.status(400).json({ message: "No categoryId" });
   }
+
+  const tx = await Transaction.findOneAndUpdate(
+    { _id: transactionId, userId: req.user._id },
+    { $set: { categoryId } },
+    { new: true }
+  );
+
+  if (!tx) {
+    return res.status(404).json({ message: "No transactions found" });
+  }
+
+  res.json(tx);
 };
+
 
 export const batchUpdateTransactionCategories = async (req, res) => {
   try {
@@ -147,7 +171,7 @@ export const batchUpdateTransactionCategories = async (req, res) => {
     const { updates } = req.body; 
 
     if (!Array.isArray(updates) || updates.length === 0) {
-      return res.status(400).json({ message: "Brak danych do aktualizacji" });
+      return res.status(400).json({ message: "No data to update" });
     }
 
     const bulkOps = updates.map(u => ({
@@ -160,13 +184,13 @@ export const batchUpdateTransactionCategories = async (req, res) => {
     const result = await Transaction.bulkWrite(bulkOps);
 
     res.json({
-      message: "Kategorie zaktualizowane",
+      message: "Categories updated",
       modifiedCount: result.modifiedCount,
     });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Błąd podczas aktualizacji kategorii" });
+    res.status(500).json({ message: "Error updating categories" });
   }
 };
 
@@ -177,9 +201,10 @@ export const deleteImport = async (req, res) => {
     await Transaction.deleteMany({ importId: id });
     await Import.findByIdAndDelete(id);
 
-    res.json({ message: "Import i związane transakcje usunięte" });
+    res.json({ message: "Import and associated transactions deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Błąd podczas usuwania importu" });
+    console.error(err);
+    res.status(500).json({ message: "Error deleting import" });
   }
 };
 

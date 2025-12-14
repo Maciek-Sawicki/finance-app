@@ -4,6 +4,7 @@ import { authenticate } from '../middleware/authenticate.js';
 import {
   createImport,
   getImportTransactions,
+  getUserImports,
   updateTransactionCategory,
   batchUpdateTransactionCategories,
   deleteImport
@@ -13,8 +14,9 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/', authenticate, upload.single("file"), createImport);
+router.get('/', authenticate, getUserImports);
 router.get('/:id/transactions', authenticate, getImportTransactions);
-router.patch('/transaction/:id/category', authenticate, updateTransactionCategory);
+router.patch('/transactions/:transactionId/category', authenticate, updateTransactionCategory);
 router.patch('/:id/categories', authenticate, batchUpdateTransactionCategories);
 router.delete('/:id', authenticate, deleteImport);
 
