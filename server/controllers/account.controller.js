@@ -375,56 +375,99 @@ export const getTotalBalance = async (req, res) => {
   try {
     const userId = req.user._id;
     const baseCurrency = req.query.base;
-    if (!baseCurrency) return res.status(400).json({ message: "Base currency is required" });
 
+    if (!baseCurrency) {
+      return res.status(400).json({ message: "Base currency is required" });
+    }
+
+    // Pobranie kont użytkownika
     const accounts = await Account.find({ userId }).lean();
     if (accounts.length === 0) {
       return res.status(404).json({ message: "No accounts found." });
     }
 
-    const ratesDoc = await ExchangeRate.findOne({ base: "USD" }).sort({ createdAt: -1 }).lean();
-    if (!ratesDoc) throw new Error("No exchange rates found.");
+    // Pobranie najnowszych kursów walut
+    const ratesDoc = await ExchangeRate
+      .findOne({ base: "USD" })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (!ratesDoc) {
+      throw new Error("No exchange rates found.");
+    }
+
     const rates = ratesDoc.rates;
 
-    const accountMap = {};
-    accounts.forEach(acc => (accountMap[acc._id.toString()] = acc));
-
+    // Agregacja transakcji (opcjonalna – nie wszystkie konta ją mają)
     const transactionAgg = await Transaction.aggregate([
       { $match: { userId } },
       {
         $group: {
           _id: "$accountId",
-          incomeSettled: { $sum: { $cond: [{ $and: [{ $eq: ["$type", "income"] }, { $eq: ["$settled", true] }] }, "$amount", 0] } },
-          expenseSettled: { $sum: { $cond: [{ $and: [{ $eq: ["$type", "expense"] }, { $eq: ["$settled", true] }] }, "$amount", 0] } },
-          incomeAll: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
-          expenseAll: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } },
+          incomeSettled: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ["$type", "income"] }, { $eq: ["$settled", true] }] },
+                "$amount",
+                0
+              ]
+            }
+          },
+          expenseSettled: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ["$type", "expense"] }, { $eq: ["$settled", true] }] },
+                "$amount",
+                0
+              ]
+            }
+          },
+          incomeAll: {
+            $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] }
+          },
+          expenseAll: {
+            $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] }
+          }
         }
       }
     ]);
 
+    // Mapowanie agregacji po accountId
+    const txMap = {};
+    transactionAgg.forEach(tx => {
+      txMap[tx._id.toString()] = tx;
+    });
+
     let total = 0;
     let totalAfterRP = 0;
 
-    transactionAgg.forEach(tx => {
-      const acc = accountMap[tx._id.toString()];
-      if (!acc) return;
+    // Iteracja po WSZYSTKICH kontach (również bez transakcji)
+    for (const acc of accounts) {
+      const tx = txMap[acc._id.toString()];
 
       const startingBalance = acc.startingBalance || 0;
 
-      const balanceSettled = startingBalance + (tx.incomeSettled - tx.expenseSettled);
-      const balanceAll = startingBalance + (tx.incomeAll - tx.expenseAll);
+      const incomeSettled = tx?.incomeSettled || 0;
+      const expenseSettled = tx?.expenseSettled || 0;
+      const incomeAll = tx?.incomeAll || 0;
+      const expenseAll = tx?.expenseAll || 0;
 
-      const rateFrom = Number(rates[acc.currency]);      
-      const rateTo = Number(rates[baseCurrency]);       
+      const balanceSettled = startingBalance + (incomeSettled - expenseSettled);
+      const balanceAll = startingBalance + (incomeAll - expenseAll);
 
-      if (!rateFrom || !rateTo) throw new Error(`Unsupported currency: ${acc.currency} or ${baseCurrency}`);
+      const rateFrom = Number(rates[acc.currency]);
+      const rateTo = Number(rates[baseCurrency]);
+
+      if (!rateFrom || !rateTo) {
+        throw new Error(`Unsupported currency: ${acc.currency} or ${baseCurrency}`);
+      }
 
       const convertedSettled = (balanceSettled / rateFrom) * rateTo;
       const convertedAll = (balanceAll / rateFrom) * rateTo;
 
       total += convertedSettled;
       totalAfterRP += convertedAll;
-    });
+    }
 
     res.status(200).json({
       totalBalance: Number(total.toFixed(2)),
@@ -437,8 +480,6 @@ export const getTotalBalance = async (req, res) => {
     res.status(500).json({ message: "Internal server error." });
   }
 };
-
-
 
 export const getAccountSummary = async (req, res) => {
   try {

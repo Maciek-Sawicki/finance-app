@@ -19,7 +19,7 @@ const SignIn: React.FC = () => {
       window.location.href = "/";
     } catch (err) {
       console.error(err);
-      alert("Błąd logowania");
+      alert("Login error");
     }
   };
 

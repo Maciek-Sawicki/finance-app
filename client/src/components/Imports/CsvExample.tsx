@@ -2,19 +2,20 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
+import dedent from "dedent";
 
 export default function CsvExample() {
-  const example1 = `
+  const example1 = dedent`
     "Date","Amount","Description"
     "2025-12-01","1500","Salary payment"
     "2025-12-02","-75.5","Groceries - supermarket"
-`.trim();
-
-  const example2 = `
-    Date,Amount,Description
-    2025-12-01,1500,Salary payment
-    2025-12-02,-75.5,Groceries - supermarket
-`.trim();
+  `;
+  const example2 = dedent`
+  Date,Amount,Description
+  2025-12-01,1500,Salary payment
+  2025-12-02,-75.5,Groceries - supermarket
+  `;
+  
 
   const CodeBlock = ({ title, code }: { title: string; code: string }) => {
     const [copied, setCopied] = useState(false);

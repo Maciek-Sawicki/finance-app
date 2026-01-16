@@ -22,12 +22,9 @@ export const createImport = async (req, res) => {
     });
 
     const csvText = req.file.buffer.toString("utf-8");
-
-    // Delimiter detection
     const firstLine = csvText.split(/\r?\n/)[0];
     const delimiter = firstLine.includes(";") ? ";" : ",";
 
-    // CSV Parse
     const parsed = Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,

@@ -231,6 +231,90 @@ export const getMonthlyTopCategories = async (req, res) => {
   }
 };
 
+// export const getMonthlyTopCategories = async (req, res) => {
+//   try {
+//     const data = {
+      
+//         "targetCurrency": "USD",
+//         "type": "expense",
+//         "monthlyCategories": {
+//           "2025-01": [
+//             { "categoryId": "cat01", "name": "Jedzenie", "icon": "🍔", "color": "#FF5733", "total": 900, "percent": 18 },
+//             { "categoryId": "cat02", "name": "Transport", "icon": "🚗", "color": "#33C1FF", "total": 400, "percent": 8 },
+//             { "categoryId": "cat03", "name": "Dom", "icon": "🏠", "color": "#99FF99", "total": 1200, "percent": 24 },
+//             { "categoryId": "cat04", "name": "Rozrywka", "icon": "🎮", "color": "#FF6633", "total": 500, "percent": 10 },
+//             { "categoryId": "cat05", "name": "Zdrowie", "icon": "💊", "color": "#FF9999", "total": 300, "percent": 6 },
+//             { "categoryId": "cat06", "name": "Ubrania", "icon": "👕", "color": "#CCCCFF", "total": 350, "percent": 7 },
+//             { "categoryId": "cat07", "name": "Subskrypcje", "icon": "📺", "color": "#FFD700", "total": 250, "percent": 5 },
+//             { "categoryId": "cat08", "name": "Inne", "icon": "📦", "color": "#AAAAAA", "total": 1100, "percent": 22 }
+//           ],
+      
+//           "2025-02": [
+//             { "categoryId": "cat01", "name": "Jedzenie", "icon": "🍔", "color": "#FF5733", "total": 850, "percent": 17 },
+//             { "categoryId": "cat02", "name": "Transport", "icon": "🚗", "color": "#33C1FF", "total": 420, "percent": 8.4 },
+//             { "categoryId": "cat03", "name": "Dom", "icon": "🏠", "color": "#99FF99", "total": 1250, "percent": 25 },
+//             { "categoryId": "cat04", "name": "Rozrywka", "icon": "🎮", "color": "#FF6633", "total": 450, "percent": 9 },
+//             { "categoryId": "cat05", "name": "Zdrowie", "icon": "💊", "color": "#FF9999", "total": 280, "percent": 5.6 },
+//             { "categoryId": "cat06", "name": "Ubrania", "icon": "👕", "color": "#CCCCFF", "total": 300, "percent": 6 },
+//             { "categoryId": "cat07", "name": "Subskrypcje", "icon": "📺", "color": "#FFD700", "total": 250, "percent": 5 },
+//             { "categoryId": "cat08", "name": "Inne", "icon": "📦", "color": "#AAAAAA", "total": 1200, "percent": 24 }
+//           ],
+      
+//           "2025-03": [
+//             { "categoryId": "cat01", "name": "Jedzenie", "icon": "🍔", "color": "#FF5733", "total": 920, "percent": 18.4 },
+//             { "categoryId": "cat02", "name": "Transport", "icon": "🚗", "color": "#33C1FF", "total": 380, "percent": 7.6 },
+//             { "categoryId": "cat03", "name": "Dom", "icon": "🏠", "color": "#99FF99", "total": 1200, "percent": 24 },
+//             { "categoryId": "cat04", "name": "Rozrywka", "icon": "🎮", "color": "#FF6633", "total": 600, "percent": 12 },
+//             { "categoryId": "cat05", "name": "Zdrowie", "icon": "💊", "color": "#FF9999", "total": 320, "percent": 6.4 },
+//             { "categoryId": "cat06", "name": "Ubrania", "icon": "👕", "color": "#CCCCFF", "total": 400, "percent": 8 },
+//             { "categoryId": "cat07", "name": "Subskrypcje", "icon": "📺", "color": "#FFD700", "total": 250, "percent": 5 },
+//             { "categoryId": "cat08", "name": "Inne", "icon": "📦", "color": "#AAAAAA", "total": 930, "percent": 18.6 }
+//           ],
+      
+//           "2025-04": [
+//             { "categoryId": "cat01", "name": "Jedzenie", "icon": "🍔", "color": "#FF5733", "total": 950, "percent": 19 },
+//             { "categoryId": "cat02", "name": "Transport", "icon": "🚗", "color": "#33C1FF", "total": 400, "percent": 8 },
+//             { "categoryId": "cat03", "name": "Dom", "icon": "🏠", "color": "#99FF99", "total": 1300, "percent": 26 },
+//             { "categoryId": "cat04", "name": "Rozrywka", "icon": "🎮", "color": "#FF6633", "total": 550, "percent": 11 },
+//             { "categoryId": "cat05", "name": "Zdrowie", "icon": "💊", "color": "#FF9999", "total": 300, "percent": 6 },
+//             { "categoryId": "cat06", "name": "Ubrania", "icon": "👕", "color": "#CCCCFF", "total": 350, "percent": 7 },
+//             { "categoryId": "cat07", "name": "Subskrypcje", "icon": "📺", "color": "#FFD700", "total": 250, "percent": 5 },
+//             { "categoryId": "cat08", "name": "Inne", "icon": "📦", "color": "#AAAAAA", "total": 900, "percent": 18 }
+//           ],
+      
+//           "2025-05": [
+//             { "categoryId": "cat01", "name": "Jedzenie", "icon": "🍔", "color": "#FF5733", "total": 1000, "percent": 20 },
+//             { "categoryId": "cat02", "name": "Transport", "icon": "🚗", "color": "#33C1FF", "total": 420, "percent": 8.4 },
+//             { "categoryId": "cat03", "name": "Dom", "icon": "🏠", "color": "#99FF99", "total": 1200, "percent": 24 },
+//             { "categoryId": "cat04", "name": "Rozrywka", "icon": "🎮", "color": "#FF6633", "total": 650, "percent": 13 },
+//             { "categoryId": "cat05", "name": "Zdrowie", "icon": "💊", "color": "#FF9999", "total": 280, "percent": 5.6 },
+//             { "categoryId": "cat06", "name": "Ubrania", "icon": "👕", "color": "#CCCCFF", "total": 400, "percent": 8 },
+//             { "categoryId": "cat07", "name": "Subskrypcje", "icon": "📺", "color": "#FFD700", "total": 250, "percent": 5 },
+//             { "categoryId": "cat08", "name": "Inne", "icon": "📦", "color": "#AAAAAA", "total": 800, "percent": 16 }
+//           ],
+      
+//           "2025-06": [
+//             { "categoryId": "cat01", "name": "Jedzenie", "icon": "🍔", "color": "#FF5733", "total": 950, "percent": 19 },
+//             { "categoryId": "cat02", "name": "Transport", "icon": "🚗", "color": "#33C1FF", "total": 380, "percent": 7.6 },
+//             { "categoryId": "cat03", "name": "Dom", "icon": "🏠", "color": "#99FF99", "total": 1150, "percent": 23 },
+//             { "categoryId": "cat04", "name": "Rozrywka", "icon": "🎮", "color": "#FF6633", "total": 700, "percent": 14 },
+//             { "categoryId": "cat05", "name": "Zdrowie", "icon": "💊", "color": "#FF9999", "total": 300, "percent": 6 },
+//             { "categoryId": "cat06", "name": "Ubrania", "icon": "👕", "color": "#CCCCFF", "total": 450, "percent": 9 },
+//             { "categoryId": "cat07", "name": "Subskrypcje", "icon": "📺", "color": "#FFD700", "total": 250, "percent": 5 },
+//             { "categoryId": "cat08", "name": "Inne", "icon": "📦", "color": "#AAAAAA", "total": 820, "percent": 16.4 }
+//           ],
+//         }
+//       };      
+//     res.status(200).json(data);
+//   } catch (err) {
+//     console.error("Error fetching monthly top categories fast:", err);
+//     res.status(500).json({ message: "Internal server error." });
+//   }
+// };
+
+
+
+
 export const getYearlyTopCategories = async (req, res) => {
   try {
     const userId = req.user._id;

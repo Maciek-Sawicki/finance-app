@@ -56,18 +56,19 @@ const calculateNextDate = (r) => {
   return nextDate;
 };
 
+
 export const startRecurringTransactionJob = () => {
-  cron.schedule("0 */6 * * *", async () => {
+  cron.schedule("0 1-23/6 * * *", async () => {
     console.log("Checking recurring transactions...");
     const recurringTransactions = await RecurringTransaction.find({ isActive: true });
 
-    for(const r of recurringTransactions){
-      if(isDue(r.nextDueDate)){
-        try{
+    for (const r of recurringTransactions) {
+      if (isDue(r.nextDueDate)) {
+        try {
           const category = await Category.findById(r.categoryId);
-          if(!category) throw new Error("Category not found");
+          if (!category) throw new Error("Category not found");
 
-          const type = category.type; 
+          const type = category.type;
 
           await Transaction.create({
             userId: r.userId,
@@ -80,22 +81,15 @@ export const startRecurringTransactionJob = () => {
           });
 
           console.log(`Transaction created for recurring '${r.name}'`);
-
-          r.repeatCount += 1;
           const nextDate = calculateNextDate(r);
-
-          if((r.maxRepeats && r.repeatCount >= r.maxRepeats) || (r.endDate && nextDate > r.endDate)){
-            r.isActive = false;
-            console.log(`Recurring '${r.name}' deactivated`);
-          } else {
-            r.nextDueDate = nextDate;
-          }
+          r.nextDueDate = nextDate;
 
           await r.save();
-        } catch(err){
+        } catch (err) {
           console.error(`Error creating transaction for '${r.name}':`, err);
         }
       }
     }
   });
 };
+

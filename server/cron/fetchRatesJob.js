@@ -2,7 +2,7 @@ import cron from 'node-cron';
 import { fetchAndSaveRates } from '../services/exchangeRate.service.js';
 
 export const fetchRatesJob = () => {
-  cron.schedule('0 */12 * * *', async () => {
+  cron.schedule('0 */6 * * *', async () => {
     try {
       console.log('Cron: updating exchange rates...');
       await fetchAndSaveRates("USD");

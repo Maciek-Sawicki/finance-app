@@ -27,7 +27,6 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user settings
   const fetchSettings = async () => {
     if (!token || !user) return;
     try {
@@ -36,7 +35,7 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
       setSettings(res.data);
     } catch (err) {
-      console.error("❌ Error fetching settings:", err);
+      console.error("Error fetching settings:", err);
     } finally {
       setLoading(false);
     }
@@ -54,19 +53,14 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
       setSettings(res.data);
     } catch (err) {
-      console.error("❌ Error update settings:", err);
+      console.error("Error update settings:", err);
     }
   };
-  
+
 
   return (
     <SettingsContext.Provider
-      value={{
-        settings,
-        updateSettings,
-        loading,
-        refreshSettings: fetchSettings,
-      }}
+      value={{settings, updateSettings, loading, refreshSettings: fetchSettings}}
     >
       {children}
     </SettingsContext.Provider>

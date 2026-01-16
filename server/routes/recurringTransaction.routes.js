@@ -10,6 +10,7 @@ import {
 } from '../controllers/recurringTransaction.controller.js';
 
 const router = express.Router();
+
 router.get('/', authenticate, getRecurringTransactions);
 router.get('/:id', authenticate, getRecurringTransaction);
 router.post('/', authenticate, createRecurringTransaction);

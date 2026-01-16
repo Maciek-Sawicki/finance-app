@@ -11,7 +11,6 @@ const transactionSchema = new mongoose.Schema({
     ref: "Category",
     default: null,
     required: function () {
-      // only required if not part of an import
       return this.importId === null;
     }
   },

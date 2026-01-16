@@ -34,7 +34,6 @@ const calculateBudgetProgress = async (budget, userId, targetCurrency) => {
 
   let spentTotal = 0;
 
-  // calculate spentTotal in targetCurrency
   for (const tx of transactions) {
     try {
       const converted = await convertCurrency(tx.amount, tx.currency, targetCurrency);
@@ -44,7 +43,6 @@ const calculateBudgetProgress = async (budget, userId, targetCurrency) => {
     }
   }
 
-  // convert budget amount to targetCurrency if needed
   let convertedBudgetAmount = budget.amount;
   if (budget.currency !== targetCurrency) {
     try {
@@ -54,7 +52,8 @@ const calculateBudgetProgress = async (budget, userId, targetCurrency) => {
     }
   }
 
-  const progress = Math.min((spentTotal / convertedBudgetAmount) * 100, 100);
+  // const progress = Math.min((spentTotal / convertedBudgetAmount) * 100, 100);
+  const progress = (spentTotal / convertedBudgetAmount) * 100;
 
   return {
     ...budget,
@@ -225,10 +224,10 @@ export const getBudgetsByType = async (req, res) => {
 
     const filter = { userId, status };
 
-    if (status === "active") {
-      filter.startDate = { $lte: now };
-      filter.endDate = { $gte: now };
-    }
+    // if (status === "active") {
+    //   filter.startDate = { $lte: now };
+    //   filter.endDate = { $gte: now };
+    // }
 
     const budgets = await Budget.find(filter)
       .populate("categoryId", "name icon color type")

@@ -33,7 +33,7 @@ export const RecurringTransactionsProvider: React.FC<{ children: React.ReactNode
     setError(null);
     try {
       const res = await RecurringTransactionsService.getAll();
-      setTransactions(res); // zakładamy, że getAll zwraca już tablicę
+      setTransactions(res);
     } catch (e: any) {
       setError(e?.message || "Failed to load recurring transactions");
     } finally {
