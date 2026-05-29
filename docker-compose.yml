@@ -4,7 +4,7 @@ services:
       context: ./server
     env_file: ./server/.env
     environment:
-      CLIENT_URL: http://localhost
+      CLIENT_URL: https://localhost
     restart: unless-stopped
 
   client:
@@ -12,8 +12,12 @@ services:
       context: ./client
       args:
         VITE_API_URL: /api
+        VITE_WS_URL: wss://localhost/ws
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./server/certs:/etc/nginx/certs:ro
     depends_on:
       - server
     restart: unless-stopped

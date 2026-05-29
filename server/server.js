@@ -21,6 +21,7 @@ import importRoutes from './routes/import.routes.js';
 
 import { fetchRatesJob } from "./cron/fetchRatesJob.js";
 import { startRecurringTransactionJob } from "./cron/recurringTransactionsJob.js";
+import { initWebSocket } from "./ws.js";
 
 import connectMongoDB from './db/connectMongoDB.js';
 
@@ -50,29 +51,19 @@ app.use('/api/budgets', budgetRoutes);
 app.use('/api/recurring-transactions', RecurringTransactionRoutes);
 app.use('/api/imports', importRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Server works on port ${PORT}`);
+const httpsOptions = {
+  key: fs.readFileSync("./certs/server.key"),
+  cert: fs.readFileSync("./certs/server.cert"),
+};
+
+const httpsServer = https.createServer(httpsOptions, app);
+initWebSocket(httpsServer);
+
+httpsServer.listen(PORT, () => {
+  console.log(`HTTPS server running on port ${PORT}`);
   connectMongoDB();
 
   fetchRatesJob();
   startRecurringTransactionJob();
-}); 
+});
 
-// const httpsOptions = {
-//   key: fs.readFileSync("./certs/server.key"),
-//   cert: fs.readFileSync("./certs/server.cert"),
-// };
-
-// // Serwer HTTPS
-// https.createServer(httpsOptions, app).listen(8443, () => {
-//   console.log("HTTPS server running on port 8443");
-//   connectMongoDB();
-
-//   fetchRatesJob();
-//   startRecurringTransactionJob();
-// });
-
-// http.createServer((req, res) => {
-//   res.writeHead(301, { Location: "https://" + req.headers.host + req.url });
-//   res.end();
-// }).listen(PORT);
