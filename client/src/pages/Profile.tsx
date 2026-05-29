@@ -16,7 +16,7 @@ import { countryConfig, type SupportedCountry } from "@/lib/countryConfig";
 import { useUserSettings } from "@/contexts/UserSettingsContext";
 
 export default function ProfilePage() {
-  const { settings: contextSettings, updateSettings: updateContextSettings } = useUserSettings();
+  const { updateSettings: updateContextSettings } = useUserSettings();
 
   const [user, setUser] = useState<User | null>(null);
   const [settings, setSettings] = useState<UserSettings | null>(null);

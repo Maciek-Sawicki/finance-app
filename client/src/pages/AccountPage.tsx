@@ -15,7 +15,7 @@ import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 export default function AccountPage() {
   const { id } = useParams<{ id: string }>();
   const [account, setAccount] = useState<Account | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [refreshSignal, setRefreshSignal] = useState(0);

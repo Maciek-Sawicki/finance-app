@@ -1,0 +1,19 @@
+services:
+  server:
+    build:
+      context: ./server
+    env_file: ./server/.env
+    environment:
+      CLIENT_URL: http://localhost
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+      args:
+        VITE_API_URL: /api
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    restart: unless-stopped
