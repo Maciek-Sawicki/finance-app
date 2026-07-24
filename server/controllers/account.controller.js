@@ -1,11 +1,9 @@
-import Account from "../models/account.model.js";
-import Transaction from "../models/transaction.model.js";
-import { convertCurrency, getRates } from "../services/exchangeRate.service.js";
+import * as accountService from "../services/account.service.js";
+import { convertCurrency } from "../services/exchangeRate.service.js";
 
 export const createAccount = async (req, res) => {
   try {
     const { name, type, currency, startingBalance, icon, description, isDefault } = req.body;
-    const userId = req.user._id;
 
     if (!name || !type || !currency || startingBalance === undefined) {
       return res.status(400).json({ message: "Name, type, currency and startingBalance are required." });
@@ -15,19 +13,11 @@ export const createAccount = async (req, res) => {
       return res.status(400).json({ message: "startingBalance must be a non-negative number." });
     }
 
-    const newAccount = new Account({
-      userId,
-      name,
-      type,
-      currency,
-      startingBalance: Number(startingBalance.toFixed(2)),
-      icon,
-      description,
-      isDefault
+    const account = await accountService.create(req.user._id, {
+      name, type, currency, startingBalance, icon, description, isDefault,
     });
 
-    await newAccount.save();
-    res.status(201).json({ message: "Account created successfully", account: newAccount });
+    res.status(201).json({ message: "Account created successfully", account });
   } catch (error) {
     console.error("Error creating account:", error);
     res.status(500).json({ message: "Internal server error." });
@@ -36,114 +26,52 @@ export const createAccount = async (req, res) => {
 
 export const getAccounts = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const targetCurrency = req.query.currency ?? "USD"; // waluta docelowa
-
-    const accounts = await Account.find({ userId }).sort({ createdAt: -1 });
+    const targetCurrency = req.query.currency ?? "USD";
+    const accounts = await accountService.list(req.user._id);
 
     if (accounts.length === 0) {
       return res.status(404).json({ message: "No accounts found." });
     }
 
-    const accountsWithBalance = await Promise.all(
-      accounts.map(async (account) => {
-        const result = await Transaction.aggregate([
-          { $match: { accountId: account._id, userId, settled: true } },
-          {
-            $group: {
-              _id: null,
-              income: {
-                $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] },
-              },
-              expense: {
-                $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] },
-              },
-            },
-          },
-        ]);
-
-        let balance = account.startingBalance || 0;
-        if (result.length > 0) balance += result[0].income - result[0].expense;
-
-        // przelicz na walutę docelową
-        const convertedBalance = await convertCurrency(
-          balance,
-          account.currency, // zakładam, że masz pole currency w koncie
-          targetCurrency
-        );
-
-        return {
-          ...account.toObject(),
-          balance,
-          convertedBalance,
-          convertedCurrency: targetCurrency,
-        };
-      })
+    const accountsWithConverted = await Promise.all(
+      accounts.map(async (account) => ({
+        ...account,
+        convertedBalance: await convertCurrency(account.balance, account.currency, targetCurrency),
+        convertedCurrency: targetCurrency,
+      }))
     );
 
-    res.status(200).json(accountsWithBalance);
+    res.status(200).json(accountsWithConverted);
   } catch (error) {
     console.error("Error fetching accounts:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 };
 
-
 export const getAccount = async (req, res) => {
   try {
-    const account = await Account.findOne({ _id: req.params.id, userId: req.user._id });
+    const account = await accountService.getById(req.user._id, req.params.id);
     if (!account) {
       return res.status(404).json({ message: "Account not found." });
     }
-
-    const result = await Transaction.aggregate([
-      { $match: { accountId: account._id, userId: req.user._id, settled: true } },
-      {
-        $group: {
-          _id: null,
-          income: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
-          expense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } },
-        }
-      }
-    ]);
-
-    let balance = account.startingBalance || 0;
-    if (result.length > 0) balance += result[0].income - result[0].expense;
-
-    res.status(200).json({ ...account.toObject(), balance });
+    res.status(200).json(account);
   } catch (error) {
     console.error("Error fetching account:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 };
 
-
 export const updateAccount = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const accountId = req.params.id;
-
     const { name, type, currency, startingBalance, icon, description, isDefault } = req.body;
 
-    const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (type !== undefined) updateData.type = type;
-    if (currency !== undefined) updateData.currency = currency;
-    if (startingBalance !== undefined) {
-      if (isNaN(startingBalance) || startingBalance < 0) {
-        return res.status(400).json({ message: "startingBalance must be a non-negative number." });
-      }
-      updateData.startingBalance = Number(startingBalance.toFixed(2));
+    if (startingBalance !== undefined && (isNaN(startingBalance) || startingBalance < 0)) {
+      return res.status(400).json({ message: "startingBalance must be a non-negative number." });
     }
-    if (icon !== undefined) updateData.icon = icon;
-    if (description !== undefined) updateData.description = description;
-    if (isDefault !== undefined) updateData.isDefault = isDefault;
 
-    const updated = await Account.findOneAndUpdate(
-      { _id: accountId, userId },
-      updateData,
-      { new: true }
-    );
+    const updated = await accountService.update(req.user._id, req.params.id, {
+      name, type, currency, startingBalance, icon, description, isDefault,
+    });
 
     if (!updated) {
       return res.status(404).json({ message: "Account not found." });
@@ -156,19 +84,12 @@ export const updateAccount = async (req, res) => {
   }
 };
 
-
 export const deleteAccount = async (req, res) => {
   try {
-    const accountId = req.params.id;
-    const userId = req.user._id;
-
-    const deleted = await Account.findOneAndDelete({ _id: accountId, userId });
+    const deleted = await accountService.remove(req.user._id, req.params.id);
     if (!deleted) {
       return res.status(404).json({ message: "Account not found." });
     }
-
-    await Transaction.deleteMany({ accountId, userId });
-
     res.status(200).json({ message: "Account and related transactions deleted successfully" });
   } catch (error) {
     console.error("Error deleting account:", error);
@@ -176,43 +97,13 @@ export const deleteAccount = async (req, res) => {
   }
 };
 
-
 export const setDefaultAccount = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const accountId = req.params.id;
-
-    await Account.updateMany({ userId }, { $set: { isDefault: false } });
-
-    const updatedAccount = await Account.findOneAndUpdate(
-      { _id: accountId, userId },
-      { $set: { isDefault: true } },
-      { new: true }
-    );
-
-    if (!updatedAccount) {
+    const account = await accountService.setDefault(req.user._id, req.params.id);
+    if (!account) {
       return res.status(404).json({ message: "Account not found." });
     }
-
-    const result = await Transaction.aggregate([
-      { $match: { accountId: updatedAccount._id, userId, settled: true } },
-      {
-        $group: {
-          _id: null,
-          income: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
-          expense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } },
-        }
-      }
-    ]);
-
-    let balance = updatedAccount.startingBalance || 0;
-    if (result.length > 0) balance += result[0].income - result[0].expense;
-
-    res.status(200).json({
-      message: "Default account set successfully",
-      account: { ...updatedAccount.toObject(), balance }
-    });
-
+    res.status(200).json({ message: "Default account set successfully", account });
   } catch (error) {
     console.error("Error setting default account:", error);
     res.status(500).json({ message: "Internal server error." });
@@ -221,80 +112,21 @@ export const setDefaultAccount = async (req, res) => {
 
 export const getDefaultAccount = async (req, res) => {
   try {
-    const userId = req.user._id;
-
-    const defaultAccount = await Account.findOne({ userId, isDefault: true }).lean();
-    if (!defaultAccount) {
+    const account = await accountService.getDefault(req.user._id);
+    if (!account) {
       return res.status(404).json({ message: "No default account found." });
     }
-
-    const result = await Transaction.aggregate([
-      { $match: { accountId: defaultAccount._id, userId } },
-      {
-        $group: {
-          _id: null,
-          incomeSettled: { $sum: { $cond: [{ $and: [{ $eq: ["$type", "income"] }, { $eq: ["$settled", true] }] }, "$amount", 0] } },
-          expenseSettled: { $sum: { $cond: [{ $and: [{ $eq: ["$type", "expense"] }, { $eq: ["$settled", true] }] }, "$amount", 0] } },
-          incomeAll: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
-          expenseAll: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } },
-        }
-      }
-    ]);
-
-    const startingBalance = defaultAccount.startingBalance || 0;
-
-    let balanceSettled = startingBalance;
-    let balanceAfterRP = startingBalance;
-
-    if (result.length > 0) {
-      balanceSettled += result[0].incomeSettled - result[0].expenseSettled;
-      balanceAfterRP += result[0].incomeAll - result[0].expenseAll;
-    }
-
-    res.status(200).json({
-      ...defaultAccount,
-      balance: Number(balanceSettled.toFixed(2)),
-      balanceAfterRP: Number(balanceAfterRP.toFixed(2)),
-      currency: defaultAccount.currency,
-    });
-
+    res.status(200).json(account);
   } catch (error) {
     console.error("Error fetching default account:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 };
 
-
 export const getAccountsByType = async (req, res) => {
   try {
-    const { type } = req.params;
-    const userId = req.user._id;
-
-    const accounts = await Account.find({ userId, type }).sort({ createdAt: -1 });
-
-    if (!accounts.length) {
-      return res.status(200).json([]);
-    }
-
-    const accountsWithBalance = await Promise.all(accounts.map(async (account) => {
-      const result = await Transaction.aggregate([
-        { $match: { accountId: account._id, userId, settled: true } },
-        {
-          $group: {
-            _id: null,
-            income: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
-            expense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } },
-          }
-        }
-      ]);
-
-      let balance = account.startingBalance || 0;
-      if (result.length > 0) balance += result[0].income - result[0].expense;
-
-      return { ...account.toObject(), balance };
-    }));
-
-    res.status(200).json(accountsWithBalance);
+    const accounts = await accountService.list(req.user._id, { type: req.params.type });
+    res.status(200).json(accounts);
   } catch (error) {
     console.error("Error fetching accounts by type:", error);
     res.status(500).json({ message: "Internal server error." });
@@ -303,34 +135,8 @@ export const getAccountsByType = async (req, res) => {
 
 export const getAccountsByCurrency = async (req, res) => {
   try {
-    const { currency } = req.params;
-    const userId = req.user._id;
-
-    const accounts = await Account.find({ userId, currency }).sort({ createdAt: -1 });
-
-    if (!accounts.length) {
-      return res.status(200).json([]);
-    }
-
-    const accountsWithBalance = await Promise.all(accounts.map(async (account) => {
-      const result = await Transaction.aggregate([
-        { $match: { accountId: account._id, userId, settled: true } },
-        {
-          $group: {
-            _id: null,
-            income: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
-            expense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } },
-          }
-        }
-      ]);
-
-      let balance = account.startingBalance || 0;
-      if (result.length > 0) balance += result[0].income - result[0].expense;
-
-      return { ...account.toObject(), balance };
-    }));
-
-    res.status(200).json(accountsWithBalance);
+    const accounts = await accountService.list(req.user._id, { currency: req.params.currency });
+    res.status(200).json(accounts);
   } catch (error) {
     console.error("Error fetching accounts by currency:", error);
     res.status(500).json({ message: "Internal server error." });
@@ -339,30 +145,10 @@ export const getAccountsByCurrency = async (req, res) => {
 
 export const getAccountBalance = async (req, res) => {
   try {
-    const accountId = req.params.id;
-    const userId = req.user._id;
-
-    const account = await Account.findOne({ _id: accountId, userId });
-    if (!account) {
+    const balance = await accountService.getBalance(req.user._id, req.params.id);
+    if (balance === null) {
       return res.status(404).json({ message: "Account not found." });
     }
-
-    const result = await Transaction.aggregate([
-      { $match: { accountId: account._id, userId, settled: true } },
-      {
-        $group: {
-          _id: null,
-          income: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
-          expense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } },
-        }
-      }
-    ]);
-
-    let balance = account.startingBalance || 0;
-    if (result.length > 0) {
-      balance += result[0].income - result[0].expense;
-    }
-
     res.status(200).json({ balance });
   } catch (error) {
     console.error("Error fetching account balance:", error);
@@ -372,99 +158,17 @@ export const getAccountBalance = async (req, res) => {
 
 export const getTotalBalance = async (req, res) => {
   try {
-    const userId = req.user._id;
     const baseCurrency = req.query.base;
-
     if (!baseCurrency) {
       return res.status(400).json({ message: "Base currency is required" });
     }
 
-    // Pobranie kont użytkownika
-    const accounts = await Account.find({ userId }).lean();
-    if (accounts.length === 0) {
+    const totals = await accountService.getTotalBalance(req.user._id, baseCurrency);
+    if (!totals) {
       return res.status(404).json({ message: "No accounts found." });
     }
 
-    // Pobranie najnowszych kursów walut (z cache w serwisie)
-    const rates = await getRates("USD");
-
-    // Agregacja transakcji (opcjonalna – nie wszystkie konta ją mają)
-    const transactionAgg = await Transaction.aggregate([
-      { $match: { userId } },
-      {
-        $group: {
-          _id: "$accountId",
-          incomeSettled: {
-            $sum: {
-              $cond: [
-                { $and: [{ $eq: ["$type", "income"] }, { $eq: ["$settled", true] }] },
-                "$amount",
-                0
-              ]
-            }
-          },
-          expenseSettled: {
-            $sum: {
-              $cond: [
-                { $and: [{ $eq: ["$type", "expense"] }, { $eq: ["$settled", true] }] },
-                "$amount",
-                0
-              ]
-            }
-          },
-          incomeAll: {
-            $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] }
-          },
-          expenseAll: {
-            $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] }
-          }
-        }
-      }
-    ]);
-
-    // Mapowanie agregacji po accountId
-    const txMap = {};
-    transactionAgg.forEach(tx => {
-      txMap[tx._id.toString()] = tx;
-    });
-
-    let total = 0;
-    let totalAfterRP = 0;
-
-    // Iteracja po WSZYSTKICH kontach (również bez transakcji)
-    for (const acc of accounts) {
-      const tx = txMap[acc._id.toString()];
-
-      const startingBalance = acc.startingBalance || 0;
-
-      const incomeSettled = tx?.incomeSettled || 0;
-      const expenseSettled = tx?.expenseSettled || 0;
-      const incomeAll = tx?.incomeAll || 0;
-      const expenseAll = tx?.expenseAll || 0;
-
-      const balanceSettled = startingBalance + (incomeSettled - expenseSettled);
-      const balanceAll = startingBalance + (incomeAll - expenseAll);
-
-      const rateFrom = Number(rates[acc.currency]);
-      const rateTo = Number(rates[baseCurrency]);
-
-      if (!rateFrom || !rateTo) {
-        throw new Error(`Unsupported currency: ${acc.currency} or ${baseCurrency}`);
-      }
-
-      const convertedSettled = (balanceSettled / rateFrom) * rateTo;
-      const convertedAll = (balanceAll / rateFrom) * rateTo;
-
-      total += convertedSettled;
-      totalAfterRP += convertedAll;
-    }
-
-    res.status(200).json({
-      totalBalance: Number(total.toFixed(2)),
-      totalAfterRP: Number(totalAfterRP.toFixed(2)),
-      currency: baseCurrency,
-    });
-
+    res.status(200).json({ ...totals, currency: baseCurrency });
   } catch (error) {
     console.error("Error calculating total balance:", error);
     res.status(500).json({ message: "Internal server error." });
@@ -473,114 +177,9 @@ export const getTotalBalance = async (req, res) => {
 
 export const getAccountSummary = async (req, res) => {
   try {
-    const userId = req.user._id;
     const targetCurrency = req.query.currency || "USD";
-
-    const accounts = await Account.find({ userId });
-    if (!accounts.length) {
-      return res.status(200).json({
-        currency: targetCurrency,
-        accounts: [],
-        total: 0,
-        totalAfterRAndP: 0,
-      });
-    }
-
-    const summary = await Promise.all(
-      accounts.map(async (account) => {
-        const resultSettled = await Transaction.aggregate([
-          {
-            $match: {
-              accountId: account._id,
-              userId,
-              settled: true,
-            },
-          },
-          {
-            $group: {
-              _id: null,
-              income: {
-                $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] },
-              },
-              expense: {
-                $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] },
-              },
-            },
-          },
-        ]);
-
-        const resultUnsettled = await Transaction.aggregate([
-          {
-            $match: {
-              accountId: account._id,
-              userId,
-              settled: false,
-            },
-          },
-          {
-            $group: {
-              _id: null,
-              receivables: {
-                $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] },
-              },
-              payables: {
-                $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] },
-              },
-            },
-          },
-        ]);
-
-        const settled =
-          resultSettled.length > 0
-            ? resultSettled[0].income - resultSettled[0].expense
-            : 0;
-
-        const unsettled =
-          resultUnsettled.length > 0
-            ? resultUnsettled[0].receivables - resultUnsettled[0].payables
-            : 0;
-
-        const baseBalance = account.startingBalance || 0;
-        const balanceSettled = baseBalance + settled;
-        const balanceWithReceivablesAndPayables = balanceSettled + unsettled;
-
-        const convertedSettled = await convertCurrency(
-          balanceSettled,
-          account.currency,
-          targetCurrency
-        );
-        const convertedWithRAndP = await convertCurrency(
-          balanceWithReceivablesAndPayables,
-          account.currency,
-          targetCurrency
-        );
-
-        return {
-          id: account._id,
-          name: account.name,
-          type: account.type,
-          currency: account.currency,
-          originalSettled: balanceSettled,
-          originalWithRAndP: balanceWithReceivablesAndPayables,
-          convertedSettled,
-          convertedWithRAndP,
-          isDefault: account.isDefault,
-        };
-      })
-    );
-
-    const total = summary.reduce((acc, s) => acc + s.convertedSettled, 0);
-    const totalAfterRAndP = summary.reduce(
-      (acc, s) => acc + s.convertedWithRAndP,
-      0
-    );
-
-    res.status(200).json({
-      currency: targetCurrency,
-      accounts: summary,
-      total,
-      totalAfterRAndP,
-    });
+    const summary = await accountService.getSummary(req.user._id, targetCurrency);
+    res.status(200).json({ currency: targetCurrency, ...summary });
   } catch (error) {
     console.error("Error fetching account summary:", error);
     res.status(500).json({ message: "Internal server error." });

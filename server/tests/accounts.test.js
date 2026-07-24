@@ -2,12 +2,10 @@ import request from 'supertest';
 import express from 'express';
 import { getAccounts } from '../controllers/account.controller.js';
 
-import Account from '../models/account.model.js';
-import Transaction from '../models/transaction.model.js';
+import * as accountService from '../services/account.service.js';
 import { convertCurrency } from '../services/exchangeRate.service.js';
 
-jest.mock('../models/account.model.js');
-jest.mock('../models/transaction.model.js');
+jest.mock('../services/account.service.js');
 jest.mock('../services/exchangeRate.service.js');
 
 const app = express();
@@ -20,11 +18,14 @@ app.use((req, res, next) => {
 
 app.get('/api/accounts', getAccounts);
 
+// The controller now only talks to accountService, so the test mocks that
+// service directly instead of the Mongoose models it used to call - no more
+// chaining .find().sort() mocks to match the query shape.
 describe('GET /api/accounts', () => {
   afterEach(() => jest.clearAllMocks());
 
   it('zwraca 404 if accounts not found', async () => {
-    Account.find.mockReturnValue({ sort: jest.fn().mockResolvedValue([]) });
+    accountService.list.mockResolvedValue([]);
 
     const res = await request(app).get('/api/accounts?currency=USD');
 
@@ -32,28 +33,10 @@ describe('GET /api/accounts', () => {
     expect(res.body).toEqual({ message: 'No accounts found.' });
   });
 
-  it('should return accounts', async () => {
-    Account.find.mockReturnValue({
-      sort: jest.fn().mockResolvedValue([
-        {
-          _id: 'acc1',
-          startingBalance: 100,
-          currency: 'USD',
-          toObject: function () {
-            return {
-              _id: this._id,
-              startingBalance: this.startingBalance,
-              currency: this.currency,
-            };
-          },
-        },
-      ]),
-    });
-
-    Transaction.aggregate.mockResolvedValue([
-      { income: 50, expense: 20 },
+  it('should return accounts with converted balance', async () => {
+    accountService.list.mockResolvedValue([
+      { _id: 'acc1', startingBalance: 100, currency: 'USD', balance: 130, balanceAfterRP: 130 },
     ]);
-
     convertCurrency.mockImplementation((amount) => Promise.resolve(amount * 2));
 
     const res = await request(app).get('/api/accounts?currency=EUR');
@@ -68,8 +51,8 @@ describe('GET /api/accounts', () => {
     });
   });
 
-  it('return 500 if database error', async () => {
-    Account.find.mockReturnValue({ sort: jest.fn().mockRejectedValue(new Error('DB error')) });
+  it('return 500 if the service throws', async () => {
+    accountService.list.mockRejectedValue(new Error('DB error'));
 
     const res = await request(app).get('/api/accounts');
     expect(res.statusCode).toBe(500);
