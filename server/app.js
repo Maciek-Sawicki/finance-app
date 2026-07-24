@@ -1,6 +1,9 @@
+import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+
+dotenv.config();
 
 import authRoutes from './routes/auth.routes.js';
 import accountRoutes from './routes/account.routes.js';

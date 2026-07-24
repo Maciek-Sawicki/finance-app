@@ -56,8 +56,14 @@ const transactionSchema = new mongoose.Schema({
     default: null,
   }  
 }, {
-  timestamps: true, 
+  timestamps: true,
 });
+
+transactionSchema.index({ userId: 1, date: -1 });
+transactionSchema.index({ userId: 1, accountId: 1 });
+transactionSchema.index({ userId: 1, categoryId: 1 });
+transactionSchema.index({ importId: 1 });
+transactionSchema.index({ transferId: 1 });
 
 const Transaction = mongoose.model("Transaction", transactionSchema);
 export default Transaction;

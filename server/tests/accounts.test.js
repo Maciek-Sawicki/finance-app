@@ -17,14 +17,14 @@ app.use((req, res, next) => {
   req.user = { _id: 'user123' };
   next();
 });
-y
+
 app.get('/api/accounts', getAccounts);
 
 describe('GET /api/accounts', () => {
   afterEach(() => jest.clearAllMocks());
 
   it('zwraca 404 if accounts not found', async () => {
-    Account.find.mockResolvedValue([]);
+    Account.find.mockReturnValue({ sort: jest.fn().mockResolvedValue([]) });
 
     const res = await request(app).get('/api/accounts?currency=USD');
 
@@ -33,20 +33,22 @@ describe('GET /api/accounts', () => {
   });
 
   it('should return accounts', async () => {
-    Account.find.mockResolvedValue([
-      {
-        _id: 'acc1',
-        startingBalance: 100,
-        currency: 'USD',
-        toObject: function () {
-          return {
-            _id: this._id,
-            startingBalance: this.startingBalance,
-            currency: this.currency,
-          };
+    Account.find.mockReturnValue({
+      sort: jest.fn().mockResolvedValue([
+        {
+          _id: 'acc1',
+          startingBalance: 100,
+          currency: 'USD',
+          toObject: function () {
+            return {
+              _id: this._id,
+              startingBalance: this.startingBalance,
+              currency: this.currency,
+            };
+          },
         },
-      },
-    ]);
+      ]),
+    });
 
     Transaction.aggregate.mockResolvedValue([
       { income: 50, expense: 20 },
@@ -60,14 +62,14 @@ describe('GET /api/accounts', () => {
     expect(res.body.length).toBe(1);
     expect(res.body[0]).toMatchObject({
       _id: 'acc1',
-      balance: 130, 
-      convertedBalance: 260, 
+      balance: 130,
+      convertedBalance: 260,
       convertedCurrency: 'EUR',
     });
   });
 
   it('return 500 if database error', async () => {
-    Account.find.mockRejectedValue(new Error('DB error'));
+    Account.find.mockReturnValue({ sort: jest.fn().mockRejectedValue(new Error('DB error')) });
 
     const res = await request(app).get('/api/accounts');
     expect(res.statusCode).toBe(500);
