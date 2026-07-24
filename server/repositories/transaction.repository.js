@@ -29,3 +29,44 @@ export const aggregateBalancesByAccount = async (userId) => {
 
 export const deleteByAccount = (userId, accountId) =>
   Transaction.deleteMany({ userId, accountId });
+
+export const create = async (data, { session } = {}) => {
+  const [doc] = await Transaction.create([data], { session, ordered: true });
+  return doc;
+};
+
+// For multi-document writes (e.g. a transfer's two legs) that must land in
+// the same session/transaction as sibling writes. Mongoose requires
+// `ordered: true` explicitly when create() is called with both a session
+// and more than one document.
+export const createMany = (docs, { session } = {}) => Transaction.create(docs, { session, ordered: true });
+
+export const findById = (userId, transactionId) =>
+  Transaction.findOne({ _id: transactionId, userId }).populate("categoryId accountId");
+
+export const updateById = (userId, transactionId, updateData) =>
+  Transaction.findOneAndUpdate({ _id: transactionId, userId }, updateData, { new: true });
+
+export const deleteById = (userId, transactionId) =>
+  Transaction.findOneAndDelete({ _id: transactionId, userId });
+
+// Aggregation-pipeline update: flips the flag atomically server-side instead
+// of a read-then-save round trip.
+export const toggleSettledById = (userId, transactionId) =>
+  Transaction.findOneAndUpdate(
+    { _id: transactionId, userId },
+    [{ $set: { settled: { $not: "$settled" } } }],
+    { new: true }
+  );
+
+export const findPaginated = (userId, filter, { skip, limit }) =>
+  Transaction.find({ userId, ...filter })
+    .sort({ date: -1 })
+    .skip(skip)
+    .limit(limit)
+    .populate("categoryId accountId");
+
+export const count = (userId, filter) => Transaction.countDocuments({ userId, ...filter });
+
+export const findRecent = (userId, limit) =>
+  Transaction.find({ userId }).sort({ date: -1 }).limit(limit).populate("categoryId accountId");
