@@ -1,7 +1,6 @@
 import Account from "../models/account.model.js";
 import Transaction from "../models/transaction.model.js";
-import ExchangeRate from "../models/exchangeRate.model.js";
-import { convertCurrency } from "../services/exchangeRate.service.js";
+import { convertCurrency, getRates } from "../services/exchangeRate.service.js";
 
 export const createAccount = async (req, res) => {
   try {
@@ -386,17 +385,8 @@ export const getTotalBalance = async (req, res) => {
       return res.status(404).json({ message: "No accounts found." });
     }
 
-    // Pobranie najnowszych kursów walut
-    const ratesDoc = await ExchangeRate
-      .findOne({ base: "USD" })
-      .sort({ createdAt: -1 })
-      .lean();
-
-    if (!ratesDoc) {
-      throw new Error("No exchange rates found.");
-    }
-
-    const rates = ratesDoc.rates;
+    // Pobranie najnowszych kursów walut (z cache w serwisie)
+    const rates = await getRates("USD");
 
     // Agregacja transakcji (opcjonalna – nie wszystkie konta ją mają)
     const transactionAgg = await Transaction.aggregate([

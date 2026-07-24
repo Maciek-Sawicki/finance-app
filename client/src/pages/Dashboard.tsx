@@ -6,15 +6,10 @@ import { LastTransactionsTable } from "@/components/Dashboard/LastTransactionsTa
 import { AccountSummaryTable } from "@/components/Dashboard/AccountSummaryTable";
 import { TotalBalanceCard } from "@/components/Accounts/TotalBalance";
 import { DefaultAccountCard } from "@/components/Accounts/DefaultAccount";
-import { CurrencyTicker } from "@/components/CurrencyTicker";
 
 export default function Dashboard() {
   return (
     <div className="grid gap-6 p-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-min">
-
-      <div className="col-span-full">
-        <CurrencyTicker />
-      </div>
 
       <div className="col-span-1">
         <TotalBalanceCard />

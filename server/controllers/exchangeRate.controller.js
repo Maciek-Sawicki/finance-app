@@ -1,5 +1,4 @@
-import { fetchAndSaveRates, convertCurrency } from '../services/exchangeRate.service.js';
-import ExchangeRate from '../models/exchangeRate.model.js';
+import { fetchAndSaveRates, convertCurrency, getLatestDocument } from '../services/exchangeRate.service.js';
 
 export const updateExchangeRates = async (req, res) => {
   try {
@@ -29,7 +28,7 @@ export const convertAmount = async (req, res) => {
 
 export const getAvailableCurrencies = async (req, res) => {
   try {
-    const ratesDoc = await ExchangeRate.findOne().sort({ createdAt: -1 }).lean();
+    const ratesDoc = await getLatestDocument();
     if (!ratesDoc) {
       return res.status(404).json({ message: "No exchange rates found." });
     }
@@ -51,7 +50,7 @@ const POPULAR_CURRENCIES = [
 
 export const getPopularCurrencies = async (req, res) => {
   try {
-    const ratesDoc = await ExchangeRate.findOne().sort({ createdAt: -1 }).lean();
+    const ratesDoc = await getLatestDocument();
 
     if (!ratesDoc) {
       return res.status(404).json({ message: "No exchange rates found." });
@@ -73,7 +72,7 @@ export const getPopularCurrencies = async (req, res) => {
 export const getExchangeRates = async (req, res) => {
   try {
     const { base } = req.query;
-    const ratesDoc = await ExchangeRate.findOne(base ? { base } : {}).sort({ createdAt: -1 }).lean();
+    const ratesDoc = await getLatestDocument(base);
 
     if (!ratesDoc) {
       return res.status(404).json({ message: "No exchange rates found." });

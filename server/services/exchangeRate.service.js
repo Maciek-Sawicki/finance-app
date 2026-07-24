@@ -1,46 +1,68 @@
-import axios from 'axios';
-import ExchangeRate from '../models/exchangeRate.model.js';
+import axios from "axios";
+import * as exchangeRateRepository from "../repositories/exchangeRate.repository.js";
 
-export const fetchAndSaveRates = async (baseCurrency = "USD") => {
-  try {
-    const url = `https://api.exchangerate-api.com/v4/latest/${baseCurrency}`;
-    const { data } = await axios.get(url);
-    if (!data || !data.rates) {
-      throw new Error('Failed to fetch exchange rates.');
+const DEFAULT_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // matches fetchRatesJob's cron cadence
+
+// Factory instead of a hard-coded singleton so tests can inject a fake
+// repository and get their own isolated cache, without mocking Mongoose.
+export const createExchangeRateService = (repository, { cacheTtlMs = DEFAULT_CACHE_TTL_MS } = {}) => {
+  const cache = new Map(); // base currency -> { rates, fetchedAt }
+  const isFresh = (entry) => Boolean(entry) && Date.now() - entry.fetchedAt < cacheTtlMs;
+
+  const fetchAndSaveRates = async (baseCurrency = "USD") => {
+    const { data } = await axios.get(`https://api.exchangerate-api.com/v4/latest/${baseCurrency}`);
+    if (!data?.rates) {
+      throw new Error("Failed to fetch exchange rates.");
     }
 
-    const newRates = new ExchangeRate({
+    const saved = await repository.insertRates({
       base: data.base,
       rates: data.rates,
       date: new Date(data.date),
     });
 
-    await newRates.save();
-    console.log('Exchange rates updated successfully');
-    return newRates;
-  } catch (error) {
-    console.error('Error fetching exchange rates:', error);
-    throw error;
-  }
+    cache.set(data.base, { rates: data.rates, fetchedAt: Date.now() });
+    return saved;
+  };
+
+  // Returns just the { [currencyCode]: rate } map for a base currency, cached
+  // for cacheTtlMs so a request that converts hundreds of transactions doesn't
+  // hit the database once per conversion.
+  const getRates = async (baseCurrency) => {
+    const cached = cache.get(baseCurrency);
+    if (isFresh(cached)) return cached.rates;
+
+    const doc = await repository.findLatest({ base: baseCurrency });
+    if (!doc) throw new Error("No exchange rates found.");
+
+    cache.set(baseCurrency, { rates: doc.rates, fetchedAt: Date.now() });
+    return doc.rates;
+  };
+
+  // Full ExchangeRate document (base/date/rates), for endpoints that need the
+  // envelope rather than just the rates. Deliberately not cached: it's read
+  // rarely (currency browsing), unlike convertCurrency's hot path.
+  const getLatestDocument = (baseCurrency) =>
+    repository.findLatest(baseCurrency ? { base: baseCurrency } : {});
+
+  const convertCurrency = async (amount, from, to, baseCurrency = "USD") => {
+    const rates = await getRates(baseCurrency);
+
+    const rateFrom = Number(rates[from]);
+    const rateTo = Number(rates[to]);
+    if (!rateFrom || !rateTo) {
+      throw new Error(`Unsupported currency: ${from} or ${to}`);
+    }
+
+    return Number(((amount / rateFrom) * rateTo).toFixed(2));
+  };
+
+  return { fetchAndSaveRates, getRates, getLatestDocument, convertCurrency };
 };
 
-export const convertCurrency = async (amount, from, to, baseCurrency = "USD") => {
-  const ratesDoc = await ExchangeRate.findOne({ base: baseCurrency }).sort({ createdAt: -1 }).lean();
+const defaultService = createExchangeRateService(exchangeRateRepository);
 
-  if (!ratesDoc) throw new Error("No exchange rates found.");
-
-  const rates = ratesDoc.rates;
-
-  if (!rates[from] || !rates[to]) {
-    console.error("Available currencies:", Object.keys(rates));
-    throw new Error("Unsupported currency: " + from + " or " + to);
-  }
-
-  const rateFrom = Number(rates[from]);
-  const rateTo = Number(rates[to]);
-
-  const amountInBase = amount / rateFrom;
-  const converted = amountInBase * rateTo;
-
-  return Number(converted.toFixed(2));
-};
+export const fetchAndSaveRates = defaultService.fetchAndSaveRates;
+export const getRates = defaultService.getRates;
+export const getLatestDocument = defaultService.getLatestDocument;
+export const convertCurrency = defaultService.convertCurrency;
