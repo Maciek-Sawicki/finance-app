@@ -76,6 +76,36 @@ export const aggregateMonthlySummary = (userId: Id) =>
     },
   ]);
 
+export interface CategoryPeriodTotalRow {
+  _id: { period: string; categoryId: mongoose.Types.ObjectId | null; currency: string | null };
+  categoryName: string | null;
+  icon: string | null;
+  color: string | null;
+  totalAmount: number;
+}
+
+// Shared by the monthly/yearly top-categories breakdown - only the
+// $dateToString format ("%Y-%m" vs "%Y") differs between the two, so one
+// pipeline serves both instead of keeping two ~30-line copies in sync.
+export const aggregateCategoryTotalsByPeriod = (userId: Id, type: string, dateFormat: "%Y-%m" | "%Y") =>
+  Transaction.aggregate<CategoryPeriodTotalRow>([
+    { $match: { userId, type, exclude: { $ne: true }, settled: true } },
+    { $lookup: { from: "categories", localField: "categoryId", foreignField: "_id", as: "category" } },
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+    { $match: { $or: [{ "category.type": { $ne: "transfer" } }, { category: null }] } },
+    { $lookup: { from: "accounts", localField: "accountId", foreignField: "_id", as: "account" } },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+    {
+      $group: {
+        _id: { period: { $dateToString: { format: dateFormat, date: "$date" } }, categoryId: "$category._id", currency: "$account.currency" },
+        categoryName: { $first: "$category.name" },
+        icon: { $first: "$category.icon" },
+        color: { $first: "$category.color" },
+        totalAmount: { $sum: "$amount" },
+      },
+    },
+  ]);
+
 export const create = async (data: mongoose.AnyKeys<TransactionAttrs>, { session }: SessionOption = {}) => {
   const [doc] = await Transaction.create([data], { session, ordered: true });
   return doc;

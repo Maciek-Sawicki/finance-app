@@ -8,10 +8,16 @@ export const findByNameAndType = (userId: Id, name: string, type: string, { sess
 
 export const findById = (userId: Id, categoryId: Id) => Category.findOne({ _id: categoryId, userId }).lean();
 
+export const findByUser = (userId: Id, filter: mongoose.FilterQuery<CategoryAttrs> = {}) =>
+  Category.find({ userId, ...filter }).sort({ createdAt: -1 }).lean();
+
 export const create = async (data: mongoose.AnyKeys<CategoryAttrs>, { session }: SessionOption = {}) => {
   const [doc] = await Category.create([data], { session, ordered: true });
   return doc;
 };
+
+export const updateById = (userId: Id, categoryId: Id, updateData: mongoose.UpdateQuery<CategoryAttrs>) =>
+  Category.findOneAndUpdate({ _id: categoryId, userId }, updateData, { new: true }).lean();
 
 export const deleteById = (userId: Id, categoryId: Id) =>
   Category.findOneAndUpdate({ _id: categoryId, userId }, softDeleteUpdate(), { new: true }).lean();

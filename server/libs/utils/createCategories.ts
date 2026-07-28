@@ -1,7 +1,15 @@
 import mongoose from 'mongoose';
 import Category from '../../models/category.model.js';
+import type { SessionOption } from '../../types/common.js';
 
-export const initDefaultCategoriesForUser = async (userId: mongoose.Types.ObjectId | string): Promise<void> => {
+// Errors here used to be swallowed (caught and only console.error'd), which
+// left a real, working user account with zero categories and nothing
+// surfaced to the caller. Now propagates so the caller (auth.service.ts's
+// signUp transaction) can roll the whole sign-up back instead.
+export const initDefaultCategoriesForUser = async (
+  userId: mongoose.Types.ObjectId | string,
+  { session }: SessionOption = {}
+): Promise<void> => {
   const defaultCategories = [
     { name: "Food", type: "expense", icon: "🍔" },
     { name: "Transport", type: "expense", icon: "🚌" },
@@ -18,10 +26,5 @@ export const initDefaultCategoriesForUser = async (userId: mongoose.Types.Object
     userId,
   }));
 
-  try {
-    await Category.insertMany(categoriesToInsert);
-    console.log("Default categories created for user:", userId);
-  } catch (err) {
-    console.error("Error creating default categories:", err);
-  }
+  await Category.insertMany(categoriesToInsert, { session });
 };

@@ -12,4 +12,4 @@ const settingsSchema = new Schema({
 export type SettingsAttrs = InferSchemaType<typeof settingsSchema>;
 export type SettingsDocument = HydratedDocument<SettingsAttrs>;
 
-export default mongoose.model("Settings", settingsSchema);
+export default mongoose.model<SettingsAttrs>("Settings", settingsSchema);

@@ -1,4 +1,4 @@
-import Settings from "../models/settings.model.js";
+import * as settingsRepository from "../repositories/settings.repository.js";
 import { countryConfig } from "../libs/countryConfig.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 
@@ -12,7 +12,7 @@ interface SettingsUpdate {
 
 export const getSettings = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  let settings = await Settings.findOne({ userId });
+  let settings = await settingsRepository.findByUser(userId);
 
   if (!settings) {
     // The User schema has no country field, so this is always "US" - kept
@@ -20,7 +20,7 @@ export const getSettings = asyncHandler(async (req, res) => {
     const defaultCountry = "US";
     const locale = countryConfig[defaultCountry]?.locale || "en-US";
 
-    settings = await Settings.create({
+    settings = await settingsRepository.create({
       userId,
       defaultCurrency: "USD",
       favoriteCurrencies: ["USD", "EUR", "PLN"],
@@ -31,28 +31,6 @@ export const getSettings = asyncHandler(async (req, res) => {
   }
 
   res.status(200).json(settings);
-});
-
-export const createSettings = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
-
-  const existing = await Settings.findOne({ userId });
-  if (existing) {
-    return res.status(400).json({ message: "Settings already exist" });
-  }
-
-  const { defaultCurrency = "USD", theme = "system", country = "US" } = req.body;
-  const locale = countryConfig[country]?.locale || "en-US";
-
-  const newSettings = await Settings.create({
-    userId,
-    defaultCurrency,
-    theme,
-    country,
-    locale,
-  });
-
-  res.status(201).json(newSettings);
 });
 
 export const updateSettings = asyncHandler(async (req, res) => {
@@ -74,11 +52,7 @@ export const updateSettings = asyncHandler(async (req, res) => {
     }
   }
 
-  const updated = await Settings.findOneAndUpdate(
-    { userId },
-    { $set: updates },
-    { new: true, upsert: true }
-  );
+  const updated = await settingsRepository.updateByUser(userId, updates);
 
   res.status(200).json(updated);
 });

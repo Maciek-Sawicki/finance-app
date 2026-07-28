@@ -54,6 +54,19 @@ export const getTransaction = asyncHandler(async (req, res) => {
 });
 
 export const updateTransaction = asyncHandler(async (req, res) => {
+  const { type, amount } = req.body;
+
+  // create validates these; update skipped them entirely and forwarded
+  // req.body straight through, so a client could PUT a negative amount or a
+  // bogus type - since account balances are computed live from these rows
+  // (Transaction.aggregate), that silently corrupted the displayed balance.
+  if (type !== undefined && !["income", "expense"].includes(type)) {
+    return res.status(400).json({ message: "Type must be either 'income' or 'expense'." });
+  }
+  if (amount !== undefined && (isNaN(amount) || amount <= 0)) {
+    return res.status(400).json({ message: "Amount must be a positive number." });
+  }
+
   const updated = await transactionService.update(req.user._id, req.params.id as string, req.body);
   if (!updated) {
     return res.status(404).json({ message: "Transaction not found." });

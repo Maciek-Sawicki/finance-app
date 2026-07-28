@@ -1,9 +1,8 @@
 import type { Request, Response } from "express";
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
-import Settings from "../models/settings.model.js";
+import * as authService from "../services/auth.service.js";
 import { generateTokenAndSetCookie } from "../libs/utils/generateToken.js";
-import { initDefaultCategoriesForUser } from "../libs/utils/createCategories.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 
 export const signUp = asyncHandler(async (req, res) => {
@@ -24,28 +23,7 @@ export const signUp = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Password must be at least 8 characters long." });
   }
 
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-
-  const newUser = new User({
-    username,
-    email,
-    firstName,
-    lastName,
-    password: hashedPassword,
-  });
-
-  await newUser.save();
-  await initDefaultCategoriesForUser(newUser._id);
-
-  await Settings.create({
-    userId: newUser._id,
-    country: country || "US",
-    preferredLocale: "en-US",
-    defaultCurrency: "USD",
-    favoriteCurrencies: [],
-    theme: "system",
-  });
+  const newUser = await authService.signUp({ username, email, firstName, lastName, password, country });
 
   generateTokenAndSetCookie(newUser._id, res);
 

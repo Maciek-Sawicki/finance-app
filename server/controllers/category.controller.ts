@@ -1,41 +1,32 @@
-import Category from '../models/category.model.js';
 import * as categoryRepository from '../repositories/category.repository.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 
 export const createCategory = asyncHandler(async (req, res) => {
-  const { name, type, icon, isDefault } = req.body;
+  const { name, type, icon } = req.body;
   const userId = req.user._id;
 
   if (!name || !type) {
     return res.status(400).json({ message: 'Name and type are required.' });
   }
 
-  const existing = await Category.findOne({ userId, name, type });
+  const existing = await categoryRepository.findByNameAndType(userId, name, type);
   if (existing) {
     return res.status(409).json({ message: 'Category already exists.' });
   }
 
-  const newCategory = new Category({
-    userId,
-    name,
-    type,
-    icon,
-    isDefault
-  });
-
-  await newCategory.save();
+  const newCategory = await categoryRepository.create({ userId, name, type, icon });
   res.status(201).json({ message: 'Category created successfully', category: newCategory });
 });
 
 export const getCategories = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const categories = await Category.find({ userId }).sort({ createdAt: -1 });
+  const categories = await categoryRepository.findByUser(userId);
 
   res.status(200).json(categories);
 });
 
 export const getCategory = asyncHandler(async (req, res) => {
-  const category = await Category.findOne({ _id: req.params.id as string, userId: req.user._id });
+  const category = await categoryRepository.findById(req.user._id, req.params.id as string);
   if (!category) {
     return res.status(404).json({ message: 'Category not found.' });
   }
@@ -51,11 +42,7 @@ export const updateCategory = asyncHandler(async (req, res) => {
   if (color !== undefined) updateData.color = color;
   if (favorite !== undefined) updateData.favorite = favorite;
 
-  const updated = await Category.findOneAndUpdate(
-    { _id: req.params.id as string, userId: req.user._id },
-    updateData,
-    { new: true }
-  );
+  const updated = await categoryRepository.updateById(req.user._id, req.params.id as string, updateData);
 
   if (!updated) {
     return res.status(404).json({ message: 'Category not found or not authorized.' });
@@ -76,7 +63,7 @@ export const deleteCategory = asyncHandler(async (req, res) => {
 
 export const getFavoriteCategories = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const favorites = await Category.find({ userId, favorite: true }).sort({ createdAt: -1 });
+  const favorites = await categoryRepository.findByUser(userId, { favorite: true });
 
   res.status(200).json(favorites);
 });
