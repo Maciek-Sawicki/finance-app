@@ -2,6 +2,9 @@ import cron from "node-cron";
 import RecurringTransaction, { type RecurringTransactionDocument } from "../models/recurringTransaction.model.js";
 import Transaction from "../models/transaction.model.js";
 import Category from "../models/category.model.js";
+import { withLock } from "./withLock.js";
+
+const LOCK_TTL_MS = 10 * 60 * 1000; // covers iterating every due rule with room to spare
 
 const isDue = (nextDueDate: Date): boolean => new Date(nextDueDate) <= new Date();
 
@@ -59,40 +62,46 @@ const calculateNextDate = (r: RecurringTransactionDocument): Date => {
 
 export const startRecurringTransactionJob = () => {
   cron.schedule("0 1-23/6 * * *", async () => {
-    console.log("Checking recurring transactions...");
-    const recurringTransactions = await RecurringTransaction.find({ isActive: true });
+    try {
+      await withLock("recurringTransactionsJob", LOCK_TTL_MS, async () => {
+        console.log("Checking recurring transactions...");
+        const recurringTransactions = await RecurringTransaction.find({ isActive: true });
 
-    for (const r of recurringTransactions) {
-      if (isDue(r.nextDueDate)) {
-        try {
-          const category = await Category.findById(r.categoryId);
-          if (!category) throw new Error("Category not found");
+        for (const r of recurringTransactions) {
+          if (isDue(r.nextDueDate)) {
+            try {
+              const category = await Category.findById(r.categoryId);
+              if (!category) throw new Error("Category not found");
 
-          // Mongoose's own enum validation rejects this at .create() time
-          // (caught below, per-item) if the category is actually a
-          // "transfer"/"exclude" type - Transaction.type only allows
-          // income/expense.
-          const type = category.type as "income" | "expense";
+              // Mongoose's own enum validation rejects this at .create() time
+              // (caught below, per-item) if the category is actually a
+              // "transfer"/"exclude" type - Transaction.type only allows
+              // income/expense.
+              const type = category.type as "income" | "expense";
 
-          await Transaction.create({
-            userId: r.userId,
-            categoryId: r.categoryId,
-            accountId: r.accountId,
-            amount: r.amount,
-            type,
-            description: r.description,
-            settled: false,
-          });
+              await Transaction.create({
+                userId: r.userId,
+                categoryId: r.categoryId,
+                accountId: r.accountId,
+                amount: r.amount,
+                type,
+                description: r.description,
+                settled: false,
+              });
 
-          console.log(`Transaction created for recurring '${r.name}'`);
-          const nextDate = calculateNextDate(r);
-          r.nextDueDate = nextDate;
+              console.log(`Transaction created for recurring '${r.name}'`);
+              const nextDate = calculateNextDate(r);
+              r.nextDueDate = nextDate;
 
-          await r.save();
-        } catch (err) {
-          console.error(`Error creating transaction for '${r.name}':`, err);
+              await r.save();
+            } catch (err) {
+              console.error(`Error creating transaction for '${r.name}':`, err);
+            }
+          }
         }
-      }
+      });
+    } catch (err) {
+      console.error("Cron error:", err);
     }
   });
 };
