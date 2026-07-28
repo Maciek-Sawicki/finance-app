@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import { createCategory } from '../controllers/category.controller.js';
+import { createCategory, updateCategory } from '../controllers/category.controller.js';
 import { errorHandler } from '../middleware/errorHandler.js';
 import Category from '../models/category.model.js';
 
@@ -15,6 +15,7 @@ app.use((req, res, next) => {
 });
 
 app.post('/api/categories', createCategory);
+app.put('/api/categories/:id', updateCategory);
 app.use(errorHandler);
 
 describe('POST /api/categories', () => {
@@ -31,7 +32,7 @@ describe('POST /api/categories', () => {
     const res = await request(app)
       .post('/api/categories')
       .send({ name: 'Food', type: 'expense', icon: 'f' });
-  
+
     expect(res.statusCode).toBe(201);
     expect(res.body.message).toBe('Category created successfully');
     expect(newCategory.save).toHaveBeenCalled();
@@ -47,115 +48,35 @@ describe('POST /api/categories', () => {
   });
 });
 
+describe('PUT /api/categories/:id', () => {
+  afterEach(() => jest.clearAllMocks());
 
-// import request from 'supertest';
-// import express from 'express';
-// import { getCategories, createCategory } from '../controllers/category.controller.js';
-// import Category from '../models/category.model.js';
+  it('only forwards whitelisted fields to the update, dropping anything else in the body', async () => {
+    Category.findOneAndUpdate.mockResolvedValue({ _id: 'cat1', name: 'Groceries' });
 
-// jest.mock('../models/category.model.js');
+    await request(app)
+      .put('/api/categories/cat1')
+      .send({
+        name: 'Groceries',
+        userId: 'attacker-controlled-user-id',
+        _id: 'forged-id',
+        createdAt: '2000-01-01',
+      });
 
-// const app = express();
-// app.use(express.json());
+    expect(Category.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: 'cat1', userId: '695aecd813b64c1039159fa1' },
+      { name: 'Groceries' },
+      { new: true }
+    );
+  });
 
-// app.use((req, res, next) => {
-//   req.user = { _id: '695aecd813b64c1039159fa1' };
-//   next();
-// });
+  it('returns 404 when the category does not belong to the user', async () => {
+    Category.findOneAndUpdate.mockResolvedValue(null);
 
-// app.get('/api/categories', getCategories);
-// app.post('/api/categories', createCategory);
+    const res = await request(app)
+      .put('/api/categories/cat1')
+      .send({ name: 'Groceries' });
 
-// describe('GET /api/categories', () => {
-//   afterEach(() => jest.clearAllMocks());
-
-//   it('return 200 and categories', async () => {
-//     const mockCategories = [
-//       { _id: '1', name: 'Food', type: 'expense', icon: '🍔', favorite: true },
-//       { _id: '2', name: 'Salary', type: 'income', icon: '💰', favorite: false },
-//     ];
-
-//     Category.find.mockReturnValue({
-//       sort: jest.fn().mockResolvedValue(mockCategories),
-//     });
-
-//     const res = await request(app).get('/api/categories');
-
-//     expect(res.statusCode).toBe(200);
-//     expect(res.body).toHaveLength(mockCategories.length);
-//     expect(res.body[0]).toMatchObject({ name: 'Food', type: 'expense' });
-//   });
-
-//   it('return 500 if error occured', async () => {
-//     Category.find.mockReturnValue({
-//       sort: jest.fn().mockRejectedValue(new Error('DB error')),
-//     });
-
-//     const res = await request(app).get('/api/categories');
-//     expect(res.statusCode).toBe(500);
-//     expect(res.body).toEqual({ message: 'Internal server error.' });
-//   });
-// });
-
-// describe('POST /api/categories', () => {
-//   afterEach(() => jest.clearAllMocks());
-
-//   it('creates a category successfully', async () => {
-//     Category.findOne.mockResolvedValue(null);
-  
-//     const newCategory = {
-//       name: 'Food',
-//       type: 'expense',
-//       icon: '🍔',
-//       save: jest.fn().mockResolvedValue(true)
-//     };
-  
-//     Category.mockImplementation(() => newCategory);
-  
-//     const res = await request(app)
-//       .post('/api/categories')
-//       .send({ name: 'Food', type: 'expense', icon: '🍔' });
-  
-//     expect(res.statusCode).toBe(201);
-//     expect(res.body.message).toBe('Category created successfully');
-//     expect(newCategory.save).toHaveBeenCalled();
-//     expect(res.body.category).toMatchObject({ name: 'Food', type: 'expense' });
-//   });
-  
-
-//   it('returns 400 if name or type is missing', async () => {
-//     const res = await request(app)
-//       .post('/api/categories')
-//       .send({ icon: '🍔' });
-
-//     expect(res.statusCode).toBe(400);
-//     expect(res.body).toEqual({ message: 'Name and type are required.' });
-//   });
-
-//   it('returns 409 if category already exists', async () => {
-//     Category.findOne.mockResolvedValue({ name: 'Food', type: 'expense' });
-
-//     const res = await request(app)
-//       .post('/api/categories')
-//       .send({ name: 'Food', type: 'expense' });
-
-//     expect(res.statusCode).toBe(409);
-//     expect(res.body).toEqual({ message: 'Category already exists.' });
-//   });
-
-//   it('returns 500 if database error occurs', async () => {
-//     Category.findOne.mockRejectedValue(new Error('DB error'));
-
-//     // Wyłącz logowanie błędów w teście
-//     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-//     const res = await request(app)
-//       .post('/api/categories')
-//       .send({ name: 'Food', type: 'expense' });
-
-//     expect(res.statusCode).toBe(500);
-//     expect(res.body).toEqual({ message: 'Internal server error.' });
-
-//     spy.mockRestore();
-//   });
-// });
+    expect(res.statusCode).toBe(404);
+  });
+});

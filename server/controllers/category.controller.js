@@ -42,9 +42,17 @@ export const getCategory = asyncHandler(async (req, res) => {
 });
 
 export const updateCategory = asyncHandler(async (req, res) => {
+  const { name, type, icon, color, favorite } = req.body;
+  const updateData = {};
+  if (name !== undefined) updateData.name = name;
+  if (type !== undefined) updateData.type = type;
+  if (icon !== undefined) updateData.icon = icon;
+  if (color !== undefined) updateData.color = color;
+  if (favorite !== undefined) updateData.favorite = favorite;
+
   const updated = await Category.findOneAndUpdate(
     { _id: req.params.id, userId: req.user._id },
-    { ...req.body },
+    updateData,
     { new: true }
   );
 
