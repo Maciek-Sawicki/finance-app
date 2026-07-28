@@ -16,6 +16,7 @@ import categoryBreakdownRoutes from './routes/categoryBreakdown.routes.js';
 import budgetRoutes from './routes/budget.routes.js';
 import RecurringTransactionRoutes from './routes/recurringTransaction.routes.js';
 import importRoutes from './routes/import.routes.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
@@ -39,5 +40,7 @@ app.use('/api/category-breakdown', categoryBreakdownRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/recurring-transactions', RecurringTransactionRoutes);
 app.use('/api/imports', importRoutes);
+
+app.use(errorHandler);
 
 export default app;

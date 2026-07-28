@@ -1,6 +1,7 @@
 import request from 'supertest';
 import express from 'express';
 import { createCategory } from '../controllers/category.controller.js';
+import { errorHandler } from '../middleware/errorHandler.js';
 import Category from '../models/category.model.js';
 
 jest.mock('../models/category.model.js');
@@ -14,6 +15,7 @@ app.use((req, res, next) => {
 });
 
 app.post('/api/categories', createCategory);
+app.use(errorHandler);
 
 describe('POST /api/categories', () => {
   afterEach(() => jest.clearAllMocks());

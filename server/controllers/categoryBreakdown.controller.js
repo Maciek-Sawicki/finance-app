@@ -1,173 +1,163 @@
 import Transaction from "../models/transaction.model.js";
 import { convertCurrency } from "../services/exchangeRate.service.js";
 import { CATEGORY_TYPES } from "../constants/transactionTypes.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
 
-export const getMonthlyTopCategories = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { type, targetCurrency, limit } = req.query;
+export const getMonthlyTopCategories = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { type, targetCurrency, limit } = req.query;
 
-    if (!targetCurrency) return res.status(400).json({ message: "targetCurrency is required." });
-    if (!type || !CATEGORY_TYPES.includes(type))
-      return res.status(400).json({ message: "Type is required and must be 'income' or 'expense'." });
+  if (!targetCurrency) return res.status(400).json({ message: "targetCurrency is required." });
+  if (!type || !CATEGORY_TYPES.includes(type))
+    return res.status(400).json({ message: "Type is required and must be 'income' or 'expense'." });
 
-    const aggregated = await Transaction.aggregate([
-      { $match: { userId, type, exclude: { $ne: true }, settled: true } },
-      {
-        $lookup: { from: "categories", localField: "categoryId", foreignField: "_id", as: "category" }
-      },
-      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
-      { $match: { $or: [{ "category.type": { $ne: "transfer" } }, { category: null }] } },
-      {
-        $lookup: { from: "accounts", localField: "accountId", foreignField: "_id", as: "account" }
-      },
-      { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
-      {
-        $group: {
-          _id: { month: { $dateToString: { format: "%Y-%m", date: "$date" } }, categoryId: "$category._id", currency: "$account.currency" },
-          categoryName: { $first: "$category.name" },
-          icon: { $first: "$category.icon" },
-          color: { $first: "$category.color" },
-          totalAmount: { $sum: "$amount" }
-        }
+  const aggregated = await Transaction.aggregate([
+    { $match: { userId, type, exclude: { $ne: true }, settled: true } },
+    {
+      $lookup: { from: "categories", localField: "categoryId", foreignField: "_id", as: "category" }
+    },
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+    { $match: { $or: [{ "category.type": { $ne: "transfer" } }, { category: null }] } },
+    {
+      $lookup: { from: "accounts", localField: "accountId", foreignField: "_id", as: "account" }
+    },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+    {
+      $group: {
+        _id: { month: { $dateToString: { format: "%Y-%m", date: "$date" } }, categoryId: "$category._id", currency: "$account.currency" },
+        categoryName: { $first: "$category.name" },
+        icon: { $first: "$category.icon" },
+        color: { $first: "$category.color" },
+        totalAmount: { $sum: "$amount" }
       }
-    ]);
+    }
+  ]);
 
-    const monthMap = {};
-    aggregated.forEach(item => {
-      const month = item._id.month;
-      const catId = item._id.categoryId ? item._id.categoryId.toString() : "Uncategorized";
-      if (!monthMap[month]) monthMap[month] = {};
-      if (!monthMap[month][catId]) monthMap[month][catId] = { name: item.categoryName || "Uncategorized", icon: item.icon || null, color: item.color || null, sumsByCurrency: {} };
-      const currency = item._id.currency || targetCurrency;
-      monthMap[month][catId].sumsByCurrency[currency] = (monthMap[month][catId].sumsByCurrency[currency] || 0) + item.totalAmount;
-    });
+  const monthMap = {};
+  aggregated.forEach(item => {
+    const month = item._id.month;
+    const catId = item._id.categoryId ? item._id.categoryId.toString() : "Uncategorized";
+    if (!monthMap[month]) monthMap[month] = {};
+    if (!monthMap[month][catId]) monthMap[month][catId] = { name: item.categoryName || "Uncategorized", icon: item.icon || null, color: item.color || null, sumsByCurrency: {} };
+    const currency = item._id.currency || targetCurrency;
+    monthMap[month][catId].sumsByCurrency[currency] = (monthMap[month][catId].sumsByCurrency[currency] || 0) + item.totalAmount;
+  });
 
-    const result = {};
+  const result = {};
 
-    for (const [month, categories] of Object.entries(monthMap)) {
-      const allCurrencies = new Set();
-      Object.values(categories).forEach(cat => Object.keys(cat.sumsByCurrency).forEach(c => allCurrencies.add(c)));
+  for (const [month, categories] of Object.entries(monthMap)) {
+    const allCurrencies = new Set();
+    Object.values(categories).forEach(cat => Object.keys(cat.sumsByCurrency).forEach(c => allCurrencies.add(c)));
 
-      const currencyRates = {};
-      await Promise.all(Array.from(allCurrencies).map(async currency => {
-        currencyRates[currency] = currency === targetCurrency ? 1 : await convertCurrency(1, currency, targetCurrency);
-      }));
+    const currencyRates = {};
+    await Promise.all(Array.from(allCurrencies).map(async currency => {
+      currencyRates[currency] = currency === targetCurrency ? 1 : await convertCurrency(1, currency, targetCurrency);
+    }));
 
-      const categoryTotalsMap = {};
-      let sumAll = 0;
-      for (const [catId, cat] of Object.entries(categories)) {
-        let total = 0;
-        for (const [currency, amount] of Object.entries(cat.sumsByCurrency)) {
-          total += amount * currencyRates[currency];
-        }
-        categoryTotalsMap[catId] = { ...cat, total };
-        sumAll += total;
+    const categoryTotalsMap = {};
+    let sumAll = 0;
+    for (const [catId, cat] of Object.entries(categories)) {
+      let total = 0;
+      for (const [currency, amount] of Object.entries(cat.sumsByCurrency)) {
+        total += amount * currencyRates[currency];
       }
-
-      let categoriesArray = Object.entries(categoryTotalsMap)
-        .map(([catId, cat]) => ({ categoryId: catId, name: cat.name, icon: cat.icon, color: cat.color, total: Number(cat.total.toFixed(2)), percent: sumAll ? Number(((cat.total / sumAll) * 100).toFixed(2)) : 0 }))
-        .sort((a, b) => b.total - a.total);
-
-      if (limit && categoriesArray.length > Number(limit)) {
-        const top = categoriesArray.slice(0, Number(limit));
-        const other = categoriesArray.slice(Number(limit));
-        const otherTotal = other.reduce((sum, c) => sum + c.total, 0);
-        const otherPercent = sumAll ? Number(((otherTotal / sumAll) * 100).toFixed(2)) : 0;
-        top.push({ categoryId: "Other", name: "Other", icon: null, color: null, total: Number(otherTotal.toFixed(2)), percent: otherPercent });
-        categoriesArray = top;
-      }
-
-      result[month] = categoriesArray;
+      categoryTotalsMap[catId] = { ...cat, total };
+      sumAll += total;
     }
 
-    res.status(200).json({ targetCurrency, type, monthlyCategories: result });
-  } catch (err) {
-    console.error("Error fetching monthly top categories fast:", err);
-    res.status(500).json({ message: "Internal server error." });
-  }
-};
+    let categoriesArray = Object.entries(categoryTotalsMap)
+      .map(([catId, cat]) => ({ categoryId: catId, name: cat.name, icon: cat.icon, color: cat.color, total: Number(cat.total.toFixed(2)), percent: sumAll ? Number(((cat.total / sumAll) * 100).toFixed(2)) : 0 }))
+      .sort((a, b) => b.total - a.total);
 
-export const getYearlyTopCategories = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { type, targetCurrency, limit } = req.query;
-
-    if (!targetCurrency) return res.status(400).json({ message: "targetCurrency is required." });
-    if (!type || !CATEGORY_TYPES.includes(type))
-      return res.status(400).json({ message: "Type is required and must be 'income' or 'expense'." });
-
-    const aggregated = await Transaction.aggregate([
-      { $match: { userId, type, exclude: { $ne: true }, settled: true } },
-      {
-        $lookup: { from: "categories", localField: "categoryId", foreignField: "_id", as: "category" }
-      },
-      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
-      { $match: { $or: [{ "category.type": { $ne: "transfer" } }, { category: null }] } },
-      {
-        $lookup: { from: "accounts", localField: "accountId", foreignField: "_id", as: "account" }
-      },
-      { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
-      {
-        $group: {
-          _id: { year: { $dateToString: { format: "%Y", date: "$date" } }, categoryId: "$category._id", currency: "$account.currency" },
-          categoryName: { $first: "$category.name" },
-          icon: { $first: "$category.icon" },
-          color: { $first: "$category.color" },
-          totalAmount: { $sum: "$amount" }
-        }
-      }
-    ]);
-
-    const yearMap = {};
-    aggregated.forEach(item => {
-      const year = item._id.year;
-      const catId = item._id.categoryId ? item._id.categoryId.toString() : "Uncategorized";
-      if (!yearMap[year]) yearMap[year] = {};
-      if (!yearMap[year][catId]) yearMap[year][catId] = { name: item.categoryName || "Uncategorized", icon: item.icon || null, color: item.color || null, sumsByCurrency: {} };
-      const currency = item._id.currency || targetCurrency;
-      yearMap[year][catId].sumsByCurrency[currency] = (yearMap[year][catId].sumsByCurrency[currency] || 0) + item.totalAmount;
-    });
-
-    const result = {};
-    for (const [year, categories] of Object.entries(yearMap)) {
-      const allCurrencies = new Set();
-      Object.values(categories).forEach(cat => Object.keys(cat.sumsByCurrency).forEach(c => allCurrencies.add(c)));
-
-      const currencyRates = {};
-      await Promise.all(Array.from(allCurrencies).map(async currency => {
-        currencyRates[currency] = currency === targetCurrency ? 1 : await convertCurrency(1, currency, targetCurrency);
-      }));
-
-      const categoryTotalsMap = {};
-      let sumAll = 0;
-      for (const [catId, cat] of Object.entries(categories)) {
-        let total = 0;
-        for (const [currency, amount] of Object.entries(cat.sumsByCurrency)) total += amount * currencyRates[currency];
-        categoryTotalsMap[catId] = { ...cat, total };
-        sumAll += total;
-      }
-
-      let categoriesArray = Object.entries(categoryTotalsMap)
-        .map(([catId, cat]) => ({ categoryId: catId, name: cat.name, icon: cat.icon, color: cat.color, total: Number(cat.total.toFixed(2)), percent: sumAll ? Number(((cat.total / sumAll) * 100).toFixed(2)) : 0 }))
-        .sort((a, b) => b.total - a.total);
-
-      if (limit && categoriesArray.length > Number(limit)) {
-        const top = categoriesArray.slice(0, Number(limit));
-        const other = categoriesArray.slice(Number(limit));
-        const otherTotal = other.reduce((sum, c) => sum + c.total, 0);
-        const otherPercent = sumAll ? Number(((otherTotal / sumAll) * 100).toFixed(2)) : 0;
-        top.push({ categoryId: "Other", name: "Other", icon: null, color: null, total: Number(otherTotal.toFixed(2)), percent: otherPercent });
-        categoriesArray = top;
-      }
-
-      result[year] = categoriesArray;
+    if (limit && categoriesArray.length > Number(limit)) {
+      const top = categoriesArray.slice(0, Number(limit));
+      const other = categoriesArray.slice(Number(limit));
+      const otherTotal = other.reduce((sum, c) => sum + c.total, 0);
+      const otherPercent = sumAll ? Number(((otherTotal / sumAll) * 100).toFixed(2)) : 0;
+      top.push({ categoryId: "Other", name: "Other", icon: null, color: null, total: Number(otherTotal.toFixed(2)), percent: otherPercent });
+      categoriesArray = top;
     }
 
-    res.status(200).json({ targetCurrency, type, yearlyCategories: result });
-  } catch (err) {
-    console.error("Error fetching yearly top categories fast:", err);
-    res.status(500).json({ message: "Internal server error." });
+    result[month] = categoriesArray;
   }
-};
 
+  res.status(200).json({ targetCurrency, type, monthlyCategories: result });
+});
+
+export const getYearlyTopCategories = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { type, targetCurrency, limit } = req.query;
+
+  if (!targetCurrency) return res.status(400).json({ message: "targetCurrency is required." });
+  if (!type || !CATEGORY_TYPES.includes(type))
+    return res.status(400).json({ message: "Type is required and must be 'income' or 'expense'." });
+
+  const aggregated = await Transaction.aggregate([
+    { $match: { userId, type, exclude: { $ne: true }, settled: true } },
+    {
+      $lookup: { from: "categories", localField: "categoryId", foreignField: "_id", as: "category" }
+    },
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+    { $match: { $or: [{ "category.type": { $ne: "transfer" } }, { category: null }] } },
+    {
+      $lookup: { from: "accounts", localField: "accountId", foreignField: "_id", as: "account" }
+    },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+    {
+      $group: {
+        _id: { year: { $dateToString: { format: "%Y", date: "$date" } }, categoryId: "$category._id", currency: "$account.currency" },
+        categoryName: { $first: "$category.name" },
+        icon: { $first: "$category.icon" },
+        color: { $first: "$category.color" },
+        totalAmount: { $sum: "$amount" }
+      }
+    }
+  ]);
+
+  const yearMap = {};
+  aggregated.forEach(item => {
+    const year = item._id.year;
+    const catId = item._id.categoryId ? item._id.categoryId.toString() : "Uncategorized";
+    if (!yearMap[year]) yearMap[year] = {};
+    if (!yearMap[year][catId]) yearMap[year][catId] = { name: item.categoryName || "Uncategorized", icon: item.icon || null, color: item.color || null, sumsByCurrency: {} };
+    const currency = item._id.currency || targetCurrency;
+    yearMap[year][catId].sumsByCurrency[currency] = (yearMap[year][catId].sumsByCurrency[currency] || 0) + item.totalAmount;
+  });
+
+  const result = {};
+  for (const [year, categories] of Object.entries(yearMap)) {
+    const allCurrencies = new Set();
+    Object.values(categories).forEach(cat => Object.keys(cat.sumsByCurrency).forEach(c => allCurrencies.add(c)));
+
+    const currencyRates = {};
+    await Promise.all(Array.from(allCurrencies).map(async currency => {
+      currencyRates[currency] = currency === targetCurrency ? 1 : await convertCurrency(1, currency, targetCurrency);
+    }));
+
+    const categoryTotalsMap = {};
+    let sumAll = 0;
+    for (const [catId, cat] of Object.entries(categories)) {
+      let total = 0;
+      for (const [currency, amount] of Object.entries(cat.sumsByCurrency)) total += amount * currencyRates[currency];
+      categoryTotalsMap[catId] = { ...cat, total };
+      sumAll += total;
+    }
+
+    let categoriesArray = Object.entries(categoryTotalsMap)
+      .map(([catId, cat]) => ({ categoryId: catId, name: cat.name, icon: cat.icon, color: cat.color, total: Number(cat.total.toFixed(2)), percent: sumAll ? Number(((cat.total / sumAll) * 100).toFixed(2)) : 0 }))
+      .sort((a, b) => b.total - a.total);
+
+    if (limit && categoriesArray.length > Number(limit)) {
+      const top = categoriesArray.slice(0, Number(limit));
+      const other = categoriesArray.slice(Number(limit));
+      const otherTotal = other.reduce((sum, c) => sum + c.total, 0);
+      const otherPercent = sumAll ? Number(((otherTotal / sumAll) * 100).toFixed(2)) : 0;
+      top.push({ categoryId: "Other", name: "Other", icon: null, color: null, total: Number(otherTotal.toFixed(2)), percent: otherPercent });
+      categoriesArray = top;
+    }
+
+    result[year] = categoriesArray;
+  }
+
+  res.status(200).json({ targetCurrency, type, yearlyCategories: result });
+});

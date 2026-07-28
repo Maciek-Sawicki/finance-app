@@ -1,6 +1,7 @@
 import request from 'supertest';
 import express from 'express';
 import { getAccounts } from '../controllers/account.controller.js';
+import { errorHandler } from '../middleware/errorHandler.js';
 
 import * as accountService from '../services/account.service.js';
 import { convertCurrency } from '../services/exchangeRate.service.js';
@@ -17,6 +18,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/api/accounts', getAccounts);
+app.use(errorHandler);
 
 // The controller now only talks to accountService, so the test mocks that
 // service directly instead of the Mongoose models it used to call - no more
