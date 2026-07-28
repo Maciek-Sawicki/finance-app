@@ -1,7 +1,6 @@
 import express from 'express';
 import { authenticate } from '../middleware/authenticate.js';
 import {
-  getTopCategories,
   getMonthlyTopCategories,
   getYearlyTopCategories
 } from '../controllers/categoryBreakdown.controller.js';
@@ -19,7 +18,6 @@ const categoryBreakdownLimiter = rateLimit({
 });
 
 
-router.get('/top-categories', authenticate, getTopCategories);
 router.get('/top-monthly-categories', authenticate, getMonthlyTopCategories);
 router.get('/top-yearly-categories', categoryBreakdownLimiter, authenticate, getYearlyTopCategories);
 

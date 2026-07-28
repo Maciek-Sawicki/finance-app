@@ -30,6 +30,42 @@ export const aggregateBalancesByAccount = async (userId) => {
 export const deleteByAccount = (userId, accountId) =>
   Transaction.deleteMany({ userId, accountId });
 
+// Settled expense total for a category within a date range, grouped by
+// account currency - a category's transactions are normally all in one
+// currency, but this stays correct for the multi-account case without a
+// currency-conversion call per transaction.
+export const aggregateCategorySpendByCurrency = (userId, categoryId, startDate, endDate) =>
+  Transaction.aggregate([
+    {
+      $match: {
+        userId,
+        categoryId,
+        type: "expense",
+        settled: true,
+        date: { $gte: startDate, $lte: endDate },
+      },
+    },
+    { $lookup: { from: "accounts", localField: "accountId", foreignField: "_id", as: "account" } },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+    { $group: { _id: "$account.currency", total: { $sum: "$amount" } } },
+  ]);
+
+// Settled, non-excluded totals grouped by month/type/currency for the
+// dashboard summary - one aggregation instead of loading every transaction
+// into Node and converting currency per row.
+export const aggregateMonthlySummary = (userId) =>
+  Transaction.aggregate([
+    { $match: { userId, exclude: { $ne: true }, settled: true } },
+    { $lookup: { from: "accounts", localField: "accountId", foreignField: "_id", as: "account" } },
+    { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+    {
+      $group: {
+        _id: { month: { $dateToString: { format: "%Y-%m", date: "$date" } }, type: "$type", currency: "$account.currency" },
+        totalAmount: { $sum: "$amount" },
+      },
+    },
+  ]);
+
 export const create = async (data, { session } = {}) => {
   const [doc] = await Transaction.create([data], { session, ordered: true });
   return doc;

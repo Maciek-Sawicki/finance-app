@@ -1,7 +1,6 @@
 import * as transactionService from "../services/transaction.service.js";
 import * as transferService from "../services/transfer.service.js";
-
-const ALLOWED_TYPES = ["income", "expense", "exclude", "transfer"];
+import { TRANSACTION_FILTER_TYPES } from "../constants/transactionTypes.js";
 
 export const createTransaction = async (req, res) => {
   try {
@@ -99,7 +98,7 @@ export const deleteTransaction = async (req, res) => {
 export const getTransactions = async (req, res) => {
   try {
     const { type } = req.query;
-    if (type && !ALLOWED_TYPES.includes(type)) {
+    if (type && !TRANSACTION_FILTER_TYPES.includes(type)) {
       return res.status(400).json({ message: "Type must be either 'income' or 'expense'." });
     }
 

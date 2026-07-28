@@ -5,7 +5,7 @@ import Transaction from '../models/transaction.model.js';
 // findById/findPaginated/findRecent populate("categoryId accountId"), which
 // needs these schemas registered on the connection even though the test
 // itself never touches them directly.
-import '../models/account.model.js';
+import Account from '../models/account.model.js';
 import '../models/category.model.js';
 
 let mongod;
@@ -24,7 +24,7 @@ afterAll(async () => {
 });
 
 afterEach(async () => {
-  await Transaction.deleteMany({});
+  await Promise.all([Transaction.deleteMany({}), Account.deleteMany({})]);
 });
 
 describe('transaction.repository', () => {
@@ -124,6 +124,58 @@ describe('transaction.repository', () => {
 
       const recent = await transactionRepository.findRecent(userId, 2);
       expect(recent.map((t) => t.amount)).toEqual([3, 2]);
+    });
+  });
+
+  describe('aggregateCategorySpendByCurrency', () => {
+    const createAccount = (overrides = {}) =>
+      Account.create({ userId, name: 'Account', type: 'checking', currency: 'USD', startingBalance: 0, ...overrides });
+
+    it('groups settled expenses by the owning account currency', async () => {
+      const usdAccount = await createAccount({ currency: 'USD' });
+      const eurAccount = await createAccount({ currency: 'EUR' });
+
+      await transactionRepository.createMany([
+        { userId, accountId: usdAccount._id, categoryId, type: 'expense', amount: 100, settled: true, date: new Date('2026-01-15') },
+        { userId, accountId: eurAccount._id, categoryId, type: 'expense', amount: 40, settled: true, date: new Date('2026-01-20') },
+        // excluded: unsettled, wrong type, and outside the date range
+        { userId, accountId: usdAccount._id, categoryId, type: 'expense', amount: 999, settled: false, date: new Date('2026-01-16') },
+        { userId, accountId: usdAccount._id, categoryId, type: 'income', amount: 999, settled: true, date: new Date('2026-01-16') },
+        { userId, accountId: usdAccount._id, categoryId, type: 'expense', amount: 999, settled: true, date: new Date('2026-03-01') },
+      ]);
+
+      const result = await transactionRepository.aggregateCategorySpendByCurrency(
+        userId, categoryId, new Date('2026-01-01'), new Date('2026-01-31')
+      );
+
+      expect(result.sort((a, b) => a._id.localeCompare(b._id))).toEqual([
+        { _id: 'EUR', total: 40 },
+        { _id: 'USD', total: 100 },
+      ]);
+    });
+  });
+
+  describe('aggregateMonthlySummary', () => {
+    it('groups settled, non-excluded transactions by month/type/currency', async () => {
+      const account = await Account.create({ userId, name: 'Account', type: 'checking', currency: 'USD', startingBalance: 0 });
+
+      await transactionRepository.createMany([
+        { userId, accountId: account._id, categoryId, type: 'income', amount: 1000, settled: true, exclude: false, date: new Date('2026-01-10') },
+        { userId, accountId: account._id, categoryId, type: 'expense', amount: 300, settled: true, exclude: false, date: new Date('2026-01-20') },
+        // excluded from totals: unsettled, and explicitly excluded
+        { userId, accountId: account._id, categoryId, type: 'income', amount: 500, settled: false, date: new Date('2026-01-11') },
+        { userId, accountId: account._id, categoryId, type: 'expense', amount: 200, settled: true, exclude: true, date: new Date('2026-01-21') },
+      ]);
+
+      const result = await transactionRepository.aggregateMonthlySummary(userId);
+
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ _id: { month: '2026-01', type: 'income', currency: 'USD' }, totalAmount: 1000 }),
+          expect.objectContaining({ _id: { month: '2026-01', type: 'expense', currency: 'USD' }, totalAmount: 300 }),
+        ])
+      );
+      expect(result).toHaveLength(2);
     });
   });
 });

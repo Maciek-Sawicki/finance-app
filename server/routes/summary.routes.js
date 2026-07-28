@@ -1,27 +1,9 @@
 import express from 'express';
 import { authenticate } from '../middleware/authenticate.js';
-import {
-  getAccountTransactionSummary,
-  getAllAccountsTransactionSummary,
-  getAccountCategorySummary,
-  getBalanceSummary,
-  getCashFlowSummary,
-  getTrendsSummary,
-  getMonthlyTrends,
-  getSavingsRate,
-  getMonthlySummary
-} from '../controllers/summary.controller.js';
+import { getMonthlySummary } from '../controllers/summary.controller.js';
 
 const router = express.Router();
 
-router.get('/account-summary', authenticate, getAccountTransactionSummary);
-router.get('/summary', authenticate, getAllAccountsTransactionSummary);
-router.get('/category-summary', authenticate, getAccountCategorySummary);
-router.get('/balance-summary', authenticate, getBalanceSummary);
-router.get('/cashflow-summary', authenticate, getCashFlowSummary);
-router.get('/trends-summary', authenticate, getTrendsSummary);
-router.get('/monthly-trends', authenticate, getMonthlyTrends);
-router.get('/savings-rate', authenticate, getSavingsRate);
 router.get('/dashboard-summary', authenticate, getMonthlySummary);
 
 export default router;

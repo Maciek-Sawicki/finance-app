@@ -1,149 +1,6 @@
 import Transaction from "../models/transaction.model.js";
 import { convertCurrency } from "../services/exchangeRate.service.js";
-const ALLOWED_TYPES = ["income", "expense"];
-
-export const getTopCategories = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { startDate, endDate, type, targetCurrency, limit } = req.query;
-
-    if (!targetCurrency) {
-      return res.status(400).json({ message: "targetCurrency is required." });
-    }
-
-    if (!type || !["income", "expense"].includes(type)) {
-      return res.status(400).json({ message: "Type is required and must be 'income' or 'expense'." });
-    }
-
-    const match = {
-      userId,
-      type,
-      exclude: { $ne: true },
-      settled: true
-    };
-    if (startDate || endDate) {
-      match.date = {};
-      if (startDate) match.date.$gte = new Date(startDate);
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        match.date.$lte = end;
-      }
-    }
-
-    // MongoDB aggregation pipeline
-    const aggregated = await Transaction.aggregate([
-      { $match: match },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "categoryId",
-          foreignField: "_id",
-          as: "category"
-        }
-      },
-      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
-      {
-        $match: {
-          $or: [
-            { "category.type": { $ne: "transfer" } },
-            { category: null }
-          ]
-        }
-      },
-      {
-        $lookup: {
-          from: "accounts",
-          localField: "accountId",
-          foreignField: "_id",
-          as: "account"
-        }
-      },
-      { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
-      {
-        $group: {
-          _id: { categoryId: "$category._id", currency: "$account.currency" },
-          categoryName: { $first: "$category.name" },
-          icon: { $first: "$category.icon" },
-          color: { $first: "$category.color" },
-          totalAmount: { $sum: "$amount" }
-        }
-      }
-    ]);
-
-    // Category map with sums by currency
-    const categoryMap = {};
-    aggregated.forEach(item => {
-      const catId = item._id.categoryId ? item._id.categoryId.toString() : "Uncategorized";
-      if (!categoryMap[catId]) {
-        categoryMap[catId] = {
-          name: item.categoryName || "Uncategorized",
-          icon: item.icon || null,
-          color: item.color || null,
-          sumsByCurrency: {}
-        };
-      }
-      const currency = item._id.currency || targetCurrency;
-      categoryMap[catId].sumsByCurrency[currency] = (categoryMap[catId].sumsByCurrency[currency] || 0) + item.totalAmount;
-    });
-
-
-    const categoryTotalsMap = {};
-    let sumAll = 0;
-
-    for (const [catId, cat] of Object.entries(categoryMap)) {
-      let total = 0;
-      for (const [currency, amount] of Object.entries(cat.sumsByCurrency)) {
-        const converted = currency === targetCurrency ? amount : await convertCurrency(amount, currency, targetCurrency);
-        total += converted;
-      }
-      categoryTotalsMap[catId] = {
-        name: cat.name,
-        icon: cat.icon,
-        color: cat.color,
-        total
-      };
-      sumAll += total;
-    }
-
-    let categoriesArray = Object.entries(categoryTotalsMap)
-      .map(([catId, cat]) => ({
-        categoryId: catId,
-        ...cat,
-        percent: sumAll ? Number(((cat.total / sumAll) * 100).toFixed(2)) : 0
-      }))
-      .sort((a, b) => b.total - a.total);
-
-    if (limit && categoriesArray.length > Number(limit)) {
-      const top = categoriesArray.slice(0, Number(limit));
-      const other = categoriesArray.slice(Number(limit));
-
-      const otherTotal = other.reduce((sum, c) => sum + c.total, 0);
-      const otherPercent = sumAll ? Number(((otherTotal / sumAll) * 100).toFixed(2)) : 0;
-
-      top.push({
-        categoryId: "Other",
-        name: "Other",
-        icon: null,
-        color: null,
-        total: Number(otherTotal.toFixed(2)),
-        percent: otherPercent
-      });
-
-      categoriesArray = top;
-    }
-
-    res.status(200).json({
-      targetCurrency,
-      type,
-      topCategories: categoriesArray
-    });
-
-  } catch (error) {
-    console.error("Error fetching top categories:", error);
-    res.status(500).json({ message: "Internal server error." });
-  }
-};
+import { CATEGORY_TYPES } from "../constants/transactionTypes.js";
 
 export const getMonthlyTopCategories = async (req, res) => {
   try {
@@ -151,7 +8,7 @@ export const getMonthlyTopCategories = async (req, res) => {
     const { type, targetCurrency, limit } = req.query;
 
     if (!targetCurrency) return res.status(400).json({ message: "targetCurrency is required." });
-    if (!type || !ALLOWED_TYPES.includes(type))
+    if (!type || !CATEGORY_TYPES.includes(type))
       return res.status(400).json({ message: "Type is required and must be 'income' or 'expense'." });
 
     const aggregated = await Transaction.aggregate([
@@ -231,97 +88,13 @@ export const getMonthlyTopCategories = async (req, res) => {
   }
 };
 
-// export const getMonthlyTopCategories = async (req, res) => {
-//   try {
-//     const data = {
-      
-//         "targetCurrency": "USD",
-//         "type": "expense",
-//         "monthlyCategories": {
-//           "2025-01": [
-//             { "categoryId": "cat01", "name": "Jedzenie", "icon": "🍔", "color": "#FF5733", "total": 900, "percent": 18 },
-//             { "categoryId": "cat02", "name": "Transport", "icon": "🚗", "color": "#33C1FF", "total": 400, "percent": 8 },
-//             { "categoryId": "cat03", "name": "Dom", "icon": "🏠", "color": "#99FF99", "total": 1200, "percent": 24 },
-//             { "categoryId": "cat04", "name": "Rozrywka", "icon": "🎮", "color": "#FF6633", "total": 500, "percent": 10 },
-//             { "categoryId": "cat05", "name": "Zdrowie", "icon": "💊", "color": "#FF9999", "total": 300, "percent": 6 },
-//             { "categoryId": "cat06", "name": "Ubrania", "icon": "👕", "color": "#CCCCFF", "total": 350, "percent": 7 },
-//             { "categoryId": "cat07", "name": "Subskrypcje", "icon": "📺", "color": "#FFD700", "total": 250, "percent": 5 },
-//             { "categoryId": "cat08", "name": "Inne", "icon": "📦", "color": "#AAAAAA", "total": 1100, "percent": 22 }
-//           ],
-      
-//           "2025-02": [
-//             { "categoryId": "cat01", "name": "Jedzenie", "icon": "🍔", "color": "#FF5733", "total": 850, "percent": 17 },
-//             { "categoryId": "cat02", "name": "Transport", "icon": "🚗", "color": "#33C1FF", "total": 420, "percent": 8.4 },
-//             { "categoryId": "cat03", "name": "Dom", "icon": "🏠", "color": "#99FF99", "total": 1250, "percent": 25 },
-//             { "categoryId": "cat04", "name": "Rozrywka", "icon": "🎮", "color": "#FF6633", "total": 450, "percent": 9 },
-//             { "categoryId": "cat05", "name": "Zdrowie", "icon": "💊", "color": "#FF9999", "total": 280, "percent": 5.6 },
-//             { "categoryId": "cat06", "name": "Ubrania", "icon": "👕", "color": "#CCCCFF", "total": 300, "percent": 6 },
-//             { "categoryId": "cat07", "name": "Subskrypcje", "icon": "📺", "color": "#FFD700", "total": 250, "percent": 5 },
-//             { "categoryId": "cat08", "name": "Inne", "icon": "📦", "color": "#AAAAAA", "total": 1200, "percent": 24 }
-//           ],
-      
-//           "2025-03": [
-//             { "categoryId": "cat01", "name": "Jedzenie", "icon": "🍔", "color": "#FF5733", "total": 920, "percent": 18.4 },
-//             { "categoryId": "cat02", "name": "Transport", "icon": "🚗", "color": "#33C1FF", "total": 380, "percent": 7.6 },
-//             { "categoryId": "cat03", "name": "Dom", "icon": "🏠", "color": "#99FF99", "total": 1200, "percent": 24 },
-//             { "categoryId": "cat04", "name": "Rozrywka", "icon": "🎮", "color": "#FF6633", "total": 600, "percent": 12 },
-//             { "categoryId": "cat05", "name": "Zdrowie", "icon": "💊", "color": "#FF9999", "total": 320, "percent": 6.4 },
-//             { "categoryId": "cat06", "name": "Ubrania", "icon": "👕", "color": "#CCCCFF", "total": 400, "percent": 8 },
-//             { "categoryId": "cat07", "name": "Subskrypcje", "icon": "📺", "color": "#FFD700", "total": 250, "percent": 5 },
-//             { "categoryId": "cat08", "name": "Inne", "icon": "📦", "color": "#AAAAAA", "total": 930, "percent": 18.6 }
-//           ],
-      
-//           "2025-04": [
-//             { "categoryId": "cat01", "name": "Jedzenie", "icon": "🍔", "color": "#FF5733", "total": 950, "percent": 19 },
-//             { "categoryId": "cat02", "name": "Transport", "icon": "🚗", "color": "#33C1FF", "total": 400, "percent": 8 },
-//             { "categoryId": "cat03", "name": "Dom", "icon": "🏠", "color": "#99FF99", "total": 1300, "percent": 26 },
-//             { "categoryId": "cat04", "name": "Rozrywka", "icon": "🎮", "color": "#FF6633", "total": 550, "percent": 11 },
-//             { "categoryId": "cat05", "name": "Zdrowie", "icon": "💊", "color": "#FF9999", "total": 300, "percent": 6 },
-//             { "categoryId": "cat06", "name": "Ubrania", "icon": "👕", "color": "#CCCCFF", "total": 350, "percent": 7 },
-//             { "categoryId": "cat07", "name": "Subskrypcje", "icon": "📺", "color": "#FFD700", "total": 250, "percent": 5 },
-//             { "categoryId": "cat08", "name": "Inne", "icon": "📦", "color": "#AAAAAA", "total": 900, "percent": 18 }
-//           ],
-      
-//           "2025-05": [
-//             { "categoryId": "cat01", "name": "Jedzenie", "icon": "🍔", "color": "#FF5733", "total": 1000, "percent": 20 },
-//             { "categoryId": "cat02", "name": "Transport", "icon": "🚗", "color": "#33C1FF", "total": 420, "percent": 8.4 },
-//             { "categoryId": "cat03", "name": "Dom", "icon": "🏠", "color": "#99FF99", "total": 1200, "percent": 24 },
-//             { "categoryId": "cat04", "name": "Rozrywka", "icon": "🎮", "color": "#FF6633", "total": 650, "percent": 13 },
-//             { "categoryId": "cat05", "name": "Zdrowie", "icon": "💊", "color": "#FF9999", "total": 280, "percent": 5.6 },
-//             { "categoryId": "cat06", "name": "Ubrania", "icon": "👕", "color": "#CCCCFF", "total": 400, "percent": 8 },
-//             { "categoryId": "cat07", "name": "Subskrypcje", "icon": "📺", "color": "#FFD700", "total": 250, "percent": 5 },
-//             { "categoryId": "cat08", "name": "Inne", "icon": "📦", "color": "#AAAAAA", "total": 800, "percent": 16 }
-//           ],
-      
-//           "2025-06": [
-//             { "categoryId": "cat01", "name": "Jedzenie", "icon": "🍔", "color": "#FF5733", "total": 950, "percent": 19 },
-//             { "categoryId": "cat02", "name": "Transport", "icon": "🚗", "color": "#33C1FF", "total": 380, "percent": 7.6 },
-//             { "categoryId": "cat03", "name": "Dom", "icon": "🏠", "color": "#99FF99", "total": 1150, "percent": 23 },
-//             { "categoryId": "cat04", "name": "Rozrywka", "icon": "🎮", "color": "#FF6633", "total": 700, "percent": 14 },
-//             { "categoryId": "cat05", "name": "Zdrowie", "icon": "💊", "color": "#FF9999", "total": 300, "percent": 6 },
-//             { "categoryId": "cat06", "name": "Ubrania", "icon": "👕", "color": "#CCCCFF", "total": 450, "percent": 9 },
-//             { "categoryId": "cat07", "name": "Subskrypcje", "icon": "📺", "color": "#FFD700", "total": 250, "percent": 5 },
-//             { "categoryId": "cat08", "name": "Inne", "icon": "📦", "color": "#AAAAAA", "total": 820, "percent": 16.4 }
-//           ],
-//         }
-//       };      
-//     res.status(200).json(data);
-//   } catch (err) {
-//     console.error("Error fetching monthly top categories fast:", err);
-//     res.status(500).json({ message: "Internal server error." });
-//   }
-// };
-
-
-
-
 export const getYearlyTopCategories = async (req, res) => {
   try {
     const userId = req.user._id;
     const { type, targetCurrency, limit } = req.query;
 
     if (!targetCurrency) return res.status(400).json({ message: "targetCurrency is required." });
-    if (!type || !ALLOWED_TYPES.includes(type))
+    if (!type || !CATEGORY_TYPES.includes(type))
       return res.status(400).json({ message: "Type is required and must be 'income' or 'expense'." });
 
     const aggregated = await Transaction.aggregate([
