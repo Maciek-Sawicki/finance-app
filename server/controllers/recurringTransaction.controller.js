@@ -1,87 +1,77 @@
-import RecurringTransaction from "../models/recurringTransaction.model.js";
+import * as recurringTransactionService from "../services/recurringTransaction.service.js";
+
+const handleError = (res, err) => {
+  if (err.status) return res.status(err.status).json({ error: err.message });
+  if (err.name === "ValidationError") {
+    const messages = Object.values(err.errors).map((e) => e.message);
+    return res.status(400).json({ error: messages.join(", ") });
+  }
+  res.status(500).json({ error: err.message });
+};
 
 export const getRecurringTransactions = async (req, res) => {
   try {
-    const transactions = await RecurringTransaction.find({ userId: req.user._id });
+    const transactions = await recurringTransactionService.list(req.user._id);
     res.json(transactions);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    handleError(res, err);
   }
 };
 
 export const getRecurringTransaction = async (req, res) => {
   try {
-    const transaction = await RecurringTransaction.findById(req.params.id);
-    if (!transaction) return res.status(404).json({ error: "Recurring transaction not found" });
+    const transaction = await recurringTransactionService.getById(req.user._id, req.params.id);
     res.json(transaction);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    handleError(res, err);
   }
 };
 
 export const createRecurringTransaction = async (req, res) => {
   try {
-    const newTransaction = new RecurringTransaction({ ...req.body, userId: req.user._id });
-    await newTransaction.save();
-    console.log(`Recurring transaction '${newTransaction.name}' created successfully!`);
+    const transaction = await recurringTransactionService.create(req.user._id, req.body);
+    console.log(`Recurring transaction '${transaction.name}' created successfully!`);
     res.status(201).json({
       message: "Recurring transaction created successfully",
-      transaction: newTransaction,
+      transaction,
     });
   } catch (err) {
-    if (err.name === "ValidationError") {
-      const messages = Object.values(err.errors).map(e => e.message);
-      return res.status(400).json({ error: messages.join(", ") });
-    }
-    res.status(500).json({ error: err.message });
+    handleError(res, err);
   }
 };
 
 export const updateRecurringTransaction = async (req, res) => {
   try {
-    const transaction = await RecurringTransaction.findById(req.params.id);
-    if (!transaction) return res.status(404).json({ error: "Recurring transaction not found" });
-
-    Object.assign(transaction, req.body);
-    await transaction.save();
+    const transaction = await recurringTransactionService.update(req.user._id, req.params.id, req.body);
     console.log(`Recurring transaction '${transaction.name}' updated successfully!`);
     res.json({
       message: "Recurring transaction updated successfully",
       transaction,
     });
   } catch (err) {
-    if (err.name === "ValidationError") {
-      const messages = Object.values(err.errors).map(e => e.message);
-      return res.status(400).json({ error: messages.join(", ") });
-    }
-    res.status(500).json({ error: err.message });
+    handleError(res, err);
   }
 };
 
 export const deleteRecurringTransaction = async (req, res) => {
   try {
-    const deleted = await RecurringTransaction.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ error: "Recurring transaction not found" });
+    const deleted = await recurringTransactionService.remove(req.user._id, req.params.id);
     console.log(`Recurring transaction '${deleted.name}' deleted successfully!`);
     res.json({ message: "Recurring transaction deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    handleError(res, err);
   }
 };
 
 export const toggleRecurringTransaction = async (req, res) => {
   try {
-    const transaction = await RecurringTransaction.findById(req.params.id);
-    if (!transaction) return res.status(404).json({ error: "Recurring transaction not found" });
-
-    transaction.isActive = !transaction.isActive;
-    await transaction.save();
+    const transaction = await recurringTransactionService.toggleActive(req.user._id, req.params.id);
     console.log(`Recurring transaction '${transaction.name}' isActive set to ${transaction.isActive}`);
     res.json({
       message: `Recurring transaction ${transaction.isActive ? "activated" : "deactivated"}`,
       transaction,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    handleError(res, err);
   }
 };

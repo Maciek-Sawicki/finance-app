@@ -106,3 +106,19 @@ export const count = (userId, filter) => Transaction.countDocuments({ userId, ..
 
 export const findRecent = (userId, limit) =>
   Transaction.find({ userId }).sort({ date: -1 }).limit(limit).populate("categoryId accountId");
+
+export const findByImport = (userId, importId) =>
+  Transaction.find({ userId, importId }).sort({ date: -1 });
+
+export const deleteByImport = (userId, importId) =>
+  Transaction.deleteMany({ userId, importId });
+
+export const bulkUpdateCategories = (userId, importId, updates) => {
+  const bulkOps = updates.map((u) => ({
+    updateOne: {
+      filter: { _id: u.transactionId, importId, userId },
+      update: { $set: { categoryId: u.categoryId } },
+    },
+  }));
+  return Transaction.bulkWrite(bulkOps);
+};
