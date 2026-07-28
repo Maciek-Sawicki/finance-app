@@ -4,6 +4,22 @@ import * as categoryRepository from "../repositories/category.repository.js";
 import * as transactionRepository from "../repositories/transaction.repository.js";
 import * as transferRepository from "../repositories/transfer.repository.js";
 import * as exchangeRateService from "./exchangeRate.service.js";
+import type { CurrencyService } from "./exchangeRate.service.js";
+import type { Id, MongooseSessionFactory } from "../types/common.js";
+
+type AccountRepository = typeof accountRepository;
+type CategoryRepository = typeof categoryRepository;
+type TransactionRepository = typeof transactionRepository;
+type TransferRepository = typeof transferRepository;
+
+interface TransferInput {
+  fromAccountId: Id;
+  toAccountId: Id;
+  amount: number;
+  toAmount?: number;
+  date?: Date | string;
+  description?: string;
+}
 
 const TRANSFER_CATEGORY = {
   name: "Transfer",
@@ -13,23 +29,23 @@ const TRANSFER_CATEGORY = {
   favorite: false,
 };
 
-const domainError = (message, status) => Object.assign(new Error(message), { status });
+const domainError = (message: string, status: number): Error => Object.assign(new Error(message), { status });
 
 export const createTransferService = (
-  accountRepository,
-  categoryRepository,
-  transactionRepository,
-  transferRepository,
-  currencyService,
-  mongooseInstance = mongoose
+  accountRepository: AccountRepository,
+  categoryRepository: CategoryRepository,
+  transactionRepository: TransactionRepository,
+  transferRepository: TransferRepository,
+  currencyService: CurrencyService,
+  mongooseInstance: MongooseSessionFactory = mongoose
 ) => {
-  const getOrCreateTransferCategory = async (userId, session) => {
+  const getOrCreateTransferCategory = async (userId: Id, session: mongoose.ClientSession) => {
     const existing = await categoryRepository.findByNameAndType(userId, TRANSFER_CATEGORY.name, TRANSFER_CATEGORY.type, { session });
     if (existing) return existing;
     return categoryRepository.create({ ...TRANSFER_CATEGORY, userId }, { session });
   };
 
-  const create = async (userId, data) => {
+  const create = async (userId: Id, data: TransferInput) => {
     const { fromAccountId, toAccountId, amount, toAmount: customToAmount, date, description } = data;
 
     if (fromAccountId === toAccountId) {
@@ -55,7 +71,7 @@ export const createTransferService = (
         try {
           toAmount = await currencyService.convertCurrency(amount, fromAccount.currency, toAccount.currency);
         } catch (err) {
-          throw domainError(err.message, 400);
+          throw domainError(err instanceof Error ? err.message : String(err), 400);
         }
         exchangeRate = Number((toAmount / amount).toFixed(6));
       }
@@ -68,9 +84,9 @@ export const createTransferService = (
     // previously these were 3-4 independent writes, so a failure partway
     // through left half a transfer on the books.
     const session = await mongooseInstance.startSession();
-    let transfer;
-    let expenseTransaction;
-    let incomeTransaction;
+    let transfer!: Awaited<ReturnType<TransferRepository["create"]>>;
+    let expenseTransaction!: Awaited<ReturnType<TransactionRepository["createMany"]>>[number];
+    let incomeTransaction!: Awaited<ReturnType<TransactionRepository["createMany"]>>[number];
 
     try {
       await session.withTransaction(async () => {

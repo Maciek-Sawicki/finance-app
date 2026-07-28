@@ -1,14 +1,41 @@
+import mongoose from "mongoose";
 import * as budgetRepository from "../repositories/budget.repository.js";
 import * as categoryRepository from "../repositories/category.repository.js";
 import * as transactionRepository from "../repositories/transaction.repository.js";
 import * as exchangeRateService from "./exchangeRate.service.js";
+import type { CurrencyService } from "./exchangeRate.service.js";
+import type { BudgetAttrs } from "../models/budget.model.js";
+import type { Id } from "../types/common.js";
 
-const domainError = (message, status) => Object.assign(new Error(message), { status });
+type BudgetRepository = typeof budgetRepository;
+type CategoryRepository = typeof categoryRepository;
+type TransactionRepository = typeof transactionRepository;
 
-export const createBudgetService = (budgetRepository, categoryRepository, transactionRepository, currencyService) => {
-  const categoryIdOf = (budget) => budget.categoryId._id ?? budget.categoryId;
+type LeanBudget = NonNullable<Awaited<ReturnType<BudgetRepository["findById"]>>>;
 
-  const withProgress = async (budget, targetCurrency) => {
+const domainError = (message: string, status: number): Error => Object.assign(new Error(message), { status });
+
+interface BudgetInput {
+  categoryId?: Id;
+  amount?: number;
+  currency?: string;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  type?: string;
+  recurrencePeriod?: string;
+  carryOver?: boolean;
+  status?: string;
+}
+
+export const createBudgetService = (
+  budgetRepository: BudgetRepository,
+  categoryRepository: CategoryRepository,
+  transactionRepository: TransactionRepository,
+  currencyService: CurrencyService
+) => {
+  const categoryIdOf = (budget: LeanBudget) => budget.categoryId._id ?? budget.categoryId;
+
+  const withProgress = async (budget: LeanBudget, targetCurrency: string) => {
     const byCurrency = await transactionRepository.aggregateCategorySpendByCurrency(
       budget.userId, categoryIdOf(budget), budget.startDate, budget.endDate
     );
@@ -16,7 +43,7 @@ export const createBudgetService = (budgetRepository, categoryRepository, transa
     const spentTotal = (
       await Promise.all(
         byCurrency.map(({ _id: currency, total }) =>
-          currency === targetCurrency ? total : currencyService.convertCurrency(total, currency, targetCurrency)
+          currency === targetCurrency ? total : currencyService.convertCurrency(total, currency as string, targetCurrency)
         )
       )
     ).reduce((sum, amount) => sum + amount, 0);
@@ -37,7 +64,7 @@ export const createBudgetService = (budgetRepository, categoryRepository, transa
     };
   };
 
-  const create = async (userId, data) => {
+  const create = async (userId: Id, data: BudgetInput) => {
     const { categoryId, amount, currency, startDate, endDate, type, recurrencePeriod } = data;
     if (!categoryId || !amount || !currency || !startDate || !endDate) {
       throw domainError("Missing required fields.", 400);
@@ -52,17 +79,17 @@ export const createBudgetService = (budgetRepository, categoryRepository, transa
       throw domainError("Fixed budgets cannot have recurrencePeriod.", 400);
     }
 
-    return budgetRepository.create({ userId, categoryId, amount, currency, startDate, endDate, type, recurrencePeriod });
+    return budgetRepository.create({ userId, categoryId, amount, currency, startDate, endDate, type, recurrencePeriod } as mongoose.AnyKeys<BudgetAttrs>);
   };
 
-  const list = async (userId, filter, targetCurrency) => {
+  const list = async (userId: Id, filter: Parameters<BudgetRepository["findByUser"]>[1], targetCurrency: string) => {
     if (!targetCurrency) throw domainError("targetCurrency is required.", 400);
 
     const budgets = await budgetRepository.findByUser(userId, filter);
     return Promise.all(budgets.map((b) => withProgress(b, targetCurrency)));
   };
 
-  const getById = async (userId, budgetId, targetCurrency) => {
+  const getById = async (userId: Id, budgetId: Id, targetCurrency: string) => {
     if (!targetCurrency) throw domainError("targetCurrency is required.", 400);
 
     const budget = await budgetRepository.findById(userId, budgetId);
@@ -70,8 +97,8 @@ export const createBudgetService = (budgetRepository, categoryRepository, transa
     return withProgress(budget, targetCurrency);
   };
 
-  const update = async (userId, budgetId, data) => {
-    const updateData = {};
+  const update = async (userId: Id, budgetId: Id, data: BudgetInput) => {
+    const updateData: BudgetInput = {};
     if (data.amount !== undefined) updateData.amount = data.amount;
     if (data.currency !== undefined) updateData.currency = data.currency;
     if (data.startDate !== undefined) updateData.startDate = data.startDate;
@@ -85,17 +112,17 @@ export const createBudgetService = (budgetRepository, categoryRepository, transa
       updateData.status = "completed";
     }
 
-    const updated = await budgetRepository.updateById(userId, budgetId, updateData);
+    const updated = await budgetRepository.updateById(userId, budgetId, updateData as mongoose.UpdateQuery<BudgetAttrs>);
     if (!updated) throw domainError("Budget not found.", 404);
     return updated;
   };
 
-  const remove = async (userId, budgetId) => {
+  const remove = async (userId: Id, budgetId: Id) => {
     const deleted = await budgetRepository.deleteById(userId, budgetId);
     if (!deleted) throw domainError("Budget not found.", 404);
   };
 
-  const getByType = async (userId, status, targetCurrency) => {
+  const getByType = async (userId: Id, status: string, targetCurrency: string) => {
     if (!targetCurrency) throw domainError("targetCurrency is required.", 400);
     if (!["completed", "active"].includes(status)) throw domainError("Invalid status parameter.", 400);
 
@@ -103,7 +130,7 @@ export const createBudgetService = (budgetRepository, categoryRepository, transa
     return Promise.all(budgets.map((b) => withProgress(b, targetCurrency)));
   };
 
-  const getHistory = async (userId, categoryId, targetCurrency) => {
+  const getHistory = async (userId: Id, categoryId: Id, targetCurrency: string) => {
     if (!targetCurrency) throw domainError("targetCurrency is required.", 400);
 
     const budgets = await budgetRepository.findByCategory(userId, categoryId);

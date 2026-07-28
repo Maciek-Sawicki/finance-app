@@ -1,9 +1,52 @@
 import * as accountRepository from "../repositories/account.repository.js";
 import * as transactionRepository from "../repositories/transaction.repository.js";
 import * as exchangeRateService from "./exchangeRate.service.js";
+import type { CurrencyService } from "./exchangeRate.service.js";
+import type { Id } from "../types/common.js";
 
-export const createAccountService = (accountRepository, transactionRepository, currencyService) => {
-  const withBalance = (account, agg) => {
+type AccountRepository = typeof accountRepository;
+type TransactionRepository = typeof transactionRepository;
+
+type LeanAccount = NonNullable<Awaited<ReturnType<AccountRepository["findById"]>>>;
+
+// Deliberately just the fields withBalance reads, not the full aggregate
+// return type - it's called with both aggregateAccountBalance's result
+// ({ _id: null, ... }) and a single entry from aggregateBalancesByAccount's
+// Map ({ _id: ObjectId, ... } | undefined), which differ in _id but agree
+// on these.
+interface BalanceAgg {
+  incomeSettled?: number;
+  expenseSettled?: number;
+  incomeAll?: number;
+  expenseAll?: number;
+}
+
+interface CreateAccountInput {
+  name: string;
+  type: string;
+  currency: string;
+  startingBalance: number;
+  icon?: string;
+  description?: string;
+  isDefault?: boolean;
+}
+
+interface UpdateAccountInput {
+  name?: string;
+  type?: string;
+  currency?: string;
+  startingBalance?: number;
+  icon?: string;
+  description?: string;
+  isDefault?: boolean;
+}
+
+export const createAccountService = (
+  accountRepository: AccountRepository,
+  transactionRepository: TransactionRepository,
+  currencyService: CurrencyService
+) => {
+  const withBalance = (account: LeanAccount, agg: BalanceAgg | null | undefined) => {
     const incomeSettled = agg?.incomeSettled || 0;
     const expenseSettled = agg?.expenseSettled || 0;
     const incomeAll = agg?.incomeAll || 0;
@@ -17,7 +60,7 @@ export const createAccountService = (accountRepository, transactionRepository, c
     };
   };
 
-  const list = async (userId, filter = {}) => {
+  const list = async (userId: Id, filter: Parameters<AccountRepository["findByUser"]>[1] = {}) => {
     const accounts = await accountRepository.findByUser(userId, filter);
     if (accounts.length === 0) return [];
 
@@ -25,7 +68,7 @@ export const createAccountService = (accountRepository, transactionRepository, c
     return accounts.map((account) => withBalance(account, balancesByAccount.get(account._id.toString())));
   };
 
-  const getById = async (userId, accountId) => {
+  const getById = async (userId: Id, accountId: Id) => {
     const account = await accountRepository.findById(userId, accountId);
     if (!account) return null;
 
@@ -33,7 +76,7 @@ export const createAccountService = (accountRepository, transactionRepository, c
     return withBalance(account, agg);
   };
 
-  const getDefault = async (userId) => {
+  const getDefault = async (userId: Id) => {
     const account = await accountRepository.findDefault(userId);
     if (!account) return null;
 
@@ -41,7 +84,7 @@ export const createAccountService = (accountRepository, transactionRepository, c
     return withBalance(account, agg);
   };
 
-  const create = (userId, data) =>
+  const create = (userId: Id, data: CreateAccountInput) =>
     accountRepository.create({
       userId,
       name: data.name,
@@ -53,8 +96,8 @@ export const createAccountService = (accountRepository, transactionRepository, c
       isDefault: data.isDefault,
     });
 
-  const update = (userId, accountId, data) => {
-    const updateData = {};
+  const update = (userId: Id, accountId: Id, data: UpdateAccountInput) => {
+    const updateData: Partial<CreateAccountInput> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.currency !== undefined) updateData.currency = data.currency;
@@ -66,7 +109,7 @@ export const createAccountService = (accountRepository, transactionRepository, c
     return accountRepository.updateById(userId, accountId, updateData);
   };
 
-  const remove = async (userId, accountId) => {
+  const remove = async (userId: Id, accountId: Id) => {
     const deleted = await accountRepository.deleteById(userId, accountId);
     if (!deleted) return false;
 
@@ -74,7 +117,7 @@ export const createAccountService = (accountRepository, transactionRepository, c
     return true;
   };
 
-  const setDefault = async (userId, accountId) => {
+  const setDefault = async (userId: Id, accountId: Id) => {
     await accountRepository.unsetDefaultForUser(userId);
     const account = await accountRepository.updateById(userId, accountId, { isDefault: true });
     if (!account) return null;
@@ -83,7 +126,7 @@ export const createAccountService = (accountRepository, transactionRepository, c
     return withBalance(account, agg);
   };
 
-  const getBalance = async (userId, accountId) => {
+  const getBalance = async (userId: Id, accountId: Id) => {
     const account = await accountRepository.findById(userId, accountId);
     if (!account) return null;
 
@@ -91,7 +134,7 @@ export const createAccountService = (accountRepository, transactionRepository, c
     return withBalance(account, agg).balance;
   };
 
-  const getTotalBalance = async (userId, baseCurrency) => {
+  const getTotalBalance = async (userId: Id, baseCurrency: string) => {
     const accounts = await accountRepository.findByUser(userId);
     if (accounts.length === 0) return null;
 
@@ -122,7 +165,7 @@ export const createAccountService = (accountRepository, transactionRepository, c
     };
   };
 
-  const getSummary = async (userId, targetCurrency) => {
+  const getSummary = async (userId: Id, targetCurrency: string) => {
     const accounts = await accountRepository.findByUser(userId);
     if (accounts.length === 0) {
       return { accounts: [], total: 0, totalAfterRAndP: 0 };

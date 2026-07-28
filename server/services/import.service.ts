@@ -1,27 +1,55 @@
 import mongoose from "mongoose";
+// Type-only side-effect import: pulls in @types/multer's `declare global
+// { namespace Express { namespace Multer { interface File } } }`
+// augmentation, which otherwise only loads once something imports the
+// multer package itself.
+import type {} from "multer";
 import Papa from "papaparse";
 import { randomUUID } from "node:crypto";
 import * as importRepository from "../repositories/import.repository.js";
 import * as transactionRepository from "../repositories/transaction.repository.js";
+import type { Id, MongooseSessionFactory } from "../types/common.js";
 
-const domainError = (message, status) => Object.assign(new Error(message), { status });
+type ImportRepository = typeof importRepository;
+type TransactionRepository = typeof transactionRepository;
+
+const domainError = (message: string, status: number): Error => Object.assign(new Error(message), { status });
+
+interface ParsedTransaction {
+  date: Date;
+  amount: number;
+  type: "income" | "expense";
+  description: string;
+  categoryId: null;
+}
+
+interface ParseRowError {
+  rowNumber: number;
+  message: string;
+}
+
+interface ParseCsvResult {
+  rowCount: number;
+  transactions: ParsedTransaction[];
+  errors: ParseRowError[];
+}
 
 // Pure - no I/O - so it's testable without a database. Kept as a named
 // export for that reason even though createImportService is the only caller.
-export const parseCsv = (csvText) => {
-  const firstLine = csvText.split(/\r?\n/)[0];
+export const parseCsv = (csvText: string): ParseCsvResult => {
+  const firstLine = csvText.split(/\r?\n/)[0] ?? "";
   const delimiter = firstLine.includes(";") ? ";" : ",";
 
-  const { data: rows } = Papa.parse(csvText, {
+  const { data: rows } = Papa.parse<Record<string, string>>(csvText, {
     header: true,
     skipEmptyLines: true,
     delimiter,
-    transformHeader: (h) => h.trim().replace(/"/g, "").toLowerCase(),
-    transform: (value) => value?.trim().replace(/"/g, "") || "",
+    transformHeader: (h: string) => h.trim().replace(/"/g, "").toLowerCase(),
+    transform: (value: string) => value?.trim().replace(/"/g, "") || "",
   });
 
-  const transactions = [];
-  const errors = [];
+  const transactions: ParsedTransaction[] = [];
+  const errors: ParseRowError[] = [];
 
   rows.forEach((row, index) => {
     if (!row || Object.values(row).every((v) => v === "")) return;
@@ -56,8 +84,17 @@ export const parseCsv = (csvText) => {
   return { rowCount: rows.length, transactions, errors };
 };
 
-export const createImportService = (importRepository, transactionRepository, mongooseInstance = mongoose) => {
-  const create = async (userId, { accountId, file }) => {
+interface CreateImportInput {
+  accountId?: Id;
+  file?: Express.Multer.File;
+}
+
+export const createImportService = (
+  importRepository: ImportRepository,
+  transactionRepository: TransactionRepository,
+  mongooseInstance: MongooseSessionFactory = mongoose
+) => {
+  const create = async (userId: Id, { accountId, file }: CreateImportInput) => {
     if (!accountId) throw domainError("Missing accountId", 400);
     if (!file) throw domainError("No file uploaded", 400);
 
@@ -97,15 +134,15 @@ export const createImportService = (importRepository, transactionRepository, mon
     return importRepository.findById(userId, importId);
   };
 
-  const listForUser = (userId) => importRepository.findByUser(userId);
+  const listForUser = (userId: Id) => importRepository.findByUser(userId);
 
-  const getTransactions = async (userId, importId) => {
+  const getTransactions = async (userId: Id, importId: Id) => {
     const importRecord = await importRepository.findById(userId, importId);
     if (!importRecord) throw domainError("Import not found.", 404);
     return transactionRepository.findByImport(userId, importId);
   };
 
-  const updateTransactionCategory = async (userId, transactionId, categoryId) => {
+  const updateTransactionCategory = async (userId: Id, transactionId: Id, categoryId: Id | undefined) => {
     if (!categoryId) throw domainError("No categoryId", 400);
 
     const updated = await transactionRepository.updateById(userId, transactionId, { categoryId });
@@ -113,12 +150,12 @@ export const createImportService = (importRepository, transactionRepository, mon
     return updated;
   };
 
-  const batchUpdateTransactionCategories = async (userId, importId, updates) => {
+  const batchUpdateTransactionCategories = async (userId: Id, importId: Id, updates: Array<{ transactionId: Id; categoryId: Id }>) => {
     if (!Array.isArray(updates) || updates.length === 0) throw domainError("No data to update", 400);
     return transactionRepository.bulkUpdateCategories(userId, importId, updates);
   };
 
-  const remove = async (userId, importId) => {
+  const remove = async (userId: Id, importId: Id) => {
     const importRecord = await importRepository.findById(userId, importId);
     if (!importRecord) throw domainError("Import not found.", 404);
 
