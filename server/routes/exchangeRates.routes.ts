@@ -1,6 +1,6 @@
 import express from 'express';
 import { authenticate } from '../middleware/authenticate.js';
-import { reportLimiter } from '../middleware/rateLimiters.js';
+import { reportLimiter, publicRatesLimiter } from '../middleware/rateLimiters.js';
 import {
   updateExchangeRates,
   convertAmount,
@@ -11,10 +11,10 @@ import {
 
 const router = express.Router();
 
-router.get('/', getExchangeRates);
+router.get('/', publicRatesLimiter, getExchangeRates);
 router.post('/update', reportLimiter, authenticate, updateExchangeRates);
-router.get('/convert', convertAmount);
-router.get('/currencies', getAvailableCurrencies);
-router.get('/currencies/popular', getPopularCurrencies);
+router.get('/convert', publicRatesLimiter, convertAmount);
+router.get('/currencies', publicRatesLimiter, getAvailableCurrencies);
+router.get('/currencies/popular', publicRatesLimiter, getPopularCurrencies);
 
 export default router;

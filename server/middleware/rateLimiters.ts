@@ -40,3 +40,14 @@ export const importLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// The public (unauthenticated) exchange-rate read endpoints - looser than
+// reportLimiter since they're cheap reads, but every other route family has
+// some bound and these previously had none at all.
+export const publicRatesLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { message: 'Too many requests. Please try again in a minute.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

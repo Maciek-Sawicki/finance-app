@@ -73,14 +73,17 @@ export const signIn = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ $or: [{ username }, { email }] }).select("+password");
 
+  // Same status/message whether the account doesn't exist or the password
+  // is wrong - "User not found" vs "Invalid password" let an attacker
+  // enumerate valid usernames/emails by watching which response they get.
   if (!user) {
-    return res.status(404).json({ message: "User not found." });
+    return res.status(401).json({ message: "Invalid credentials." });
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.password);
 
   if (!isPasswordValid) {
-    return res.status(401).json({ message: "Invalid password." });
+    return res.status(401).json({ message: "Invalid credentials." });
   }
 
   // Only the httpOnly cookie carries the session - it used to also be

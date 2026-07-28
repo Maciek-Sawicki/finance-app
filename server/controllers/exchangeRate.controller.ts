@@ -13,7 +13,12 @@ export const convertAmount = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Missing required query parameters: amount, from, to" });
   }
 
-  const convertedAmount = await convertCurrency(parseFloat(amount), from, to);
+  const numericAmount = parseFloat(amount);
+  if (isNaN(numericAmount)) {
+    return res.status(400).json({ message: "amount must be a number." });
+  }
+
+  const convertedAmount = await convertCurrency(numericAmount, from, to);
   res.status(200).json({ amount: convertedAmount, from, to });
 });
 

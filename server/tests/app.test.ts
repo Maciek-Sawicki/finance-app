@@ -14,4 +14,10 @@ describe('Test', () => {
     expect(res.statusCode).toBe(200);
     expect(res.text).toBe('API works!');
   });
+
+  it('sets helmet security headers on every response', async () => {
+    const res = await request(app).get('/');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['x-dns-prefetch-control']).toBe('off');
+  });
 });

@@ -2,8 +2,20 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 
 dotenv.config();
+
+// Fail loudly and immediately on a misconfigured deploy instead of booting
+// "successfully" and only breaking confusingly on the first request that
+// needs the missing value (JWT_SECRET) or the first cross-origin request
+// silently getting blocked (CLIENT_URL, used below as the CORS origin).
+for (const name of ['JWT_SECRET', 'CLIENT_URL'] as const) {
+  if (!process.env[name]) {
+    console.error(`Missing ${name} environment variable.`);
+    process.exit(1);
+  }
+}
 
 import authRoutes from './routes/auth.routes.js';
 import accountRoutes from './routes/account.routes.js';
@@ -28,6 +40,7 @@ const app = express();
 // combined, not per client.
 app.set('trust proxy', 1);
 
+app.use(helmet());
 app.use(cors({
   origin: process.env.CLIENT_URL,
   credentials: true,

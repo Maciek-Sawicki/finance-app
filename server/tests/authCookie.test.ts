@@ -55,4 +55,32 @@ describe('POST /api/auth/signin', () => {
     expect(setCookie).toBeDefined();
     expect((setCookie as unknown as string[]).some((c) => c.startsWith('token='))).toBe(true);
   });
+
+  // Regression test for a user-enumeration gap: an unknown username/email
+  // used to get 404 "User not found" while a wrong password got 401
+  // "Invalid password" - the different status/message let an attacker
+  // discover which usernames/emails have accounts. Both cases must now be
+  // indistinguishable from the response alone.
+  it('responds identically (401, same message) for an unknown user and a wrong password', async () => {
+    MockedUser.findOne.mockReturnValue({
+      select: jest.fn().mockResolvedValue(null),
+    } as unknown as ReturnType<typeof User.findOne>);
+
+    const unknownUserRes = await request(app)
+      .post('/api/auth/signin')
+      .send({ username: 'nobody', password: 'password123' });
+
+    MockedUser.findOne.mockReturnValue({
+      select: jest.fn().mockResolvedValue({ _id: 'user1', username: 'alice', password: 'hashed-password' }),
+    } as unknown as ReturnType<typeof User.findOne>);
+    mockedCompare.mockResolvedValue(false as never);
+
+    const wrongPasswordRes = await request(app)
+      .post('/api/auth/signin')
+      .send({ username: 'alice', password: 'wrong' });
+
+    expect(unknownUserRes.statusCode).toBe(401);
+    expect(wrongPasswordRes.statusCode).toBe(401);
+    expect(unknownUserRes.body).toEqual(wrongPasswordRes.body);
+  });
 });
