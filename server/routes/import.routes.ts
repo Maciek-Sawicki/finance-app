@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from "multer";
 import { authenticate } from '../middleware/authenticate.js';
+import { importLimiter } from '../middleware/rateLimiters.js';
 import {
   createImport,
   getImportTransactions,
@@ -13,7 +14,7 @@ import {
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.post('/', authenticate, upload.single("file"), createImport);
+router.post('/', importLimiter, authenticate, upload.single("file"), createImport);
 router.get('/', authenticate, getUserImports);
 router.get('/:id/transactions', authenticate, getImportTransactions);
 router.patch('/transactions/:transactionId/category', authenticate, updateTransactionCategory);

@@ -20,6 +20,14 @@ import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
+// The app is only ever reachable through the nginx container in front of it
+// (docker-compose gives the server service no published port) - trusting
+// exactly that one hop lets req.ip (and express-rate-limit, which keys off
+// it) read the real client IP from X-Forwarded-For instead of nginx's own
+// container IP. Without this every rate limiter below throttles all users
+// combined, not per client.
+app.set('trust proxy', 1);
+
 app.use(cors({
   origin: process.env.CLIENT_URL,
   credentials: true,
