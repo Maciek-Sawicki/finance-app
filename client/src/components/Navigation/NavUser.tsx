@@ -1,8 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import api from "@/lib/api"
 import { useNavigate } from "react-router-dom"
 import {
   BadgeCheck,
@@ -32,28 +30,12 @@ import {
 } from "@/components/ui/sidebar"
 
 export function NavUser() {
-  const { token, user: authUser, signOut } = useAuth()
+  // AuthProvider already resolves /auth/me once on mount (cookie-based), so
+  // this no longer needs its own fallback fetch - user here is the single
+  // source of truth.
+  const { user, signOut } = useAuth()
   const { isMobile } = useSidebar()
-  const [user, setUser] = useState<any>(authUser)
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (token && !authUser) {
-        try {
-          const res = await api.get("/auth/me", {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          setUser(res.data.user)
-        } catch (err) {
-          console.error("Error fetching data:", err)
-        }
-      } else {
-        setUser(authUser)
-      }
-    }
-    fetchUser()
-  }, [token, authUser])
 
   if (!user) return null
 
@@ -80,11 +62,11 @@ export function NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-9 w-9 rounded-md">
-                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarImage alt={displayName} />
                 <AvatarFallback className="rounded-lg">{getFirstLetters(displayName)}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name}</span>
+                <span className="truncate font-semibold">{displayName}</span>
                 <span className="truncate text-xs">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
@@ -99,11 +81,11 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-9 w-9 rounded-md">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage alt={displayName} />
                   <AvatarFallback className="rounded-lg">{getFirstLetters(displayName)}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name}</span>
+                  <span className="truncate font-semibold">{displayName}</span>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>
               </div>

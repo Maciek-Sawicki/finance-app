@@ -6,50 +6,50 @@ import type { AuthContextType } from "../lib/types";
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    // No local token to gate on anymore - the httpOnly cookie (if any) is
+    // sent automatically, so this just asks the server "am I logged in?"
+    // on every load. A 401 here just means "not signed in", not an error.
     const fetchUser = async () => {
-      if (token) {
-        try {
-          const res = await api.get("/auth/me", {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          setUser(res.data.user)
-        } catch (err) {
-          console.error("Error fetching user:", err)
-          setToken(null)
-          localStorage.removeItem("token")
-        }
+      try {
+        const res = await api.get("/auth/me");
+        setUser(res.data.user);
+      } catch {
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false)
-    }
+    };
 
-    fetchUser()
-  }, [token])
+    fetchUser();
+  }, []);
 
   const signUp = async (data: any) => {
     const res = await api.post("/auth/signup", data)
     return res.data
   }
-  
+
   const signIn = async (email: string, password: string) => {
-    const res = await api.post('/auth/signIn', { email, password });
+    const res = await api.post('/auth/signin', { email, password });
     setUser(res.data.user);
-    setToken(res.data.token);
-    localStorage.setItem('token', res.data.token);
   };
 
-  const signOut = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
+  const signOut = async () => {
+    // The cookie is httpOnly, so only the server can clear it - clearing
+    // just the local user state used to leave a still-valid session cookie
+    // sitting in the browser after "signing out".
+    try {
+      await api.post("/auth/signout");
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, signIn, signOut, signUp, loading }}>
+    <AuthContext.Provider value={{ user, signIn, signOut, signUp, loading }}>
       {children}
     </AuthContext.Provider>
   );

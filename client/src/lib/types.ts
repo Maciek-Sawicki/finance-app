@@ -29,9 +29,8 @@ export interface UserProfileResponse {
 
 export interface AuthContextType {
   user: User | null
-  token: string | null
   signIn: (email: string, password: string) => Promise<void>
-  signOut: () => void
+  signOut: () => Promise<void>
   signUp: (data: any) => Promise<any>;
   loading: boolean
 }

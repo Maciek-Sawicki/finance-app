@@ -7,11 +7,7 @@ export const ImportService = {
     formData.append("accountId", accountId);
     formData.append("file", file);
 
-    const res = await api.post("/imports", formData, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+    const res = await api.post("/imports", formData);
 
     return res.data;
   },

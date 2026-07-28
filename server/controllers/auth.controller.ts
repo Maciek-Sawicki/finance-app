@@ -83,7 +83,13 @@ export const signIn = asyncHandler(async (req, res) => {
     return res.status(401).json({ message: "Invalid password." });
   }
 
-  const token = generateTokenAndSetCookie(user._id, res);
+  // Only the httpOnly cookie carries the session - it used to also be
+  // returned here as a plain string, which the client stored in
+  // localStorage and read back into an Authorization header (see
+  // client/src/lib/api.ts's old request interceptor). That defeated the
+  // point of httpOnly: an XSS bug could read localStorage and steal a
+  // fully-valid 30-day credential, whereas it can't read the cookie at all.
+  generateTokenAndSetCookie(user._id, res);
 
   res.status(200).json({
     message: "User signed in successfully.",
@@ -94,7 +100,6 @@ export const signIn = asyncHandler(async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
     },
-    token,
   });
 });
 

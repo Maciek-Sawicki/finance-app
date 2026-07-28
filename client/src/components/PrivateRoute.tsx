@@ -8,9 +8,16 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { token } = useAuth();
+  const { user, loading } = useAuth();
 
-  if (!token) {
+  // There's no token to read synchronously anymore - "am I logged in" now
+  // only resolves once AuthProvider's /auth/me check comes back, so this
+  // has to wait rather than redirecting before that's known.
+  if (loading) {
+    return null;
+  }
+
+  if (!user) {
     return <Navigate to="/signin" replace />;
   }
 
@@ -18,4 +25,3 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
 };
 
 export default PrivateRoute;
-

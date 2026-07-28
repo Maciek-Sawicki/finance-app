@@ -23,16 +23,14 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = async () => {
-    if (!token || !user) return;
+    if (!user) return;
     try {
-      const res = await api.get("/settings/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get("/settings/me");
       setSettings(res.data);
     } catch (err) {
       console.error("Error fetching settings:", err);
@@ -43,14 +41,12 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   useEffect(() => {
     fetchSettings();
-  }, [token, user]);
+  }, [user]);
 
   const updateSettings = async (updates: Partial<UserSettings>) => {
-    if (!token) return;
+    if (!user) return;
     try {
-      const res = await api.patch("/settings/me", updates, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.patch("/settings/me", updates);
       setSettings(res.data);
     } catch (err) {
       console.error("Error update settings:", err);
