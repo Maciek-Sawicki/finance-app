@@ -11,7 +11,7 @@ import {
 
 const router = express.Router();
 
-router.post('/create', authenticate, createCategory);
+router.post('/', authenticate, createCategory);
 router.get('/', authenticate, getCategories);
 router.get('/favorites', authenticate, getFavoriteCategories);
 

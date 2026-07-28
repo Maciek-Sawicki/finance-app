@@ -13,8 +13,8 @@ import {
 const router = express.Router();
 
 router.get('/', authenticate, getBudgets);
-router.post('/create', authenticate, createBudget);
-router.get('/getByType', authenticate, getBudgetsByType);
+router.post('/', authenticate, createBudget);
+router.get('/by-status/:status', authenticate, getBudgetsByType);
 
 router.get('/:id', authenticate, getBudgetById);
 router.put('/:id', authenticate, updateBudget);

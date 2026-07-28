@@ -16,6 +16,6 @@ router.get('/:id', authenticate, getRecurringTransaction);
 router.post('/', authenticate, createRecurringTransaction);
 router.put('/:id', authenticate, updateRecurringTransaction);
 router.delete('/:id', authenticate, deleteRecurringTransaction);
-router.patch('/toggle/:id', authenticate, toggleRecurringTransaction);
+router.patch('/:id/toggle', authenticate, toggleRecurringTransaction);
 
 export default router;

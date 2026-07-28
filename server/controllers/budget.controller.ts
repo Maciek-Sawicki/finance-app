@@ -46,9 +46,10 @@ export const deleteBudget = asyncHandler(async (req, res) => {
 
 export const getBudgetsByType = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const { targetCurrency, status } = req.query as { targetCurrency?: string; status?: string };
+  const { status } = req.params as { status: string };
+  const { targetCurrency } = req.query as { targetCurrency?: string };
 
-  const budgets = await budgetService.getByType(userId, status as string, targetCurrency as string);
+  const budgets = await budgetService.getByType(userId, status, targetCurrency as string);
   res.status(200).json(budgets);
 });
 

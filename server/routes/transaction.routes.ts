@@ -13,7 +13,7 @@ import {
 
 const router = express.Router();
 
-router.post('/create', authenticate, createTransaction);
+router.post('/', authenticate, createTransaction);
 router.post('/transfer', authenticate, createTransfer);
 router.get('/', authenticate, getTransactions);
 router.get('/last', authenticate, getLastTransactions);

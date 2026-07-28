@@ -17,7 +17,7 @@ import {
 
 const router = express.Router();
 
-router.post('/create', authenticate, createAccount);
+router.post('/', authenticate, createAccount);
 router.get('/', authenticate, getAccounts);
 router.get('/default', authenticate, getDefaultAccount);
 router.get('/total-balance', authenticate, getTotalBalance);

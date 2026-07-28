@@ -23,7 +23,7 @@ export const CategoriesService = {
   
 
   create: async (category: Partial<Category>): Promise<Category> => {
-    const res = await api.post("/categories/create", category);
+    const res = await api.post("/categories", category);
     return res.data;
   },
 

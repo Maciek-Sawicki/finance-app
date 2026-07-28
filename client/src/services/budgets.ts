@@ -10,8 +10,8 @@ export const BudgetsService = {
   },
 
   getBudgetsByType : async (targetCurrency: string, status: string): Promise<Budget[]> => {
-    const res = await api.get("/budgets/getByType", {
-      params: { targetCurrency, status }
+    const res = await api.get(`/budgets/by-status/${status}`, {
+      params: { targetCurrency }
     });
     return res.data;
   },
@@ -34,7 +34,7 @@ export const BudgetsService = {
   },
 
   create: async (budget: Partial<Budget>): Promise<Budget> => {
-    const res = await api.post("/budgets/create", budget);
+    const res = await api.post("/budgets", budget);
     return res.data;
   },
 

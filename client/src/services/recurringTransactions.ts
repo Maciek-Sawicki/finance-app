@@ -27,7 +27,7 @@ export const RecurringTransactionsService = {
   },
 
   toggle: async (id: string) => {
-    const res = await api.patch(`/recurring-transactions/toggle/${id}`);
+    const res = await api.patch(`/recurring-transactions/${id}/toggle`);
     return res.data;
   },
 };

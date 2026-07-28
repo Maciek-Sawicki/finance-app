@@ -17,7 +17,7 @@ export const AccountsService = {
   },
 
   create: async (account: Partial<Account>): Promise<Account> => {
-    const res = await api.post("/accounts/create", account);
+    const res = await api.post("/accounts", account);
     return res.data;
   },
 

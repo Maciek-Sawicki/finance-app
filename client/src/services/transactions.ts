@@ -22,7 +22,7 @@ export const TransactionsService = {
     return res.data;
   },
   create: async (transaction: Partial<Transaction>): Promise<Transaction> => {
-    const res = await api.post("/transactions/create", transaction);
+    const res = await api.post("/transactions", transaction);
     return res.data;
   },
   update: async (id: string, transaction: Partial<Transaction>): Promise<Transaction> => {
