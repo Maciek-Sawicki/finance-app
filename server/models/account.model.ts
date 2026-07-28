@@ -1,8 +1,8 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, type InferSchemaType, type HydratedDocument } from "mongoose";
 
-const accountSchema = new mongoose.Schema({
+const accountSchema = new Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },
@@ -20,7 +20,7 @@ const accountSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
-  startingBalance: {          
+  startingBalance: {
     type: Number,
     required: true,
     min: 0,
@@ -35,11 +35,14 @@ const accountSchema = new mongoose.Schema({
   },
   isDefault: {
     type: Boolean,
-    default: false, 
+    default: false,
   }
 }, {
-  timestamps: true, 
+  timestamps: true,
 });
+
+export type AccountAttrs = InferSchemaType<typeof accountSchema>;
+export type AccountDocument = HydratedDocument<AccountAttrs>;
 
 const Account = mongoose.model("Account", accountSchema);
 export default Account;

@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, type InferSchemaType, type HydratedDocument } from "mongoose";
 
-const exchangeRateSchema = new mongoose.Schema({
+const exchangeRateSchema = new Schema({
   base: {
     type: String,
     required: true
@@ -15,6 +15,9 @@ const exchangeRateSchema = new mongoose.Schema({
     default: Date.now
   }
 }, { timestamps: true });
+
+export type ExchangeRateAttrs = InferSchemaType<typeof exchangeRateSchema>;
+export type ExchangeRateDocument = HydratedDocument<ExchangeRateAttrs>;
 
 const ExchangeRate = mongoose.model("ExchangeRate", exchangeRateSchema);
 export default ExchangeRate;

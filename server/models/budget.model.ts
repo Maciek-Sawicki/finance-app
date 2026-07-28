@@ -1,8 +1,8 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, type InferSchemaType, type HydratedDocument } from "mongoose";
 
-const budgetSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
+const budgetSchema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  categoryId: { type: Schema.Types.ObjectId, ref: "Category", required: true },
 
   amount: { type: Number, required: true, min: 0 },
   currency: { type: String, required: true },
@@ -24,5 +24,8 @@ const budgetSchema = new mongoose.Schema({
     default: "active",
   },
 }, { timestamps: true });
+
+export type BudgetAttrs = InferSchemaType<typeof budgetSchema>;
+export type BudgetDocument = HydratedDocument<BudgetAttrs>;
 
 export default mongoose.model("Budget", budgetSchema);

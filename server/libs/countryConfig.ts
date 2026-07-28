@@ -1,4 +1,9 @@
-export const countryConfig = {
+export interface CountryConfigEntry {
+  name: string;
+  locale: string;
+}
+
+export const countryConfig: Record<string, CountryConfigEntry> = {
   US: { name: "United States", locale: "en-US" },
   DE: { name: "Germany", locale: "de-DE" },
   FR: { name: "France", locale: "fr-FR" },

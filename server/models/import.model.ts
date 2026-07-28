@@ -1,12 +1,12 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, type InferSchemaType, type HydratedDocument } from "mongoose";
 
-const importSchema = new mongoose.Schema({
+const importSchema = new Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },
-  accountId: { type: mongoose.Schema.Types.ObjectId, ref: "Account", required: true },
+  accountId: { type: Schema.Types.ObjectId, ref: "Account", required: true },
   fileName: {
     type: String,
     required: true,
@@ -48,8 +48,11 @@ const importSchema = new mongoose.Schema({
     unique: true,
   }
 }, {
-  timestamps: true, 
+  timestamps: true,
 });
+
+export type ImportAttrs = InferSchemaType<typeof importSchema>;
+export type ImportDocument = HydratedDocument<ImportAttrs>;
 
 const Import = mongoose.model("Import", importSchema);
 export default Import;

@@ -1,10 +1,10 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, type InferSchemaType, type HydratedDocument } from "mongoose";
 
-const recurringTransactionSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+const recurringTransactionSchema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   name: { type: String, required: true, trim: true },
-  categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
-  accountId: { type: mongoose.Schema.Types.ObjectId, ref: "Account", required: true },
+  categoryId: { type: Schema.Types.ObjectId, ref: "Category", required: true },
+  accountId: { type: Schema.Types.ObjectId, ref: "Account", required: true },
   amount: { type: Number, required: true, min: 0 },
   frequency: {
     type: String,
@@ -18,11 +18,11 @@ const recurringTransactionSchema = new mongoose.Schema({
     dayOfMonth: { type: Number, min: 1, max: 31 },
     dayOfWeek: {
       type: String,
-      enum: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+      enum: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
     },
     weekOfMonth: {
       type: String,
-      enum: ['First','Second','Third','Fourth','Last'],
+      enum: ['First', 'Second', 'Third', 'Fourth', 'Last'],
     },
   },
   nextDueDate: { type: Date, required: true },
@@ -34,16 +34,19 @@ const recurringTransactionSchema = new mongoose.Schema({
   settled: { type: Boolean, default: false },
 }, { timestamps: true });
 
-recurringTransactionSchema.pre('validate', function(next) {
+export type RecurringTransactionAttrs = InferSchemaType<typeof recurringTransactionSchema>;
+export type RecurringTransactionDocument = HydratedDocument<RecurringTransactionAttrs>;
+
+recurringTransactionSchema.pre('validate', function (this: RecurringTransactionDocument, next) {
   if (this.frequency === 'custom') {
-    const c = this.customInterval;
+    const c = this.customInterval ?? {};
     const count = [
       c.everyXDays ? 1 : 0,
       c.everyXWeeks ? 1 : 0,
       c.everyXMonths ? 1 : 0,
       c.dayOfMonth ? 1 : 0,
       (c.dayOfWeek && c.weekOfMonth) ? 1 : 0
-    ].reduce((a,b)=>a+b,0);
+    ].reduce((a, b) => a + b, 0);
 
     if (count === 0) return next(new Error("Custom frequency requires at least one interval to be set."));
     if (count > 1) return next(new Error("Custom frequency can only have one interval type set."));

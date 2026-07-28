@@ -1,22 +1,22 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, type InferSchemaType, type HydratedDocument } from "mongoose";
 
-const transactionSchema = new mongoose.Schema({
+const transactionSchema = new Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },
   categoryId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "Category",
     default: null,
-    required: function () {
+    required: function (this: { importId: mongoose.Types.ObjectId | null }) {
       return this.importId === null;
     }
   },
   accountId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Account", 
+    type: Schema.Types.ObjectId,
+    ref: "Account",
     required: true,
   },
   type: {
@@ -26,16 +26,16 @@ const transactionSchema = new mongoose.Schema({
   },
   exclude: {
     type: Boolean,
-    default: false, 
+    default: false,
   },
   amount: {
     type: Number,
     required: true,
-    min: 0, 
+    min: 0,
   },
   date: {
     type: Date,
-    default: Date.now, 
+    default: Date.now,
   },
   settled: {
     type: Boolean,
@@ -46,15 +46,15 @@ const transactionSchema = new mongoose.Schema({
     trim: true,
   },
   transferId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "Transfer",
     default: null,
   },
   importId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "Import",
     default: null,
-  }  
+  }
 }, {
   timestamps: true,
 });
@@ -64,6 +64,9 @@ transactionSchema.index({ userId: 1, accountId: 1 });
 transactionSchema.index({ userId: 1, categoryId: 1 });
 transactionSchema.index({ importId: 1 });
 transactionSchema.index({ transferId: 1 });
+
+export type TransactionAttrs = InferSchemaType<typeof transactionSchema>;
+export type TransactionDocument = HydratedDocument<TransactionAttrs>;
 
 const Transaction = mongoose.model("Transaction", transactionSchema);
 export default Transaction;

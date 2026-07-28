@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, type InferSchemaType, type HydratedDocument } from "mongoose";
 
-const categorySchema = new mongoose.Schema(
+const categorySchema = new Schema(
   {
     name: {
       type: String,
@@ -9,13 +9,13 @@ const categorySchema = new mongoose.Schema(
       maxlength: 50,
     },
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
     type: {
       type: String,
-      enum: ["income", "expense", "transfer", "exclude"], 
+      enum: ["income", "expense", "transfer", "exclude"],
       required: true,
     },
     icon: {
@@ -37,6 +37,9 @@ const categorySchema = new mongoose.Schema(
 );
 
 categorySchema.index({ userId: 1, name: 1, type: 1 }, { unique: true });
+
+export type CategoryAttrs = InferSchemaType<typeof categorySchema>;
+export type CategoryDocument = HydratedDocument<CategoryAttrs>;
 
 const Category = mongoose.model("Category", categorySchema);
 export default Category;

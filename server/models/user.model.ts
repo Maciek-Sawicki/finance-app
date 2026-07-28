@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, type InferSchemaType, type HydratedDocument } from "mongoose";
 
-const userSchema = new mongoose.Schema({
+const userSchema = new Schema({
   username: {
     type: String,
     required: true,
@@ -26,11 +26,12 @@ const userSchema = new mongoose.Schema({
     select: false, // Exclude password from queries by default
   },
 }, {
-    timestamps: true, 
-  }
-);
+  timestamps: true,
+});
+
+export type UserAttrs = InferSchemaType<typeof userSchema>;
+export type UserDocument = HydratedDocument<UserAttrs>;
 
 const User = mongoose.model("User", userSchema);
 
 export default User;
-
