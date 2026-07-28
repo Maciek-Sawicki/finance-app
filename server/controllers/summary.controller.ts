@@ -7,6 +7,6 @@ export const getMonthlySummary = asyncHandler(async (req, res) => {
 
   if (!targetCurrency) return res.status(400).json({ message: "targetCurrency is required." });
 
-  const monthlySummary = await summaryService.getMonthlySummary(userId, targetCurrency);
+  const monthlySummary = await summaryService.getMonthlySummary(userId, targetCurrency as string);
   res.status(200).json({ targetCurrency, monthlySummary });
 });

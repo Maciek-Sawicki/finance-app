@@ -1,3 +1,4 @@
+import type { Request, Response } from "express";
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import Settings from "../models/settings.model.js";
@@ -108,12 +109,12 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
   res.status(200).json({ user });
 });
 
-export const signOut = (req, res) => {
+export const signOut = (req: Request, res: Response) => {
   res.clearCookie("token", {
     path: "/",
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: "Strict",
+    sameSite: "strict",
   });
   res.status(200).json({ message: "User signed out successfully." });
 };

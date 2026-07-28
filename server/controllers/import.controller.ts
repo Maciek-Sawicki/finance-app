@@ -15,17 +15,17 @@ export const getUserImports = asyncHandler(async (req, res) => {
 });
 
 export const getImportTransactions = asyncHandler(async (req, res) => {
-  const tx = await importService.getTransactions(req.user._id, req.params.id);
+  const tx = await importService.getTransactions(req.user._id, req.params.id as string);
   res.json(tx);
 });
 
 export const updateTransactionCategory = asyncHandler(async (req, res) => {
-  const tx = await importService.updateTransactionCategory(req.user._id, req.params.transactionId, req.body.categoryId);
+  const tx = await importService.updateTransactionCategory(req.user._id, req.params.transactionId as string, req.body.categoryId);
   res.json(tx);
 });
 
 export const batchUpdateTransactionCategories = asyncHandler(async (req, res) => {
-  const result = await importService.batchUpdateTransactionCategories(req.user._id, req.params.id, req.body.updates);
+  const result = await importService.batchUpdateTransactionCategories(req.user._id, req.params.id as string, req.body.updates);
   res.json({
     message: "Categories updated",
     modifiedCount: result.modifiedCount,
@@ -33,6 +33,6 @@ export const batchUpdateTransactionCategories = asyncHandler(async (req, res) =>
 });
 
 export const deleteImport = asyncHandler(async (req, res) => {
-  await importService.remove(req.user._id, req.params.id);
+  await importService.remove(req.user._id, req.params.id as string);
   res.json({ message: "Import and associated transactions deleted" });
 });

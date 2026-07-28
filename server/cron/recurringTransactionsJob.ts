@@ -1,28 +1,28 @@
 import cron from "node-cron";
-import RecurringTransaction from "../models/recurringTransaction.model.js";
+import RecurringTransaction, { type RecurringTransactionDocument } from "../models/recurringTransaction.model.js";
 import Transaction from "../models/transaction.model.js";
 import Category from "../models/category.model.js";
 
-const isDue = (nextDueDate) => new Date(nextDueDate) <= new Date();
+const isDue = (nextDueDate: Date): boolean => new Date(nextDueDate) <= new Date();
 
-const getNextCustomDate = (r) => {
+const getNextCustomDate = (r: RecurringTransactionDocument): Date => {
   const today = new Date(r.nextDueDate);
-  const c = r.customInterval;
+  const c = r.customInterval ?? {};
   let nextDate = new Date(today);
 
   if (c.everyXDays) { nextDate.setDate(nextDate.getDate() + c.everyXDays); return nextDate; }
-  if (c.everyXWeeks) { nextDate.setDate(nextDate.getDate() + 7*c.everyXWeeks); return nextDate; }
+  if (c.everyXWeeks) { nextDate.setDate(nextDate.getDate() + 7 * c.everyXWeeks); return nextDate; }
   if (c.everyXMonths) { nextDate.setMonth(nextDate.getMonth() + c.everyXMonths); return nextDate; }
   if (c.dayOfMonth) { nextDate.setMonth(nextDate.getMonth() + 1); nextDate.setDate(c.dayOfMonth); return nextDate; }
 
   if (c.dayOfWeek && c.weekOfMonth) {
-    const dayOfWeekMap = { Sunday:0, Monday:1, Tuesday:2, Wednesday:3, Thursday:4, Friday:5, Saturday:6 };
-    const weekOfMonthMap = { First:1, Second:2, Third:3, Fourth:4, Last:-1 };
+    const dayOfWeekMap: Record<string, number> = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
+    const weekOfMonthMap: Record<string, number> = { First: 1, Second: 2, Third: 3, Fourth: 4, Last: -1 };
     const targetDay = dayOfWeekMap[c.dayOfWeek];
     const targetWeek = weekOfMonthMap[c.weekOfMonth];
 
     const year = nextDate.getFullYear();
-    const month = nextDate.getMonth() + 1; 
+    const month = nextDate.getMonth() + 1;
     nextDate = new Date(year, month, 1);
 
     if (targetWeek === -1) {
@@ -33,7 +33,7 @@ const getNextCustomDate = (r) => {
     } else {
       const firstDay = new Date(year, month, 1);
       const diff = (targetDay - firstDay.getDay() + 7) % 7;
-      nextDate = new Date(year, month, 1 + diff + 7*(targetWeek-1));
+      nextDate = new Date(year, month, 1 + diff + 7 * (targetWeek - 1));
     }
     return nextDate;
   }
@@ -41,11 +41,11 @@ const getNextCustomDate = (r) => {
   return nextDate;
 };
 
-const calculateNextDate = (r) => {
+const calculateNextDate = (r: RecurringTransactionDocument): Date => {
   if (r.frequency === "custom") return getNextCustomDate(r);
 
-  let nextDate = new Date(r.nextDueDate);
-  switch(r.frequency){
+  const nextDate = new Date(r.nextDueDate);
+  switch (r.frequency) {
     case "daily": nextDate.setDate(nextDate.getDate() + 1); break;
     case "weekly": nextDate.setDate(nextDate.getDate() + 7); break;
     case "biweekly": nextDate.setDate(nextDate.getDate() + 14); break;
@@ -68,7 +68,11 @@ export const startRecurringTransactionJob = () => {
           const category = await Category.findById(r.categoryId);
           if (!category) throw new Error("Category not found");
 
-          const type = category.type;
+          // Mongoose's own enum validation rejects this at .create() time
+          // (caught below, per-item) if the category is actually a
+          // "transfer"/"exclude" type - Transaction.type only allows
+          // income/expense.
+          const type = category.type as "income" | "expense";
 
           await Transaction.create({
             userId: r.userId,
@@ -92,4 +96,3 @@ export const startRecurringTransactionJob = () => {
     }
   });
 };
-

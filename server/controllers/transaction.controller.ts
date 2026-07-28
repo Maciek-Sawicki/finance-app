@@ -1,5 +1,6 @@
 import * as transactionService from "../services/transaction.service.js";
 import * as transferService from "../services/transfer.service.js";
+import type { ListQuery } from "../services/transaction.service.js";
 import { TRANSACTION_FILTER_TYPES } from "../constants/transactionTypes.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 
@@ -45,7 +46,7 @@ export const createTransfer = asyncHandler(async (req, res) => {
 });
 
 export const getTransaction = asyncHandler(async (req, res) => {
-  const transaction = await transactionService.getById(req.user._id, req.params.id);
+  const transaction = await transactionService.getById(req.user._id, req.params.id as string);
   if (!transaction) {
     return res.status(404).json({ message: "Transaction not found." });
   }
@@ -53,7 +54,7 @@ export const getTransaction = asyncHandler(async (req, res) => {
 });
 
 export const updateTransaction = asyncHandler(async (req, res) => {
-  const updated = await transactionService.update(req.user._id, req.params.id, req.body);
+  const updated = await transactionService.update(req.user._id, req.params.id as string, req.body);
   if (!updated) {
     return res.status(404).json({ message: "Transaction not found." });
   }
@@ -61,7 +62,7 @@ export const updateTransaction = asyncHandler(async (req, res) => {
 });
 
 export const deleteTransaction = asyncHandler(async (req, res) => {
-  const deleted = await transactionService.remove(req.user._id, req.params.id);
+  const deleted = await transactionService.remove(req.user._id, req.params.id as string);
   if (!deleted) {
     return res.status(404).json({ message: "Transaction not found." });
   }
@@ -69,23 +70,26 @@ export const deleteTransaction = asyncHandler(async (req, res) => {
 });
 
 export const getTransactions = asyncHandler(async (req, res) => {
-  const { type } = req.query;
-  if (type && !TRANSACTION_FILTER_TYPES.includes(type)) {
+  const { startDate, endDate, type, categoryId, accountId, page, limit } = req.query as {
+    startDate?: string; endDate?: string; type?: string; categoryId?: string; accountId?: string; page?: string; limit?: string;
+  };
+  if (type && !(TRANSACTION_FILTER_TYPES as readonly string[]).includes(type)) {
     return res.status(400).json({ message: "Type must be either 'income' or 'expense'." });
   }
 
-  const result = await transactionService.list(req.user._id, req.query);
+  const query: ListQuery = { startDate, endDate, type, categoryId, accountId, page, limit };
+  const result = await transactionService.list(req.user._id, query);
   res.status(200).json(result);
 });
 
 export const toggleTransactionSettled = asyncHandler(async (req, res) => {
-  const transaction = await transactionService.toggleSettled(req.user._id, req.params.id);
+  const transaction = await transactionService.toggleSettled(req.user._id, req.params.id as string);
   if (!transaction) return res.status(404).json({ message: "Transaction not found." });
   res.status(200).json({ message: "Transaction updated", transaction });
 });
 
 export const getLastTransactions = asyncHandler(async (req, res) => {
-  const limit = parseInt(req.query.limit, 10) || 5;
+  const limit = parseInt(req.query.limit as string, 10) || 5;
   const transactions = await transactionService.listRecent(req.user._id, limit);
   res.status(200).json(transactions);
 });

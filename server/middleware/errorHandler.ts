@@ -1,15 +1,23 @@
+import type { ErrorRequestHandler } from "express";
+
+interface AppError extends Error {
+  status?: number;
+  code?: number;
+  errors?: Record<string, { message: string }>;
+}
+
 // Single place that turns a thrown/rejected error into an HTTP response.
 // Handles the domain-error convention used across services
 // (Object.assign(new Error(message), { status })) plus the Mongoose error
 // shapes that used to leak through as generic 500s.
-export const errorHandler = (err, req, res, next) => {
+export const errorHandler: ErrorRequestHandler = (err: AppError, req, res, next) => {
   console.error(`[${req.method} ${req.originalUrl}]`, err);
 
   if (typeof err.status === "number") {
     return res.status(err.status).json({ message: err.message });
   }
 
-  if (err.name === "ValidationError") {
+  if (err.name === "ValidationError" && err.errors) {
     const messages = Object.values(err.errors).map((e) => e.message);
     return res.status(400).json({ message: messages.join(", ") });
   }

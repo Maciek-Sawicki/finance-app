@@ -2,13 +2,13 @@ import { fetchAndSaveRates, convertCurrency, getLatestDocument } from '../servic
 import { asyncHandler } from '../middleware/asyncHandler.js';
 
 export const updateExchangeRates = asyncHandler(async (req, res) => {
-  const { base } = req.query;
+  const { base } = req.query as { base?: string };
   const rates = await fetchAndSaveRates(base || "USD");
   res.status(200).json({ message: "Exchange rates updated successfully", rates });
 });
 
 export const convertAmount = asyncHandler(async (req, res) => {
-  const { amount, from, to } = req.query;
+  const { amount, from, to } = req.query as { amount?: string; from?: string; to?: string };
   if (!amount || !from || !to) {
     return res.status(400).json({ message: "Missing required query parameters: amount, from, to" });
   }
@@ -51,7 +51,7 @@ export const getPopularCurrencies = asyncHandler(async (req, res) => {
 });
 
 export const getExchangeRates = asyncHandler(async (req, res) => {
-  const { base } = req.query;
+  const { base } = req.query as { base?: string };
   const ratesDoc = await getLatestDocument(base);
 
   if (!ratesDoc) {

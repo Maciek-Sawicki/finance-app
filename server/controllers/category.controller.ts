@@ -34,7 +34,7 @@ export const getCategories = asyncHandler(async (req, res) => {
 });
 
 export const getCategory = asyncHandler(async (req, res) => {
-  const category = await Category.findOne({ _id: req.params.id, userId: req.user._id });
+  const category = await Category.findOne({ _id: req.params.id as string, userId: req.user._id });
   if (!category) {
     return res.status(404).json({ message: 'Category not found.' });
   }
@@ -43,7 +43,7 @@ export const getCategory = asyncHandler(async (req, res) => {
 
 export const updateCategory = asyncHandler(async (req, res) => {
   const { name, type, icon, color, favorite } = req.body;
-  const updateData = {};
+  const updateData: { name?: string; type?: string; icon?: string; color?: string; favorite?: boolean } = {};
   if (name !== undefined) updateData.name = name;
   if (type !== undefined) updateData.type = type;
   if (icon !== undefined) updateData.icon = icon;
@@ -51,7 +51,7 @@ export const updateCategory = asyncHandler(async (req, res) => {
   if (favorite !== undefined) updateData.favorite = favorite;
 
   const updated = await Category.findOneAndUpdate(
-    { _id: req.params.id, userId: req.user._id },
+    { _id: req.params.id as string, userId: req.user._id },
     updateData,
     { new: true }
   );
@@ -64,7 +64,7 @@ export const updateCategory = asyncHandler(async (req, res) => {
 });
 
 export const deleteCategory = asyncHandler(async (req, res) => {
-  const deleted = await Category.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
+  const deleted = await Category.findOneAndDelete({ _id: req.params.id as string, userId: req.user._id });
 
   if (!deleted) {
     return res.status(404).json({ message: 'Category not found or not authorized.' });

@@ -16,7 +16,7 @@ interface TransactionInput {
   exclude?: boolean;
 }
 
-interface ListQuery {
+export interface ListQuery {
   startDate?: string;
   endDate?: string;
   type?: string;

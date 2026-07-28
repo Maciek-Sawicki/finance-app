@@ -9,28 +9,28 @@ export const createBudget = asyncHandler(async (req, res) => {
 
 export const getBudgets = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const { status, type, targetCurrency } = req.query;
+  const { status, type, targetCurrency } = req.query as { status?: string; type?: string; targetCurrency?: string };
 
-  const filters = {};
+  const filters: { status?: string; type?: string } = {};
   if (status) filters.status = status;
   if (type) filters.type = type;
 
-  const budgets = await budgetService.list(userId, filters, targetCurrency);
+  const budgets = await budgetService.list(userId, filters, targetCurrency as string);
   res.status(200).json(budgets);
 });
 
 export const getBudgetById = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const { id } = req.params;
-  const { targetCurrency } = req.query;
+  const { id } = req.params as { id: string };
+  const { targetCurrency } = req.query as { targetCurrency?: string };
 
-  const budget = await budgetService.getById(userId, id, targetCurrency);
+  const budget = await budgetService.getById(userId, id, targetCurrency as string);
   res.status(200).json(budget);
 });
 
 export const updateBudget = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
 
   const updated = await budgetService.update(userId, id, req.body);
   res.status(200).json(updated);
@@ -38,7 +38,7 @@ export const updateBudget = asyncHandler(async (req, res) => {
 
 export const deleteBudget = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
 
   await budgetService.remove(userId, id);
   res.status(200).json({ message: "Budget deleted successfully." });
@@ -46,17 +46,17 @@ export const deleteBudget = asyncHandler(async (req, res) => {
 
 export const getBudgetsByType = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const { targetCurrency, status } = req.query;
+  const { targetCurrency, status } = req.query as { targetCurrency?: string; status?: string };
 
-  const budgets = await budgetService.getByType(userId, status, targetCurrency);
+  const budgets = await budgetService.getByType(userId, status as string, targetCurrency as string);
   res.status(200).json(budgets);
 });
 
 export const getBudgetHistory = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const { id: categoryId } = req.params;
-  const { targetCurrency } = req.query;
+  const { id: categoryId } = req.params as { id: string };
+  const { targetCurrency } = req.query as { targetCurrency?: string };
 
-  const history = await budgetService.getHistory(userId, categoryId, targetCurrency);
+  const history = await budgetService.getHistory(userId, categoryId, targetCurrency as string);
   res.status(200).json(history);
 });

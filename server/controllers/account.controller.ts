@@ -21,7 +21,7 @@ export const createAccount = asyncHandler(async (req, res) => {
 });
 
 export const getAccounts = asyncHandler(async (req, res) => {
-  const targetCurrency = req.query.currency ?? "USD";
+  const targetCurrency = (req.query.currency as string) ?? "USD";
   const accounts = await accountService.list(req.user._id);
 
   if (accounts.length === 0) {
@@ -40,7 +40,7 @@ export const getAccounts = asyncHandler(async (req, res) => {
 });
 
 export const getAccount = asyncHandler(async (req, res) => {
-  const account = await accountService.getById(req.user._id, req.params.id);
+  const account = await accountService.getById(req.user._id, req.params.id as string);
   if (!account) {
     return res.status(404).json({ message: "Account not found." });
   }
@@ -54,7 +54,7 @@ export const updateAccount = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "startingBalance must be a non-negative number." });
   }
 
-  const updated = await accountService.update(req.user._id, req.params.id, {
+  const updated = await accountService.update(req.user._id, req.params.id as string, {
     name, type, currency, startingBalance, icon, description, isDefault,
   });
 
@@ -66,7 +66,7 @@ export const updateAccount = asyncHandler(async (req, res) => {
 });
 
 export const deleteAccount = asyncHandler(async (req, res) => {
-  const deleted = await accountService.remove(req.user._id, req.params.id);
+  const deleted = await accountService.remove(req.user._id, req.params.id as string);
   if (!deleted) {
     return res.status(404).json({ message: "Account not found." });
   }
@@ -74,7 +74,7 @@ export const deleteAccount = asyncHandler(async (req, res) => {
 });
 
 export const setDefaultAccount = asyncHandler(async (req, res) => {
-  const account = await accountService.setDefault(req.user._id, req.params.id);
+  const account = await accountService.setDefault(req.user._id, req.params.id as string);
   if (!account) {
     return res.status(404).json({ message: "Account not found." });
   }
@@ -90,17 +90,17 @@ export const getDefaultAccount = asyncHandler(async (req, res) => {
 });
 
 export const getAccountsByType = asyncHandler(async (req, res) => {
-  const accounts = await accountService.list(req.user._id, { type: req.params.type });
+  const accounts = await accountService.list(req.user._id, { type: req.params.type as string });
   res.status(200).json(accounts);
 });
 
 export const getAccountsByCurrency = asyncHandler(async (req, res) => {
-  const accounts = await accountService.list(req.user._id, { currency: req.params.currency });
+  const accounts = await accountService.list(req.user._id, { currency: req.params.currency as string });
   res.status(200).json(accounts);
 });
 
 export const getAccountBalance = asyncHandler(async (req, res) => {
-  const balance = await accountService.getBalance(req.user._id, req.params.id);
+  const balance = await accountService.getBalance(req.user._id, req.params.id as string);
   if (balance === null) {
     return res.status(404).json({ message: "Account not found." });
   }
@@ -108,7 +108,7 @@ export const getAccountBalance = asyncHandler(async (req, res) => {
 });
 
 export const getTotalBalance = asyncHandler(async (req, res) => {
-  const baseCurrency = req.query.base;
+  const baseCurrency = req.query.base as string | undefined;
   if (!baseCurrency) {
     return res.status(400).json({ message: "Base currency is required" });
   }
@@ -122,7 +122,7 @@ export const getTotalBalance = asyncHandler(async (req, res) => {
 });
 
 export const getAccountSummary = asyncHandler(async (req, res) => {
-  const targetCurrency = req.query.currency || "USD";
+  const targetCurrency = (req.query.currency as string) || "USD";
   const summary = await accountService.getSummary(req.user._id, targetCurrency);
   res.status(200).json({ currency: targetCurrency, ...summary });
 });

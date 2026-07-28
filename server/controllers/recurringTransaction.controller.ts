@@ -7,7 +7,7 @@ export const getRecurringTransactions = asyncHandler(async (req, res) => {
 });
 
 export const getRecurringTransaction = asyncHandler(async (req, res) => {
-  const transaction = await recurringTransactionService.getById(req.user._id, req.params.id);
+  const transaction = await recurringTransactionService.getById(req.user._id, req.params.id as string);
   res.json(transaction);
 });
 
@@ -20,7 +20,7 @@ export const createRecurringTransaction = asyncHandler(async (req, res) => {
 });
 
 export const updateRecurringTransaction = asyncHandler(async (req, res) => {
-  const transaction = await recurringTransactionService.update(req.user._id, req.params.id, req.body);
+  const transaction = await recurringTransactionService.update(req.user._id, req.params.id as string, req.body);
   res.json({
     message: "Recurring transaction updated successfully",
     transaction,
@@ -28,12 +28,12 @@ export const updateRecurringTransaction = asyncHandler(async (req, res) => {
 });
 
 export const deleteRecurringTransaction = asyncHandler(async (req, res) => {
-  await recurringTransactionService.remove(req.user._id, req.params.id);
+  await recurringTransactionService.remove(req.user._id, req.params.id as string);
   res.json({ message: "Recurring transaction deleted successfully" });
 });
 
 export const toggleRecurringTransaction = asyncHandler(async (req, res) => {
-  const transaction = await recurringTransactionService.toggleActive(req.user._id, req.params.id);
+  const transaction = await recurringTransactionService.toggleActive(req.user._id, req.params.id as string);
   res.json({
     message: `Recurring transaction ${transaction.isActive ? "activated" : "deactivated"}`,
     transaction,

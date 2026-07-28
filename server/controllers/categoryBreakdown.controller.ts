@@ -1,17 +1,49 @@
+import mongoose from "mongoose";
 import Transaction from "../models/transaction.model.js";
 import { convertCurrency } from "../services/exchangeRate.service.js";
 import { CATEGORY_TYPES } from "../constants/transactionTypes.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 
+interface AggregatedRow {
+  _id: { month?: string; year?: string; categoryId: mongoose.Types.ObjectId | null; currency: string | null };
+  categoryName: string | null;
+  icon: string | null;
+  color: string | null;
+  totalAmount: number;
+}
+
+interface CategoryBucket {
+  name: string;
+  icon: string | null;
+  color: string | null;
+  sumsByCurrency: Record<string, number>;
+}
+
+interface CategoryTotal {
+  name: string;
+  icon: string | null;
+  color: string | null;
+  total: number;
+}
+
+interface CategoryResult {
+  categoryId: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+  total: number;
+  percent: number;
+}
+
 export const getMonthlyTopCategories = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const { type, targetCurrency, limit } = req.query;
+  const { type, targetCurrency, limit } = req.query as { type?: string; targetCurrency?: string; limit?: string };
 
   if (!targetCurrency) return res.status(400).json({ message: "targetCurrency is required." });
-  if (!type || !CATEGORY_TYPES.includes(type))
+  if (!type || !(CATEGORY_TYPES as readonly string[]).includes(type))
     return res.status(400).json({ message: "Type is required and must be 'income' or 'expense'." });
 
-  const aggregated = await Transaction.aggregate([
+  const aggregated = await Transaction.aggregate<AggregatedRow>([
     { $match: { userId, type, exclude: { $ne: true }, settled: true } },
     {
       $lookup: { from: "categories", localField: "categoryId", foreignField: "_id", as: "category" }
@@ -33,9 +65,9 @@ export const getMonthlyTopCategories = asyncHandler(async (req, res) => {
     }
   ]);
 
-  const monthMap = {};
+  const monthMap: Record<string, Record<string, CategoryBucket>> = {};
   aggregated.forEach(item => {
-    const month = item._id.month;
+    const month = item._id.month as string;
     const catId = item._id.categoryId ? item._id.categoryId.toString() : "Uncategorized";
     if (!monthMap[month]) monthMap[month] = {};
     if (!monthMap[month][catId]) monthMap[month][catId] = { name: item.categoryName || "Uncategorized", icon: item.icon || null, color: item.color || null, sumsByCurrency: {} };
@@ -43,18 +75,18 @@ export const getMonthlyTopCategories = asyncHandler(async (req, res) => {
     monthMap[month][catId].sumsByCurrency[currency] = (monthMap[month][catId].sumsByCurrency[currency] || 0) + item.totalAmount;
   });
 
-  const result = {};
+  const result: Record<string, CategoryResult[]> = {};
 
   for (const [month, categories] of Object.entries(monthMap)) {
-    const allCurrencies = new Set();
+    const allCurrencies = new Set<string>();
     Object.values(categories).forEach(cat => Object.keys(cat.sumsByCurrency).forEach(c => allCurrencies.add(c)));
 
-    const currencyRates = {};
+    const currencyRates: Record<string, number> = {};
     await Promise.all(Array.from(allCurrencies).map(async currency => {
       currencyRates[currency] = currency === targetCurrency ? 1 : await convertCurrency(1, currency, targetCurrency);
     }));
 
-    const categoryTotalsMap = {};
+    const categoryTotalsMap: Record<string, CategoryTotal> = {};
     let sumAll = 0;
     for (const [catId, cat] of Object.entries(categories)) {
       let total = 0;
@@ -65,7 +97,7 @@ export const getMonthlyTopCategories = asyncHandler(async (req, res) => {
       sumAll += total;
     }
 
-    let categoriesArray = Object.entries(categoryTotalsMap)
+    let categoriesArray: CategoryResult[] = Object.entries(categoryTotalsMap)
       .map(([catId, cat]) => ({ categoryId: catId, name: cat.name, icon: cat.icon, color: cat.color, total: Number(cat.total.toFixed(2)), percent: sumAll ? Number(((cat.total / sumAll) * 100).toFixed(2)) : 0 }))
       .sort((a, b) => b.total - a.total);
 
@@ -86,13 +118,13 @@ export const getMonthlyTopCategories = asyncHandler(async (req, res) => {
 
 export const getYearlyTopCategories = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const { type, targetCurrency, limit } = req.query;
+  const { type, targetCurrency, limit } = req.query as { type?: string; targetCurrency?: string; limit?: string };
 
   if (!targetCurrency) return res.status(400).json({ message: "targetCurrency is required." });
-  if (!type || !CATEGORY_TYPES.includes(type))
+  if (!type || !(CATEGORY_TYPES as readonly string[]).includes(type))
     return res.status(400).json({ message: "Type is required and must be 'income' or 'expense'." });
 
-  const aggregated = await Transaction.aggregate([
+  const aggregated = await Transaction.aggregate<AggregatedRow>([
     { $match: { userId, type, exclude: { $ne: true }, settled: true } },
     {
       $lookup: { from: "categories", localField: "categoryId", foreignField: "_id", as: "category" }
@@ -114,9 +146,9 @@ export const getYearlyTopCategories = asyncHandler(async (req, res) => {
     }
   ]);
 
-  const yearMap = {};
+  const yearMap: Record<string, Record<string, CategoryBucket>> = {};
   aggregated.forEach(item => {
-    const year = item._id.year;
+    const year = item._id.year as string;
     const catId = item._id.categoryId ? item._id.categoryId.toString() : "Uncategorized";
     if (!yearMap[year]) yearMap[year] = {};
     if (!yearMap[year][catId]) yearMap[year][catId] = { name: item.categoryName || "Uncategorized", icon: item.icon || null, color: item.color || null, sumsByCurrency: {} };
@@ -124,17 +156,17 @@ export const getYearlyTopCategories = asyncHandler(async (req, res) => {
     yearMap[year][catId].sumsByCurrency[currency] = (yearMap[year][catId].sumsByCurrency[currency] || 0) + item.totalAmount;
   });
 
-  const result = {};
+  const result: Record<string, CategoryResult[]> = {};
   for (const [year, categories] of Object.entries(yearMap)) {
-    const allCurrencies = new Set();
+    const allCurrencies = new Set<string>();
     Object.values(categories).forEach(cat => Object.keys(cat.sumsByCurrency).forEach(c => allCurrencies.add(c)));
 
-    const currencyRates = {};
+    const currencyRates: Record<string, number> = {};
     await Promise.all(Array.from(allCurrencies).map(async currency => {
       currencyRates[currency] = currency === targetCurrency ? 1 : await convertCurrency(1, currency, targetCurrency);
     }));
 
-    const categoryTotalsMap = {};
+    const categoryTotalsMap: Record<string, CategoryTotal> = {};
     let sumAll = 0;
     for (const [catId, cat] of Object.entries(categories)) {
       let total = 0;
@@ -143,7 +175,7 @@ export const getYearlyTopCategories = asyncHandler(async (req, res) => {
       sumAll += total;
     }
 
-    let categoriesArray = Object.entries(categoryTotalsMap)
+    let categoriesArray: CategoryResult[] = Object.entries(categoryTotalsMap)
       .map(([catId, cat]) => ({ categoryId: catId, name: cat.name, icon: cat.icon, color: cat.color, total: Number(cat.total.toFixed(2)), percent: sumAll ? Number(((cat.total / sumAll) * 100).toFixed(2)) : 0 }))
       .sort((a, b) => b.total - a.total);
 
