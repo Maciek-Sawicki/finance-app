@@ -12,7 +12,11 @@ import {
 } from '../controllers/import.controller.js';
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
+// memoryStorage buffers the whole file in RAM before createImport ever runs,
+// so an unbounded upload is a straightforward way to OOM the process.
+// Exported so tests can exercise the exact real limit instead of duplicating it.
+export const MAX_IMPORT_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMPORT_FILE_SIZE_BYTES } });
 
 router.post('/', importLimiter, authenticate, upload.single("file"), createImport);
 router.get('/', authenticate, getUserImports);

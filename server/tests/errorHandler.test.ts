@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import multer from 'multer';
 import { errorHandler } from '../middleware/errorHandler.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 
@@ -60,6 +61,26 @@ describe('errorHandler', () => {
 
     expect(res.status).toHaveBeenCalledWith(409);
     expect(res.json).toHaveBeenCalledWith({ message: 'Duplicate value.' });
+  });
+
+  it('maps a multer file-too-large error to 400 instead of leaking a 500', () => {
+    const res = createRes();
+    const err = new multer.MulterError('LIMIT_FILE_SIZE');
+
+    errorHandler(err, req, res, jest.fn());
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: 'File is too large.' });
+  });
+
+  it('maps other multer errors to 400 using multer\'s own message', () => {
+    const res = createRes();
+    const err = new multer.MulterError('LIMIT_UNEXPECTED_FILE');
+
+    errorHandler(err, req, res, jest.fn());
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: err.message });
   });
 
   it('falls back to a generic 500 for anything else, without leaking the raw error message', () => {
