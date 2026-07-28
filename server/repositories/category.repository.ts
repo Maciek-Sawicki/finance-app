@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Category, { type CategoryAttrs } from "../models/category.model.js";
+import { softDeleteUpdate } from "../models/plugins/softDelete.plugin.js";
 import type { Id, SessionOption } from "../types/common.js";
 
 export const findByNameAndType = (userId: Id, name: string, type: string, { session }: SessionOption = {}) =>
@@ -11,3 +12,6 @@ export const create = async (data: mongoose.AnyKeys<CategoryAttrs>, { session }:
   const [doc] = await Category.create([data], { session, ordered: true });
   return doc;
 };
+
+export const deleteById = (userId: Id, categoryId: Id) =>
+  Category.findOneAndUpdate({ _id: categoryId, userId }, softDeleteUpdate(), { new: true }).lean();

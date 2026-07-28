@@ -1,4 +1,5 @@
 import mongoose, { Schema, type InferSchemaType, type HydratedDocument } from "mongoose";
+import { softDeletePlugin, type SoftDeleteAttrs } from "./plugins/softDelete.plugin.js";
 
 const importSchema = new Schema({
   userId: {
@@ -51,8 +52,10 @@ const importSchema = new Schema({
   timestamps: true,
 });
 
-export type ImportAttrs = InferSchemaType<typeof importSchema>;
+importSchema.plugin(softDeletePlugin);
+
+export type ImportAttrs = InferSchemaType<typeof importSchema> & SoftDeleteAttrs;
 export type ImportDocument = HydratedDocument<ImportAttrs>;
 
-const Import = mongoose.model("Import", importSchema);
+const Import = mongoose.model<ImportAttrs>("Import", importSchema);
 export default Import;

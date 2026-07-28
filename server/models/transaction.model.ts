@@ -1,4 +1,5 @@
 import mongoose, { Schema, type InferSchemaType, type HydratedDocument } from "mongoose";
+import { softDeletePlugin, type SoftDeleteAttrs } from "./plugins/softDelete.plugin.js";
 
 const transactionSchema = new Schema({
   userId: {
@@ -65,8 +66,10 @@ transactionSchema.index({ userId: 1, categoryId: 1 });
 transactionSchema.index({ importId: 1 });
 transactionSchema.index({ transferId: 1 });
 
-export type TransactionAttrs = InferSchemaType<typeof transactionSchema>;
+transactionSchema.plugin(softDeletePlugin);
+
+export type TransactionAttrs = InferSchemaType<typeof transactionSchema> & SoftDeleteAttrs;
 export type TransactionDocument = HydratedDocument<TransactionAttrs>;
 
-const Transaction = mongoose.model("Transaction", transactionSchema);
+const Transaction = mongoose.model<TransactionAttrs>("Transaction", transactionSchema);
 export default Transaction;

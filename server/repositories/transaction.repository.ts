@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Transaction, { type TransactionAttrs } from "../models/transaction.model.js";
+import { softDeleteUpdate } from "../models/plugins/softDelete.plugin.js";
 import type { Id, SessionOption } from "../types/common.js";
 
 interface BalanceSums {
@@ -37,7 +38,7 @@ export const aggregateBalancesByAccount = async (userId: Id) => {
 };
 
 export const deleteByAccount = (userId: Id, accountId: Id) =>
-  Transaction.deleteMany({ userId, accountId });
+  Transaction.updateMany({ userId, accountId }, softDeleteUpdate());
 
 // Settled expense total for a category within a date range, grouped by
 // account currency - a category's transactions are normally all in one
@@ -94,7 +95,7 @@ export const updateById = (userId: Id, transactionId: Id, updateData: mongoose.U
   Transaction.findOneAndUpdate({ _id: transactionId, userId }, updateData, { new: true });
 
 export const deleteById = (userId: Id, transactionId: Id) =>
-  Transaction.findOneAndDelete({ _id: transactionId, userId });
+  Transaction.findOneAndUpdate({ _id: transactionId, userId }, softDeleteUpdate(), { new: true });
 
 // Aggregation-pipeline update: flips the flag atomically server-side instead
 // of a read-then-save round trip.
@@ -122,7 +123,7 @@ export const findByImport = (userId: Id, importId: Id) =>
   Transaction.find({ userId, importId }).sort({ date: -1 });
 
 export const deleteByImport = (userId: Id, importId: Id) =>
-  Transaction.deleteMany({ userId, importId });
+  Transaction.updateMany({ userId, importId }, softDeleteUpdate());
 
 export const bulkUpdateCategories = (userId: Id, importId: Id, updates: Array<{ transactionId: Id; categoryId: Id }>) => {
   const bulkOps = updates.map((u) => ({

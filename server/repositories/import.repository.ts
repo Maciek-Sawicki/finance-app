@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Import, { type ImportAttrs } from "../models/import.model.js";
+import { softDeleteUpdate } from "../models/plugins/softDelete.plugin.js";
 import type { Id, SessionOption } from "../types/common.js";
 
 const LIST_FIELDS = "_id accountId fileName status rowCount importedCount skippedCount createdAt uploadDate";
@@ -17,4 +18,5 @@ export const create = async (
   return doc;
 };
 
-export const deleteById = (userId: Id, importId: Id) => Import.findOneAndDelete({ _id: importId, userId }).lean();
+export const deleteById = (userId: Id, importId: Id) =>
+  Import.findOneAndUpdate({ _id: importId, userId }, softDeleteUpdate(), { new: true }).lean();

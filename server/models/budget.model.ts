@@ -1,4 +1,5 @@
 import mongoose, { Schema, type InferSchemaType, type HydratedDocument } from "mongoose";
+import { softDeletePlugin, type SoftDeleteAttrs } from "./plugins/softDelete.plugin.js";
 
 const budgetSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -25,7 +26,9 @@ const budgetSchema = new Schema({
   },
 }, { timestamps: true });
 
-export type BudgetAttrs = InferSchemaType<typeof budgetSchema>;
+budgetSchema.plugin(softDeletePlugin);
+
+export type BudgetAttrs = InferSchemaType<typeof budgetSchema> & SoftDeleteAttrs;
 export type BudgetDocument = HydratedDocument<BudgetAttrs>;
 
-export default mongoose.model("Budget", budgetSchema);
+export default mongoose.model<BudgetAttrs>("Budget", budgetSchema);

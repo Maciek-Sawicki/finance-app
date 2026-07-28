@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Account, { type AccountAttrs } from "../models/account.model.js";
+import { softDeleteUpdate } from "../models/plugins/softDelete.plugin.js";
 import type { Id } from "../types/common.js";
 
 export const findByUser = (userId: Id, filter: mongoose.FilterQuery<AccountAttrs> = {}) =>
@@ -17,7 +18,7 @@ export const updateById = (userId: Id, accountId: Id, updateData: mongoose.Updat
   Account.findOneAndUpdate({ _id: accountId, userId }, updateData, { new: true }).lean();
 
 export const deleteById = (userId: Id, accountId: Id) =>
-  Account.findOneAndDelete({ _id: accountId, userId }).lean();
+  Account.findOneAndUpdate({ _id: accountId, userId }, softDeleteUpdate(), { new: true }).lean();
 
 export const unsetDefaultForUser = (userId: Id) =>
   Account.updateMany({ userId }, { $set: { isDefault: false } });

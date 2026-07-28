@@ -1,4 +1,5 @@
 import Category from '../models/category.model.js';
+import * as categoryRepository from '../repositories/category.repository.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 
 export const createCategory = asyncHandler(async (req, res) => {
@@ -64,7 +65,7 @@ export const updateCategory = asyncHandler(async (req, res) => {
 });
 
 export const deleteCategory = asyncHandler(async (req, res) => {
-  const deleted = await Category.findOneAndDelete({ _id: req.params.id as string, userId: req.user._id });
+  const deleted = await categoryRepository.deleteById(req.user._id, req.params.id as string);
 
   if (!deleted) {
     return res.status(404).json({ message: 'Category not found or not authorized.' });

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import RecurringTransaction, { type RecurringTransactionAttrs } from "../models/recurringTransaction.model.js";
+import { softDeleteUpdate } from "../models/plugins/softDelete.plugin.js";
 import type { Id } from "../types/common.js";
 
 export const findByUser = (userId: Id) => RecurringTransaction.find({ userId });
@@ -19,7 +20,8 @@ export const updateById = async (userId: Id, id: Id, updateData: Partial<Recurri
   return doc.save();
 };
 
-export const deleteById = (userId: Id, id: Id) => RecurringTransaction.findOneAndDelete({ _id: id, userId });
+export const deleteById = (userId: Id, id: Id) =>
+  RecurringTransaction.findOneAndUpdate({ _id: id, userId }, softDeleteUpdate(), { new: true });
 
 export const toggleActive = async (userId: Id, id: Id) => {
   const doc = await RecurringTransaction.findOne({ _id: id, userId });

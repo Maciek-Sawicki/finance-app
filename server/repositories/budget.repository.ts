@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Budget, { type BudgetAttrs } from "../models/budget.model.js";
 import type { CategoryAttrs } from "../models/category.model.js";
+import { softDeleteUpdate } from "../models/plugins/softDelete.plugin.js";
 import type { Id } from "../types/common.js";
 
 const CATEGORY_FIELDS = "name icon color type";
@@ -22,4 +23,5 @@ export const create = (data: mongoose.AnyKeys<BudgetAttrs>) => Budget.create(dat
 export const updateById = (userId: Id, budgetId: Id, updateData: mongoose.UpdateQuery<BudgetAttrs>) =>
   Budget.findOneAndUpdate({ _id: budgetId, userId }, { $set: updateData }, { new: true, runValidators: true }).lean();
 
-export const deleteById = (userId: Id, budgetId: Id) => Budget.findOneAndDelete({ _id: budgetId, userId }).lean();
+export const deleteById = (userId: Id, budgetId: Id) =>
+  Budget.findOneAndUpdate({ _id: budgetId, userId }, softDeleteUpdate(), { new: true }).lean();

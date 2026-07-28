@@ -1,4 +1,5 @@
 import mongoose, { Schema, type InferSchemaType, type HydratedDocument } from "mongoose";
+import { softDeletePlugin, type SoftDeleteAttrs } from "./plugins/softDelete.plugin.js";
 
 const recurringTransactionSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -34,7 +35,7 @@ const recurringTransactionSchema = new Schema({
   settled: { type: Boolean, default: false },
 }, { timestamps: true });
 
-export type RecurringTransactionAttrs = InferSchemaType<typeof recurringTransactionSchema>;
+export type RecurringTransactionAttrs = InferSchemaType<typeof recurringTransactionSchema> & SoftDeleteAttrs;
 export type RecurringTransactionDocument = HydratedDocument<RecurringTransactionAttrs>;
 
 recurringTransactionSchema.pre('validate', function (this: RecurringTransactionDocument, next) {
@@ -57,5 +58,7 @@ recurringTransactionSchema.pre('validate', function (this: RecurringTransactionD
   next();
 });
 
-const RecurringTransaction = mongoose.model("RecurringTransaction", recurringTransactionSchema);
+recurringTransactionSchema.plugin(softDeletePlugin);
+
+const RecurringTransaction = mongoose.model<RecurringTransactionAttrs>("RecurringTransaction", recurringTransactionSchema);
 export default RecurringTransaction;
