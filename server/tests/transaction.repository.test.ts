@@ -8,7 +8,7 @@ import Transaction from '../models/transaction.model.js';
 import Account from '../models/account.model.js';
 import '../models/category.model.js';
 
-let mongod;
+let mongod: MongoMemoryServer;
 const userId = new mongoose.Types.ObjectId();
 const accountId = new mongoose.Types.ObjectId();
 const categoryId = new mongoose.Types.ObjectId();
@@ -35,7 +35,7 @@ describe('transaction.repository', () => {
       });
 
       const found = await transactionRepository.findById(userId, created._id);
-      expect(found.amount).toBe(10);
+      expect(found!.amount).toBe(10);
 
       const otherUser = new mongoose.Types.ObjectId();
       expect(await transactionRepository.findById(otherUser, created._id)).toBeNull();
@@ -49,10 +49,10 @@ describe('transaction.repository', () => {
       });
 
       const first = await transactionRepository.toggleSettledById(userId, created._id);
-      expect(first.settled).toBe(true);
+      expect(first!.settled).toBe(true);
 
       const second = await transactionRepository.toggleSettledById(userId, created._id);
-      expect(second.settled).toBe(false);
+      expect(second!.settled).toBe(false);
     });
 
     it('returns null for a transaction that does not belong to the user', async () => {
@@ -72,7 +72,7 @@ describe('transaction.repository', () => {
       });
 
       const updated = await transactionRepository.updateById(userId, created._id, { amount: 25 });
-      expect(updated.amount).toBe(25);
+      expect(updated!.amount).toBe(25);
     });
 
     it('deletes only a transaction scoped to the given user', async () => {
@@ -128,7 +128,7 @@ describe('transaction.repository', () => {
   });
 
   describe('aggregateCategorySpendByCurrency', () => {
-    const createAccount = (overrides = {}) =>
+    const createAccount = (overrides: Record<string, unknown> = {}) =>
       Account.create({ userId, name: 'Account', type: 'checking', currency: 'USD', startingBalance: 0, ...overrides });
 
     it('groups settled expenses by the owning account currency', async () => {
@@ -148,7 +148,7 @@ describe('transaction.repository', () => {
         userId, categoryId, new Date('2026-01-01'), new Date('2026-01-31')
       );
 
-      expect(result.sort((a, b) => a._id.localeCompare(b._id))).toEqual([
+      expect(result.sort((a, b) => a._id!.localeCompare(b._id!))).toEqual([
         { _id: 'EUR', total: 40 },
         { _id: 'USD', total: 100 },
       ]);

@@ -1,20 +1,40 @@
 import { createTransferService } from '../services/transfer.service.js';
+import * as accountRepository from '../repositories/account.repository.js';
+import * as categoryRepository from '../repositories/category.repository.js';
+import * as transactionRepository from '../repositories/transaction.repository.js';
+import * as transferRepository from '../repositories/transfer.repository.js';
+import type { CurrencyService } from '../services/exchangeRate.service.js';
+import type { MongooseSessionFactory } from '../types/common.js';
 
-const createFakeAccountRepository = () => ({ findById: jest.fn() });
-const createFakeCategoryRepository = () => ({ findByNameAndType: jest.fn(), create: jest.fn() });
-const createFakeTransactionRepository = () => ({ createMany: jest.fn() });
-const createFakeTransferRepository = () => ({ create: jest.fn() });
-const createFakeCurrencyService = () => ({ convertCurrency: jest.fn() });
+type AccountRepository = jest.Mocked<typeof accountRepository>;
+type CategoryRepository = jest.Mocked<typeof categoryRepository>;
+type TransactionRepository = jest.Mocked<typeof transactionRepository>;
+type TransferRepository = jest.Mocked<typeof transferRepository>;
+type LeanAccount = NonNullable<Awaited<ReturnType<typeof accountRepository.findById>>>;
+type CategoryDoc = Awaited<ReturnType<typeof categoryRepository.findByNameAndType>>;
+type CreatedTransactions = Awaited<ReturnType<typeof transactionRepository.createMany>>;
+type CreatedTransfer = Awaited<ReturnType<typeof transferRepository.create>>;
+
+const createFakeAccountRepository = (): AccountRepository => ({ findById: jest.fn() } as unknown as AccountRepository);
+const createFakeCategoryRepository = (): CategoryRepository =>
+  ({ findByNameAndType: jest.fn(), create: jest.fn() } as unknown as CategoryRepository);
+const createFakeTransactionRepository = (): TransactionRepository =>
+  ({ createMany: jest.fn() } as unknown as TransactionRepository);
+const createFakeTransferRepository = (): TransferRepository => ({ create: jest.fn() } as unknown as TransferRepository);
+const createFakeCurrencyService = (): jest.Mocked<CurrencyService> =>
+  ({ convertCurrency: jest.fn() } as unknown as jest.Mocked<CurrencyService>);
 
 // A fake session whose withTransaction just invokes the callback directly -
 // enough to unit-test the service's own logic (currency branching, category
 // reuse, error status codes) without touching a real MongoDB session.
 const createFakeMongoose = () => {
-  const session = { withTransaction: jest.fn((fn) => fn()), endSession: jest.fn() };
-  return { mongooseInstance: { startSession: jest.fn().mockResolvedValue(session) }, session };
+  const session = { withTransaction: jest.fn((fn: () => unknown) => fn()), endSession: jest.fn() };
+  const mongooseInstance = { startSession: jest.fn().mockResolvedValue(session) } as unknown as MongooseSessionFactory;
+  return { mongooseInstance, session };
 };
 
-const account = (overrides = {}) => ({ _id: 'acc', name: 'Account', currency: 'USD', ...overrides });
+const account = (overrides: Partial<Omit<LeanAccount, '_id'> & { _id: string }> = {}): LeanAccount =>
+  ({ _id: 'acc', name: 'Account', currency: 'USD', ...overrides } as unknown as LeanAccount);
 
 describe('transfer.service', () => {
   it('rejects a transfer between the same account before touching the database', async () => {
@@ -47,11 +67,11 @@ describe('transfer.service', () => {
     const accountRepository = createFakeAccountRepository();
     accountRepository.findById.mockResolvedValueOnce(account({ _id: 'acc1' })).mockResolvedValueOnce(account({ _id: 'acc2' }));
     const categoryRepository = createFakeCategoryRepository();
-    categoryRepository.findByNameAndType.mockResolvedValue({ _id: 'cat1' });
+    categoryRepository.findByNameAndType.mockResolvedValue({ _id: 'cat1' } as unknown as CategoryDoc);
     const transactionRepository = createFakeTransactionRepository();
-    transactionRepository.createMany.mockResolvedValue([{ _id: 'exp' }, { _id: 'inc' }]);
+    transactionRepository.createMany.mockResolvedValue([{ _id: 'exp' }, { _id: 'inc' }] as unknown as CreatedTransactions);
     const transferRepository = createFakeTransferRepository();
-    transferRepository.create.mockResolvedValue({ _id: 'transfer1' });
+    transferRepository.create.mockResolvedValue({ _id: 'transfer1' } as unknown as CreatedTransfer);
     const currencyService = createFakeCurrencyService();
     const { mongooseInstance } = createFakeMongoose();
 
@@ -74,11 +94,11 @@ describe('transfer.service', () => {
       .mockResolvedValueOnce(account({ _id: 'acc1', currency: 'USD' }))
       .mockResolvedValueOnce(account({ _id: 'acc2', currency: 'EUR' }));
     const categoryRepository = createFakeCategoryRepository();
-    categoryRepository.findByNameAndType.mockResolvedValue({ _id: 'cat1' });
+    categoryRepository.findByNameAndType.mockResolvedValue({ _id: 'cat1' } as unknown as CategoryDoc);
     const transactionRepository = createFakeTransactionRepository();
-    transactionRepository.createMany.mockResolvedValue([{ _id: 'exp' }, { _id: 'inc' }]);
+    transactionRepository.createMany.mockResolvedValue([{ _id: 'exp' }, { _id: 'inc' }] as unknown as CreatedTransactions);
     const transferRepository = createFakeTransferRepository();
-    transferRepository.create.mockResolvedValue({ _id: 'transfer1' });
+    transferRepository.create.mockResolvedValue({ _id: 'transfer1' } as unknown as CreatedTransfer);
     const currencyService = createFakeCurrencyService();
     currencyService.convertCurrency.mockResolvedValue(90);
     const { mongooseInstance } = createFakeMongoose();
@@ -102,11 +122,11 @@ describe('transfer.service', () => {
       .mockResolvedValueOnce(account({ _id: 'acc1', currency: 'USD' }))
       .mockResolvedValueOnce(account({ _id: 'acc2', currency: 'EUR' }));
     const categoryRepository = createFakeCategoryRepository();
-    categoryRepository.findByNameAndType.mockResolvedValue({ _id: 'cat1' });
+    categoryRepository.findByNameAndType.mockResolvedValue({ _id: 'cat1' } as unknown as CategoryDoc);
     const transactionRepository = createFakeTransactionRepository();
-    transactionRepository.createMany.mockResolvedValue([{ _id: 'exp' }, { _id: 'inc' }]);
+    transactionRepository.createMany.mockResolvedValue([{ _id: 'exp' }, { _id: 'inc' }] as unknown as CreatedTransactions);
     const transferRepository = createFakeTransferRepository();
-    transferRepository.create.mockResolvedValue({ _id: 'transfer1' });
+    transferRepository.create.mockResolvedValue({ _id: 'transfer1' } as unknown as CreatedTransfer);
     const currencyService = createFakeCurrencyService();
     const { mongooseInstance } = createFakeMongoose();
 
@@ -127,11 +147,11 @@ describe('transfer.service', () => {
     const accountRepository = createFakeAccountRepository();
     accountRepository.findById.mockResolvedValueOnce(account({ _id: 'acc1' })).mockResolvedValueOnce(account({ _id: 'acc2' }));
     const categoryRepository = createFakeCategoryRepository();
-    categoryRepository.findByNameAndType.mockResolvedValue({ _id: 'existing-cat' });
+    categoryRepository.findByNameAndType.mockResolvedValue({ _id: 'existing-cat' } as unknown as CategoryDoc);
     const transactionRepository = createFakeTransactionRepository();
-    transactionRepository.createMany.mockResolvedValue([{ _id: 'exp' }, { _id: 'inc' }]);
+    transactionRepository.createMany.mockResolvedValue([{ _id: 'exp' }, { _id: 'inc' }] as unknown as CreatedTransactions);
     const transferRepository = createFakeTransferRepository();
-    transferRepository.create.mockResolvedValue({ _id: 'transfer1' });
+    transferRepository.create.mockResolvedValue({ _id: 'transfer1' } as unknown as CreatedTransfer);
     const { mongooseInstance } = createFakeMongoose();
 
     const service = createTransferService(
@@ -165,7 +185,7 @@ describe('transfer.service', () => {
     const accountRepository = createFakeAccountRepository();
     accountRepository.findById.mockResolvedValueOnce(account({ _id: 'acc1' })).mockResolvedValueOnce(account({ _id: 'acc2' }));
     const categoryRepository = createFakeCategoryRepository();
-    categoryRepository.findByNameAndType.mockResolvedValue({ _id: 'cat1' });
+    categoryRepository.findByNameAndType.mockResolvedValue({ _id: 'cat1' } as unknown as CategoryDoc);
     const transferRepository = createFakeTransferRepository();
     transferRepository.create.mockRejectedValue(new Error('boom'));
     const { mongooseInstance, session } = createFakeMongoose();

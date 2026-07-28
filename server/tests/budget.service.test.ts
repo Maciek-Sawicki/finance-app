@@ -1,38 +1,66 @@
 import { createBudgetService } from '../services/budget.service.js';
+import * as budgetRepository from '../repositories/budget.repository.js';
+import * as categoryRepository from '../repositories/category.repository.js';
+import * as transactionRepository from '../repositories/transaction.repository.js';
+import type { CurrencyService } from '../services/exchangeRate.service.js';
 
-const createFakeBudgetRepository = () => ({
-  findByUser: jest.fn(),
-  findByCategory: jest.fn(),
-  findById: jest.fn(),
-  create: jest.fn(),
-  updateById: jest.fn(),
-  deleteById: jest.fn(),
-});
+type BudgetRepository = jest.Mocked<typeof budgetRepository>;
+type CategoryRepository = jest.Mocked<typeof categoryRepository>;
+type TransactionRepository = jest.Mocked<typeof transactionRepository>;
+type LeanBudget = NonNullable<Awaited<ReturnType<typeof budgetRepository.findById>>>;
+type LeanCategory = NonNullable<Awaited<ReturnType<typeof categoryRepository.findById>>>;
+// create/updateById don't populate categoryId the way findById/findByUser/
+// findByCategory do, so their resolved shape differs (categoryId: ObjectId,
+// not the populated {_id,name,...}) - these two casts bridge that at the
+// handful of call sites that mock them with the same budget() fixture.
+type CreatedBudget = Awaited<ReturnType<typeof budgetRepository.create>>;
+type UpdatedBudget = NonNullable<Awaited<ReturnType<typeof budgetRepository.updateById>>>;
 
-const createFakeCategoryRepository = () => ({
-  findById: jest.fn(),
-});
+const createFakeBudgetRepository = (): BudgetRepository =>
+  ({
+    findByUser: jest.fn(),
+    findByCategory: jest.fn(),
+    findById: jest.fn(),
+    create: jest.fn(),
+    updateById: jest.fn(),
+    deleteById: jest.fn(),
+  } as unknown as BudgetRepository);
 
-const createFakeTransactionRepository = () => ({
-  aggregateCategorySpendByCurrency: jest.fn().mockResolvedValue([]),
-});
+const createFakeCategoryRepository = (): CategoryRepository =>
+  ({
+    findById: jest.fn(),
+  } as unknown as CategoryRepository);
 
-const createFakeCurrencyService = () => ({
-  convertCurrency: jest.fn((amount) => Promise.resolve(amount)),
-});
+const createFakeTransactionRepository = (): TransactionRepository =>
+  ({
+    aggregateCategorySpendByCurrency: jest.fn().mockResolvedValue([]),
+  } as unknown as TransactionRepository);
 
-const budget = (overrides = {}) => ({
-  _id: 'budget1',
-  userId: 'user1',
-  categoryId: { _id: 'cat1', name: 'Groceries', type: 'expense' },
-  amount: 500,
-  currency: 'USD',
-  startDate: new Date('2026-01-01'),
-  endDate: new Date('2026-01-31'),
-  type: 'recurring',
-  status: 'active',
-  ...overrides,
-});
+const createFakeCurrencyService = (): jest.Mocked<CurrencyService> =>
+  ({
+    convertCurrency: jest.fn((amount: number) => Promise.resolve(amount)),
+  } as unknown as jest.Mocked<CurrencyService>);
+
+type BudgetOverrides = Partial<Omit<LeanBudget, '_id' | 'userId' | 'categoryId'> & {
+  _id: string; userId: string; categoryId: { _id: string; name: string; type: string };
+}>;
+
+const budget = (overrides: BudgetOverrides = {}): LeanBudget =>
+  ({
+    _id: 'budget1',
+    userId: 'user1',
+    categoryId: { _id: 'cat1', name: 'Groceries', type: 'expense' },
+    amount: 500,
+    currency: 'USD',
+    startDate: new Date('2026-01-01'),
+    endDate: new Date('2026-01-31'),
+    type: 'recurring',
+    status: 'active',
+    ...overrides,
+  } as unknown as LeanBudget);
+
+const category = (overrides: Partial<Omit<LeanCategory, '_id'> & { _id: string }> = {}): LeanCategory =>
+  ({ _id: 'cat1', type: 'expense', ...overrides } as unknown as LeanCategory);
 
 describe('budget.service', () => {
   describe('create', () => {
@@ -59,7 +87,7 @@ describe('budget.service', () => {
     it('rejects a non-expense category', async () => {
       const budgetRepository = createFakeBudgetRepository();
       const categoryRepository = createFakeCategoryRepository();
-      categoryRepository.findById.mockResolvedValue({ _id: 'cat1', type: 'income' });
+      categoryRepository.findById.mockResolvedValue(category({ type: 'income' }));
       const service = createBudgetService(budgetRepository, categoryRepository, createFakeTransactionRepository(), createFakeCurrencyService());
 
       await expect(
@@ -70,7 +98,7 @@ describe('budget.service', () => {
     it('rejects a fixed budget with a recurrencePeriod', async () => {
       const budgetRepository = createFakeBudgetRepository();
       const categoryRepository = createFakeCategoryRepository();
-      categoryRepository.findById.mockResolvedValue({ _id: 'cat1', type: 'expense' });
+      categoryRepository.findById.mockResolvedValue(category());
       const service = createBudgetService(budgetRepository, categoryRepository, createFakeTransactionRepository(), createFakeCurrencyService());
 
       await expect(
@@ -84,8 +112,8 @@ describe('budget.service', () => {
     it('creates the budget once validation passes', async () => {
       const budgetRepository = createFakeBudgetRepository();
       const categoryRepository = createFakeCategoryRepository();
-      categoryRepository.findById.mockResolvedValue({ _id: 'cat1', type: 'expense' });
-      budgetRepository.create.mockResolvedValue(budget());
+      categoryRepository.findById.mockResolvedValue(category());
+      budgetRepository.create.mockResolvedValue(budget() as unknown as CreatedBudget);
       const service = createBudgetService(budgetRepository, categoryRepository, createFakeTransactionRepository(), createFakeCurrencyService());
 
       const result = await service.create('user1', {
@@ -106,7 +134,7 @@ describe('budget.service', () => {
         { _id: 'USD', total: 100 },
         { _id: 'EUR', total: 50 },
       ]);
-      currencyService.convertCurrency.mockImplementation((amount, from, to) =>
+      currencyService.convertCurrency.mockImplementation((amount: number, from: string, to: string) =>
         Promise.resolve(from === to ? amount : amount * 2)
       );
       const service = createBudgetService(budgetRepository, createFakeCategoryRepository(), transactionRepository, currencyService);
@@ -140,7 +168,7 @@ describe('budget.service', () => {
       const budgetRepository = createFakeBudgetRepository();
       const service = createBudgetService(budgetRepository, createFakeCategoryRepository(), createFakeTransactionRepository(), createFakeCurrencyService());
 
-      await expect(service.getById('user1', 'budget1', undefined)).rejects.toMatchObject({ status: 400 });
+      await expect(service.getById('user1', 'budget1', undefined as unknown as string)).rejects.toMatchObject({ status: 400 });
     });
 
     it('rejects when the budget does not exist', async () => {
@@ -161,24 +189,25 @@ describe('budget.service', () => {
 
       expect(budgetRepository.findByUser).toHaveBeenCalledWith('user1', { status: 'active' });
       expect(result).toHaveLength(2);
-      expect(result[0].targetCurrency).toBe('USD');
+      expect(result[0]!.targetCurrency).toBe('USD');
     });
   });
 
   describe('update', () => {
     it('whitelists fields instead of trusting the raw request body', async () => {
       const budgetRepository = createFakeBudgetRepository();
-      budgetRepository.updateById.mockResolvedValue(budget({ amount: 600 }));
+      budgetRepository.updateById.mockResolvedValue(budget({ amount: 600 }) as unknown as UpdatedBudget);
       const service = createBudgetService(budgetRepository, createFakeCategoryRepository(), createFakeTransactionRepository(), createFakeCurrencyService());
 
-      await service.update('user1', 'budget1', { amount: 600, userId: 'attacker', _id: 'other' });
+      const maliciousPayload = { amount: 600, userId: 'attacker', _id: 'other' } as unknown as Parameters<typeof service.update>[2];
+      await service.update('user1', 'budget1', maliciousPayload);
 
       expect(budgetRepository.updateById).toHaveBeenCalledWith('user1', 'budget1', { amount: 600 });
     });
 
     it('marks the budget completed when the new endDate is in the past', async () => {
       const budgetRepository = createFakeBudgetRepository();
-      budgetRepository.updateById.mockResolvedValue(budget());
+      budgetRepository.updateById.mockResolvedValue(budget() as unknown as UpdatedBudget);
       const service = createBudgetService(budgetRepository, createFakeCategoryRepository(), createFakeTransactionRepository(), createFakeCurrencyService());
 
       await service.update('user1', 'budget1', { endDate: '2020-01-01' });
@@ -229,8 +258,8 @@ describe('budget.service', () => {
       const result = await service.getHistory('user1', 'cat1', 'USD');
 
       expect(budgetRepository.findByCategory).toHaveBeenCalledWith('user1', 'cat1');
-      expect(result.find((b) => b._id === 'past').status).toBe('completed');
-      expect(result.find((b) => b._id === 'future').status).toBe('active');
+      expect(result.find((b) => (b._id as unknown as string) === 'past')!.status).toBe('completed');
+      expect(result.find((b) => (b._id as unknown as string) === 'future')!.status).toBe('active');
     });
   });
 });

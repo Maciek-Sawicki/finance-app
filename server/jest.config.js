@@ -6,4 +6,8 @@ export default {
   moduleNameMapper: {
     "^(\\.{1,2}/.*)\\.js$": "$1",
   },
+  // Without this, a local `npm run build` (or a stray non---noEmit tsc run)
+  // leaves compiled test doubles in dist/tests/*.test.js that Jest picks up
+  // alongside the real tests/*.test.ts sources, running everything twice.
+  testPathIgnorePatterns: ["/node_modules/", "/dist/"],
 };

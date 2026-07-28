@@ -1,5 +1,6 @@
 import request from 'supertest';
 import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { getAccounts } from '../controllers/account.controller.js';
 import { errorHandler } from '../middleware/errorHandler.js';
 
@@ -9,11 +10,15 @@ import { convertCurrency } from '../services/exchangeRate.service.js';
 jest.mock('../services/account.service.js');
 jest.mock('../services/exchangeRate.service.js');
 
+const mockedAccountService = jest.mocked(accountService);
+const mockedConvertCurrency = jest.mocked(convertCurrency);
+type AccountListItem = Awaited<ReturnType<typeof accountService.list>>[number];
+
 const app = express();
 app.use(express.json());
 
-app.use((req, res, next) => {
-  req.user = { _id: 'user123' };
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  req.user = { _id: 'user123' } as unknown as Request['user'];
   next();
 });
 
@@ -27,7 +32,7 @@ describe('GET /api/accounts', () => {
   afterEach(() => jest.clearAllMocks());
 
   it('zwraca 404 if accounts not found', async () => {
-    accountService.list.mockResolvedValue([]);
+    mockedAccountService.list.mockResolvedValue([]);
 
     const res = await request(app).get('/api/accounts?currency=USD');
 
@@ -36,10 +41,10 @@ describe('GET /api/accounts', () => {
   });
 
   it('should return accounts with converted balance', async () => {
-    accountService.list.mockResolvedValue([
-      { _id: 'acc1', startingBalance: 100, currency: 'USD', balance: 130, balanceAfterRP: 130 },
+    mockedAccountService.list.mockResolvedValue([
+      { _id: 'acc1', startingBalance: 100, currency: 'USD', balance: 130, balanceAfterRP: 130 } as unknown as AccountListItem,
     ]);
-    convertCurrency.mockImplementation((amount) => Promise.resolve(amount * 2));
+    mockedConvertCurrency.mockImplementation((amount) => Promise.resolve(amount * 2));
 
     const res = await request(app).get('/api/accounts?currency=EUR');
 
@@ -54,7 +59,7 @@ describe('GET /api/accounts', () => {
   });
 
   it('return 500 if the service throws', async () => {
-    accountService.list.mockRejectedValue(new Error('DB error'));
+    mockedAccountService.list.mockRejectedValue(new Error('DB error'));
 
     const res = await request(app).get('/api/accounts');
     expect(res.statusCode).toBe(500);

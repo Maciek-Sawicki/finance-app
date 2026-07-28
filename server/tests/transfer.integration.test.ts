@@ -5,6 +5,7 @@ import * as accountRepository from '../repositories/account.repository.js';
 import * as categoryRepository from '../repositories/category.repository.js';
 import * as transactionRepository from '../repositories/transaction.repository.js';
 import * as transferRepository from '../repositories/transfer.repository.js';
+import type { CurrencyService } from '../services/exchangeRate.service.js';
 import Account from '../models/account.model.js';
 import Category from '../models/category.model.js';
 import Transaction from '../models/transaction.model.js';
@@ -14,7 +15,7 @@ import Transfer from '../models/transfer.model.js';
 // rejects session.startTransaction() outright, so this needs the replset
 // flavor of mongodb-memory-server rather than the plain MongoMemoryServer
 // used elsewhere.
-let replset;
+let replset: MongoMemoryReplSet;
 
 beforeAll(async () => {
   replset = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
@@ -35,9 +36,10 @@ afterEach(async () => {
   ]);
 });
 
-const fakeCurrencyService = { convertCurrency: jest.fn().mockResolvedValue(90) };
+const fakeCurrencyService: jest.Mocked<CurrencyService> =
+  { convertCurrency: jest.fn().mockResolvedValue(90) } as unknown as jest.Mocked<CurrencyService>;
 
-const createAccount = (overrides = {}) =>
+const createAccount = (overrides: Record<string, unknown> = {}) =>
   Account.create({ name: 'Account', type: 'checking', currency: 'USD', startingBalance: 0, ...overrides });
 
 describe('transfer.service (integration, real MongoDB transaction)', () => {
@@ -51,12 +53,12 @@ describe('transfer.service (integration, real MongoDB transaction)', () => {
       accountRepository, categoryRepository, transactionRepository, transferRepository, fakeCurrencyService
     );
 
-    const result = await service.create(userId, { fromAccountId: from._id, toAccountId: to._id, amount: 50 });
+    const result = await service.create(userId, { fromAccountId: from!._id, toAccountId: to!._id, amount: 50 });
 
     expect(await Transfer.countDocuments()).toBe(1);
     expect(await Transaction.countDocuments()).toBe(2);
-    expect(result.transactions[0].transferId.toString()).toBe(result.transfer._id.toString());
-    expect(result.transactions[1].transferId.toString()).toBe(result.transfer._id.toString());
+    expect(result.transactions[0]!.transferId!.toString()).toBe(result.transfer._id.toString());
+    expect(result.transactions[1]!.transferId!.toString()).toBe(result.transfer._id.toString());
 
     const category = await Category.findOne({ userId, name: 'Transfer' });
     expect(category).not.toBeNull();
@@ -73,16 +75,16 @@ describe('transfer.service (integration, real MongoDB transaction)', () => {
     // transaction leg is forced to fail mid-transaction - this is the exact
     // failure mode the review flagged: previously the Transfer document
     // would have already been committed by this point.
-    const failingTransactionRepository = {
+    const failingTransactionRepository: typeof transactionRepository = {
       ...transactionRepository,
-      createMany: jest.fn().mockRejectedValue(new Error('simulated failure writing transaction legs')),
+      createMany: jest.fn().mockRejectedValue(new Error('simulated failure writing transaction legs')) as unknown as typeof transactionRepository.createMany,
     };
 
     const service = createTransferService(
       accountRepository, categoryRepository, failingTransactionRepository, transferRepository, fakeCurrencyService
     );
 
-    await expect(service.create(userId, { fromAccountId: from._id, toAccountId: to._id, amount: 50 }))
+    await expect(service.create(userId, { fromAccountId: from!._id, toAccountId: to!._id, amount: 50 }))
       .rejects.toThrow('simulated failure writing transaction legs');
 
     expect(await Transfer.countDocuments()).toBe(0);
@@ -102,8 +104,8 @@ describe('transfer.service (integration, real MongoDB transaction)', () => {
     );
 
     await Promise.all([
-      service.create(userId, { fromAccountId: a._id, toAccountId: b._id, amount: 10 }),
-      service.create(userId, { fromAccountId: c._id, toAccountId: d._id, amount: 20 }),
+      service.create(userId, { fromAccountId: a!._id, toAccountId: b!._id, amount: 10 }),
+      service.create(userId, { fromAccountId: c!._id, toAccountId: d!._id, amount: 20 }),
     ]);
 
     expect(await Transfer.countDocuments()).toBe(2);

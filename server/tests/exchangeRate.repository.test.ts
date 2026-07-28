@@ -6,7 +6,7 @@ import ExchangeRate from '../models/exchangeRate.model.js';
 // Integration test against a real (in-memory) MongoDB: this is what catches
 // things a mocked Mongoose model can't, e.g. that .lean() turns the schema's
 // Map field into a plain object rather than a Mongoose Map.
-let mongod;
+let mongod: MongoMemoryServer;
 
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
@@ -47,7 +47,7 @@ describe('exchangeRate.repository', () => {
 
       const latest = await exchangeRateRepository.findLatest({ base: 'USD' });
 
-      expect(latest.rates.EUR).toBe(0.51);
+      expect(latest!.rates.EUR).toBe(0.51);
     });
 
     it('returns a plain object for the rates field, not a Mongoose Map', async () => {
@@ -55,8 +55,8 @@ describe('exchangeRate.repository', () => {
 
       const latest = await exchangeRateRepository.findLatest({ base: 'USD' });
 
-      expect(latest.rates instanceof Map).toBe(false);
-      expect(latest.rates.EUR).toBe(0.5);
+      expect(latest!.rates instanceof Map).toBe(false);
+      expect(latest!.rates.EUR).toBe(0.5);
     });
 
     it('returns null when no document matches the filter', async () => {
@@ -69,7 +69,7 @@ describe('exchangeRate.repository', () => {
 
       const latest = await exchangeRateRepository.findLatest();
 
-      expect(latest.base).toBe('EUR');
+      expect(latest!.base).toBe('EUR');
     });
   });
 });

@@ -1,16 +1,20 @@
 import request from 'supertest';
 import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { createCategory, updateCategory } from '../controllers/category.controller.js';
 import { errorHandler } from '../middleware/errorHandler.js';
 import Category from '../models/category.model.js';
 
 jest.mock('../models/category.model.js');
 
+const MockedCategory = jest.mocked(Category);
+type CategoryDoc = InstanceType<typeof Category>;
+
 const app = express();
 app.use(express.json());
 
-app.use((req, res, next) => {
-  req.user = { _id: '695aecd813b64c1039159fa1' };
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  req.user = { _id: '695aecd813b64c1039159fa1' } as unknown as Request['user'];
   next();
 });
 
@@ -21,14 +25,14 @@ app.use(errorHandler);
 describe('POST /api/categories', () => {
   afterEach(() => jest.clearAllMocks());
   it('creates a category successfully', async () => {
-    Category.findOne.mockResolvedValue(null);
+    MockedCategory.findOne.mockResolvedValue(null);
     const newCategory = {
       name: 'Food',
       type: 'expense',
       icon: 'f',
       save: jest.fn().mockResolvedValue(true)
     };
-    Category.mockImplementation(() => newCategory);
+    MockedCategory.mockImplementation(() => newCategory as unknown as CategoryDoc);
     const res = await request(app)
       .post('/api/categories')
       .send({ name: 'Food', type: 'expense', icon: 'f' });
@@ -52,7 +56,7 @@ describe('PUT /api/categories/:id', () => {
   afterEach(() => jest.clearAllMocks());
 
   it('only forwards whitelisted fields to the update, dropping anything else in the body', async () => {
-    Category.findOneAndUpdate.mockResolvedValue({ _id: 'cat1', name: 'Groceries' });
+    MockedCategory.findOneAndUpdate.mockResolvedValue({ _id: 'cat1', name: 'Groceries' } as unknown as CategoryDoc);
 
     await request(app)
       .put('/api/categories/cat1')
@@ -63,7 +67,7 @@ describe('PUT /api/categories/:id', () => {
         createdAt: '2000-01-01',
       });
 
-    expect(Category.findOneAndUpdate).toHaveBeenCalledWith(
+    expect(MockedCategory.findOneAndUpdate).toHaveBeenCalledWith(
       { _id: 'cat1', userId: '695aecd813b64c1039159fa1' },
       { name: 'Groceries' },
       { new: true }
@@ -71,7 +75,7 @@ describe('PUT /api/categories/:id', () => {
   });
 
   it('returns 404 when the category does not belong to the user', async () => {
-    Category.findOneAndUpdate.mockResolvedValue(null);
+    MockedCategory.findOneAndUpdate.mockResolvedValue(null);
 
     const res = await request(app)
       .put('/api/categories/cat1')

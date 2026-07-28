@@ -1,20 +1,21 @@
+import type { Request, Response } from 'express';
 import { errorHandler } from '../middleware/errorHandler.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 
-const createRes = () => {
-  const res = {};
-  res.status = jest.fn().mockReturnValue(res);
-  res.json = jest.fn().mockReturnValue(res);
-  return res;
+const createRes = (): Response => {
+  const res: Partial<Response> = {};
+  res.status = jest.fn().mockReturnValue(res) as unknown as Response['status'];
+  res.json = jest.fn().mockReturnValue(res) as unknown as Response['json'];
+  return res as Response;
 };
 
-const req = { method: 'GET', originalUrl: '/api/whatever' };
+const req = { method: 'GET', originalUrl: '/api/whatever' } as unknown as Request;
 
 describe('errorHandler', () => {
-  let consoleSpy;
+  let consoleSpy: jest.SpyInstance;
 
   beforeEach(() => {
-    consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
   afterEach(() => {

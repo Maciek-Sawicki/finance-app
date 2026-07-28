@@ -1,26 +1,37 @@
 import { createRecurringTransactionService } from '../services/recurringTransaction.service.js';
+import * as recurringTransactionRepository from '../repositories/recurringTransaction.repository.js';
 
-const createFakeRepository = () => ({
-  findByUser: jest.fn(),
-  findById: jest.fn(),
-  create: jest.fn(),
-  updateById: jest.fn(),
-  deleteById: jest.fn(),
-  toggleActive: jest.fn(),
-});
+type RecurringTransactionRepository = jest.Mocked<typeof recurringTransactionRepository>;
+type RecurringDoc = NonNullable<Awaited<ReturnType<typeof recurringTransactionRepository.findById>>>;
+type CreatedDoc = Awaited<ReturnType<typeof recurringTransactionRepository.create>>;
 
-const recurring = (overrides = {}) => ({
-  _id: 'rec1',
-  userId: 'user1',
-  name: 'Rent',
-  categoryId: 'cat1',
-  accountId: 'acc1',
-  amount: 1000,
-  frequency: 'monthly',
-  nextDueDate: new Date('2026-02-01'),
-  isActive: true,
-  ...overrides,
-});
+const createFakeRepository = (): RecurringTransactionRepository =>
+  ({
+    findByUser: jest.fn(),
+    findById: jest.fn(),
+    create: jest.fn(),
+    updateById: jest.fn(),
+    deleteById: jest.fn(),
+    toggleActive: jest.fn(),
+  } as unknown as RecurringTransactionRepository);
+
+type RecurringOverrides = Partial<Omit<RecurringDoc, '_id' | 'userId' | 'categoryId' | 'accountId'> & {
+  _id: string; userId: string; categoryId: string; accountId: string;
+}>;
+
+const recurring = (overrides: RecurringOverrides = {}): RecurringDoc =>
+  ({
+    _id: 'rec1',
+    userId: 'user1',
+    name: 'Rent',
+    categoryId: 'cat1',
+    accountId: 'acc1',
+    amount: 1000,
+    frequency: 'monthly',
+    nextDueDate: new Date('2026-02-01'),
+    isActive: true,
+    ...overrides,
+  } as unknown as RecurringDoc);
 
 describe('recurringTransaction.service', () => {
   describe('getById', () => {
@@ -44,13 +55,14 @@ describe('recurringTransaction.service', () => {
   describe('create', () => {
     it('whitelists fields and injects the userId, ignoring any userId in the payload', async () => {
       const repository = createFakeRepository();
-      repository.create.mockResolvedValue(recurring());
+      repository.create.mockResolvedValue(recurring() as unknown as CreatedDoc);
       const service = createRecurringTransactionService(repository);
 
-      await service.create('user1', {
+      const maliciousPayload = {
         name: 'Rent', categoryId: 'cat1', accountId: 'acc1', amount: 1000, frequency: 'monthly',
         nextDueDate: '2026-02-01', userId: 'attacker', _id: 'forged',
-      });
+      } as unknown as Parameters<typeof service.create>[1];
+      await service.create('user1', maliciousPayload);
 
       expect(repository.create).toHaveBeenCalledWith({
         name: 'Rent', categoryId: 'cat1', accountId: 'acc1', amount: 1000, frequency: 'monthly',
@@ -63,9 +75,11 @@ describe('recurringTransaction.service', () => {
     it('whitelists fields instead of trusting the raw request body', async () => {
       const repository = createFakeRepository();
       repository.updateById.mockResolvedValue(recurring({ amount: 1200 }));
+
       const service = createRecurringTransactionService(repository);
 
-      await service.update('user1', 'rec1', { amount: 1200, userId: 'attacker', _id: 'forged' });
+      const maliciousPayload = { amount: 1200, userId: 'attacker', _id: 'forged' } as unknown as Parameters<typeof service.update>[2];
+      await service.update('user1', 'rec1', maliciousPayload);
 
       expect(repository.updateById).toHaveBeenCalledWith('user1', 'rec1', { amount: 1200 });
     });

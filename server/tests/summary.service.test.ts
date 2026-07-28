@@ -1,12 +1,18 @@
 import { createSummaryService } from '../services/summary.service.js';
+import * as transactionRepository from '../repositories/transaction.repository.js';
+import type { CurrencyService } from '../services/exchangeRate.service.js';
 
-const createFakeTransactionRepository = () => ({
-  aggregateMonthlySummary: jest.fn(),
-});
+type TransactionRepository = jest.Mocked<typeof transactionRepository>;
 
-const createFakeCurrencyService = () => ({
-  convertCurrency: jest.fn((amount) => Promise.resolve(amount)),
-});
+const createFakeTransactionRepository = (): TransactionRepository =>
+  ({
+    aggregateMonthlySummary: jest.fn(),
+  } as unknown as TransactionRepository);
+
+const createFakeCurrencyService = (): jest.Mocked<CurrencyService> =>
+  ({
+    convertCurrency: jest.fn((amount: number) => Promise.resolve(amount)),
+  } as unknown as jest.Mocked<CurrencyService>);
 
 describe('summary.service', () => {
   describe('getMonthlySummary', () => {
@@ -39,7 +45,7 @@ describe('summary.service', () => {
 
       expect(currencyService.convertCurrency).toHaveBeenCalledTimes(1);
       expect(currencyService.convertCurrency).toHaveBeenCalledWith(1, 'EUR', 'USD');
-      expect(result['2026-01'].totalIncome).toBe(200);
+      expect(result['2026-01']!.totalIncome).toBe(200);
     });
 
     it('returns a null e_i_ratio when there was no income that month', async () => {
@@ -51,7 +57,7 @@ describe('summary.service', () => {
 
       const result = await service.getMonthlySummary('user1', 'USD');
 
-      expect(result['2026-01'].e_i_ratio).toBeNull();
+      expect(result['2026-01']!.e_i_ratio).toBeNull();
     });
 
     it('returns an empty object when there is nothing to summarize', async () => {

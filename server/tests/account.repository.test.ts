@@ -5,7 +5,7 @@ import * as transactionRepository from '../repositories/transaction.repository.j
 import Account from '../models/account.model.js';
 import Transaction from '../models/transaction.model.js';
 
-let mongod;
+let mongod: MongoMemoryServer;
 const userId = new mongoose.Types.ObjectId();
 const otherUserId = new mongoose.Types.ObjectId();
 
@@ -35,7 +35,7 @@ describe('account.repository', () => {
       const accounts = await accountRepository.findByUser(userId);
 
       expect(accounts).toHaveLength(1);
-      expect(accounts[0].name).toBe('Checking');
+      expect(accounts[0]!.name).toBe('Checking');
     });
 
     it('applies an additional filter such as type or currency', async () => {
@@ -47,7 +47,7 @@ describe('account.repository', () => {
       const savingsOnly = await accountRepository.findByUser(userId, { type: 'savings' });
 
       expect(savingsOnly).toHaveLength(1);
-      expect(savingsOnly[0].name).toBe('Savings');
+      expect(savingsOnly[0]!.name).toBe('Savings');
     });
   });
 
@@ -59,11 +59,11 @@ describe('account.repository', () => {
       ]);
 
       await accountRepository.unsetDefaultForUser(userId);
-      const updated = await accountRepository.updateById(userId, b._id, { isDefault: true });
+      const updated = await accountRepository.updateById(userId, b!._id, { isDefault: true });
 
-      expect(updated.isDefault).toBe(true);
-      const reloadedA = await Account.findById(a._id).lean();
-      expect(reloadedA.isDefault).toBe(false);
+      expect(updated!.isDefault).toBe(true);
+      const reloadedA = await Account.findById(a!._id).lean();
+      expect(reloadedA!.isDefault).toBe(false);
     });
   });
 });
@@ -81,10 +81,10 @@ describe('transaction.repository balance aggregations', () => {
 
     const agg = await transactionRepository.aggregateAccountBalance(userId, accountId);
 
-    expect(agg.incomeSettled).toBe(100);
-    expect(agg.expenseSettled).toBe(30);
-    expect(agg.incomeAll).toBe(150);
-    expect(agg.expenseAll).toBe(30);
+    expect(agg!.incomeSettled).toBe(100);
+    expect(agg!.expenseSettled).toBe(30);
+    expect(agg!.incomeAll).toBe(150);
+    expect(agg!.expenseAll).toBe(30);
   });
 
   it('aggregateBalancesByAccount groups every account of a user in a single query', async () => {
@@ -99,8 +99,8 @@ describe('transaction.repository balance aggregations', () => {
 
     const balancesByAccount = await transactionRepository.aggregateBalancesByAccount(userId);
 
-    expect(balancesByAccount.get(accountA.toString()).incomeSettled).toBe(100);
-    expect(balancesByAccount.get(accountB.toString()).expenseSettled).toBe(40);
+    expect(balancesByAccount.get(accountA.toString())!.incomeSettled).toBe(100);
+    expect(balancesByAccount.get(accountB.toString())!.expenseSettled).toBe(40);
   });
 
   it('deleteByAccount only removes transactions for the given account and user', async () => {

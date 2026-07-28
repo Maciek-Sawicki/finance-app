@@ -4,7 +4,7 @@ import * as budgetRepository from '../repositories/budget.repository.js';
 import Budget from '../models/budget.model.js';
 import Category from '../models/category.model.js';
 
-let mongod;
+let mongod: MongoMemoryServer;
 const userId = new mongoose.Types.ObjectId();
 
 beforeAll(async () => {
@@ -21,10 +21,10 @@ afterEach(async () => {
   await Promise.all([Budget.deleteMany({}), Category.deleteMany({})]);
 });
 
-const createCategory = (overrides = {}) =>
+const createCategory = (overrides: Partial<{ name: string; type: string }> = {}) =>
   Category.create({ userId, name: 'Groceries', type: 'expense', ...overrides });
 
-const createBudget = (categoryId, overrides = {}) =>
+const createBudget = (categoryId: mongoose.Types.ObjectId, overrides: Record<string, unknown> = {}) =>
   Budget.create({
     userId, categoryId, amount: 500, currency: 'USD',
     startDate: new Date('2026-01-01'), endDate: new Date('2026-01-31'),
@@ -37,8 +37,8 @@ describe('budget.repository', () => {
     const created = await createBudget(category._id);
 
     const found = await budgetRepository.findById(userId, created._id);
-    expect(found.amount).toBe(500);
-    expect(found.categoryId.name).toBe('Groceries');
+    expect(found!.amount).toBe(500);
+    expect(found!.categoryId.name).toBe('Groceries');
 
     const otherUser = new mongoose.Types.ObjectId();
     expect(await budgetRepository.findById(otherUser, created._id)).toBeNull();
@@ -61,7 +61,7 @@ describe('budget.repository', () => {
 
     const result = await budgetRepository.findByCategory(userId, groceries._id);
     expect(result).toHaveLength(1);
-    expect(result[0].categoryId.name).toBe('Groceries');
+    expect(result[0]!.categoryId.name).toBe('Groceries');
   });
 
   it('updateById only updates a budget scoped to the given user', async () => {
@@ -72,7 +72,7 @@ describe('budget.repository', () => {
     expect(await budgetRepository.updateById(otherUser, created._id, { amount: 999 })).toBeNull();
 
     const updated = await budgetRepository.updateById(userId, created._id, { amount: 750 });
-    expect(updated.amount).toBe(750);
+    expect(updated!.amount).toBe(750);
   });
 
   it('deleteById only deletes a budget scoped to the given user', async () => {

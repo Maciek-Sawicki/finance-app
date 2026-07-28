@@ -3,7 +3,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import * as recurringTransactionRepository from '../repositories/recurringTransaction.repository.js';
 import RecurringTransaction from '../models/recurringTransaction.model.js';
 
-let mongod;
+let mongod: MongoMemoryServer;
 const userId = new mongoose.Types.ObjectId();
 const categoryId = new mongoose.Types.ObjectId();
 const accountId = new mongoose.Types.ObjectId();
@@ -22,7 +22,7 @@ afterEach(async () => {
   await RecurringTransaction.deleteMany({});
 });
 
-const create = (overrides = {}) =>
+const create = (overrides: Record<string, unknown> = {}) =>
   recurringTransactionRepository.create({
     userId, name: 'Rent', categoryId, accountId, amount: 1000,
     frequency: 'monthly', nextDueDate: new Date('2026-02-01'),
@@ -40,7 +40,7 @@ describe('recurringTransaction.repository', () => {
     expect(await recurringTransactionRepository.deleteById(otherUser, created._id)).toBeNull();
 
     const updated = await recurringTransactionRepository.updateById(userId, created._id, { amount: 1500 });
-    expect(updated.amount).toBe(1500);
+    expect(updated!.amount).toBe(1500);
   });
 
   it('updateById runs the custom-interval validation hook, unlike a raw findOneAndUpdate', async () => {
@@ -55,17 +55,17 @@ describe('recurringTransaction.repository', () => {
 
     // the document must be unchanged - the invalid update was rejected before persisting
     const reloaded = await RecurringTransaction.findById(created._id);
-    expect(reloaded.frequency).toBe('monthly');
+    expect(reloaded!.frequency).toBe('monthly');
   });
 
   it('toggleActive flips isActive without touching other fields', async () => {
     const created = await create({ isActive: true });
 
     const toggled = await recurringTransactionRepository.toggleActive(userId, created._id);
-    expect(toggled.isActive).toBe(false);
+    expect(toggled!.isActive).toBe(false);
 
     const toggledAgain = await recurringTransactionRepository.toggleActive(userId, created._id);
-    expect(toggledAgain.isActive).toBe(true);
+    expect(toggledAgain!.isActive).toBe(true);
   });
 
   it('findByUser returns only that user\'s recurring transactions', async () => {
@@ -75,6 +75,6 @@ describe('recurringTransaction.repository', () => {
 
     const result = await recurringTransactionRepository.findByUser(userId);
     expect(result).toHaveLength(1);
-    expect(result[0].name).toBe('Rent');
+    expect(result[0]!.name).toBe('Rent');
   });
 });

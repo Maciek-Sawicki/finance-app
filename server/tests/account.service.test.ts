@@ -1,36 +1,54 @@
 import { createAccountService } from '../services/account.service.js';
+import * as accountRepository from '../repositories/account.repository.js';
+import * as transactionRepository from '../repositories/transaction.repository.js';
+import type { CurrencyService } from '../services/exchangeRate.service.js';
 
-const createFakeAccountRepository = () => ({
-  findByUser: jest.fn(),
-  findById: jest.fn(),
-  findDefault: jest.fn(),
-  create: jest.fn(),
-  updateById: jest.fn(),
-  deleteById: jest.fn(),
-  unsetDefaultForUser: jest.fn(),
-});
+type AccountRepository = jest.Mocked<typeof accountRepository>;
+type TransactionRepository = jest.Mocked<typeof transactionRepository>;
+type LeanAccount = NonNullable<Awaited<ReturnType<typeof accountRepository.findById>>>;
+type BalancesByAccount = Awaited<ReturnType<typeof transactionRepository.aggregateBalancesByAccount>>;
+type BalanceAgg = Awaited<ReturnType<typeof transactionRepository.aggregateAccountBalance>>;
 
-const createFakeTransactionRepository = () => ({
-  aggregateAccountBalance: jest.fn(),
-  aggregateBalancesByAccount: jest.fn(),
-  deleteByAccount: jest.fn(),
-});
+const createFakeAccountRepository = (): AccountRepository =>
+  ({
+    findByUser: jest.fn(),
+    findById: jest.fn(),
+    findDefault: jest.fn(),
+    create: jest.fn(),
+    updateById: jest.fn(),
+    deleteById: jest.fn(),
+    unsetDefaultForUser: jest.fn(),
+  } as unknown as AccountRepository);
 
-const createFakeCurrencyService = () => ({
-  getRates: jest.fn(),
-  convertCurrency: jest.fn((amount) => Promise.resolve(amount)),
-});
+const createFakeTransactionRepository = (): TransactionRepository =>
+  ({
+    aggregateAccountBalance: jest.fn(),
+    aggregateBalancesByAccount: jest.fn(),
+    deleteByAccount: jest.fn(),
+  } as unknown as TransactionRepository);
 
-const account = (overrides = {}) => ({
-  _id: 'acc1',
-  userId: 'user1',
-  name: 'Checking',
-  type: 'checking',
-  currency: 'USD',
-  startingBalance: 100,
-  isDefault: false,
-  ...overrides,
-});
+const createFakeCurrencyService = (): jest.Mocked<CurrencyService> =>
+  ({
+    getRates: jest.fn(),
+    convertCurrency: jest.fn((amount: number) => Promise.resolve(amount)),
+  } as unknown as jest.Mocked<CurrencyService>);
+
+// Tests use readable string ids ('acc1', 'user1') instead of real
+// ObjectIds - this one cast is where that convenience lives, so every call
+// site below just gets a properly-typed LeanAccount for free.
+type AccountOverrides = Partial<Omit<LeanAccount, '_id' | 'userId'> & { _id: string; userId: string }>;
+
+const account = (overrides: AccountOverrides = {}): LeanAccount =>
+  ({
+    _id: 'acc1',
+    userId: 'user1',
+    name: 'Checking',
+    type: 'checking',
+    currency: 'USD',
+    startingBalance: 100,
+    isDefault: false,
+    ...overrides,
+  } as unknown as LeanAccount);
 
 describe('account.service', () => {
   describe('list', () => {
@@ -42,7 +60,7 @@ describe('account.service', () => {
         new Map([
           ['acc1', { incomeSettled: 50, expenseSettled: 20, incomeAll: 50, expenseAll: 20 }],
           ['acc2', { incomeSettled: 0, expenseSettled: 0, incomeAll: 0, expenseAll: 0 }],
-        ])
+        ]) as unknown as BalancesByAccount
       );
       const service = createAccountService(accountRepository, transactionRepository, createFakeCurrencyService());
 
@@ -96,13 +114,13 @@ describe('account.service', () => {
       accountRepository.findDefault.mockResolvedValue(account({ startingBalance: 1000 }));
       transactionRepository.aggregateAccountBalance.mockResolvedValue({
         incomeSettled: 100, expenseSettled: 300, incomeAll: 150, expenseAll: 300,
-      });
+      } as unknown as BalanceAgg);
       const service = createAccountService(accountRepository, transactionRepository, createFakeCurrencyService());
 
       const result = await service.getDefault('user1');
 
-      expect(result.balance).toBe(800);
-      expect(result.balanceAfterRP).toBe(850);
+      expect(result!.balance).toBe(800);
+      expect(result!.balanceAfterRP).toBe(850);
     });
   });
 
@@ -137,7 +155,7 @@ describe('account.service', () => {
       const accountRepository = createFakeAccountRepository();
       const transactionRepository = createFakeTransactionRepository();
       accountRepository.updateById.mockResolvedValue(account({ isDefault: true }));
-      transactionRepository.aggregateAccountBalance.mockResolvedValue(null);
+      transactionRepository.aggregateAccountBalance.mockResolvedValue(null as unknown as BalanceAgg);
       const service = createAccountService(accountRepository, transactionRepository, createFakeCurrencyService());
 
       await service.setDefault('user1', 'acc1');

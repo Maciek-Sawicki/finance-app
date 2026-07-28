@@ -5,7 +5,7 @@ import * as transactionRepository from '../repositories/transaction.repository.j
 import Import from '../models/import.model.js';
 import Transaction from '../models/transaction.model.js';
 
-let mongod;
+let mongod: MongoMemoryServer;
 const userId = new mongoose.Types.ObjectId();
 const accountId = new mongoose.Types.ObjectId();
 
@@ -23,7 +23,7 @@ afterEach(async () => {
   await Promise.all([Import.deleteMany({}), Transaction.deleteMany({})]);
 });
 
-const createImportDoc = (overrides = {}) =>
+const createImportDoc = (overrides: Record<string, unknown> = {}) =>
   Import.create({
     userId, accountId, fileName: 'a.csv', importIdToken: `token-${Math.random()}`,
     status: 'completed', rowCount: 1, importedCount: 1, skippedCount: 0,
@@ -56,7 +56,7 @@ describe('import.repository', () => {
 });
 
 describe('transaction.repository (import-related)', () => {
-  const createTx = (importId, overrides = {}) =>
+  const createTx = (importId: mongoose.Types.ObjectId, overrides: Record<string, unknown> = {}) =>
     Transaction.create({
       userId, accountId, importId, type: 'expense', amount: 10, categoryId: null, ...overrides,
     });
@@ -86,7 +86,7 @@ describe('transaction.repository (import-related)', () => {
       { transactionId: notMine._id, categoryId },
     ]);
 
-    expect((await Transaction.findById(mine._id)).categoryId.toString()).toBe(categoryId.toString());
-    expect((await Transaction.findById(notMine._id)).categoryId).toBeNull();
+    expect((await Transaction.findById(mine._id))!.categoryId!.toString()).toBe(categoryId.toString());
+    expect((await Transaction.findById(notMine._id))!.categoryId).toBeNull();
   });
 });

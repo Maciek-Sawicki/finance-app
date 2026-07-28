@@ -8,7 +8,7 @@ import Transaction from '../models/transaction.model.js';
 
 // create() writes the Import record and the parsed transactions inside one
 // multi-document transaction, which requires a replica set.
-let replset;
+let replset: MongoMemoryReplSet;
 
 beforeAll(async () => {
   replset = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
@@ -24,7 +24,8 @@ afterEach(async () => {
   await Promise.all([Import.deleteMany({}), Transaction.deleteMany({})]);
 });
 
-const csvFile = (csv) => ({ buffer: Buffer.from(csv), originalname: 'statement.csv' });
+const csvFile = (csv: string): Express.Multer.File =>
+  ({ buffer: Buffer.from(csv), originalname: 'statement.csv' } as unknown as Express.Multer.File);
 
 describe('import.service (integration, real MongoDB transaction)', () => {
   it('persists importErrors under the schema field name, not the old "errors" typo', async () => {
@@ -35,14 +36,14 @@ describe('import.service (integration, real MongoDB transaction)', () => {
 
     const result = await service.create(userId, { accountId, file: csvFile(csv) });
 
-    expect(result.importedCount).toBe(1);
-    expect(result.skippedCount).toBe(1);
-    expect(result.importErrors).toEqual([
+    expect(result!.importedCount).toBe(1);
+    expect(result!.skippedCount).toBe(1);
+    expect(result!.importErrors).toEqual([
       expect.objectContaining({ rowNumber: 2, message: 'Missing date or amount' }),
     ]);
 
-    const stored = await Import.findById(result._id).lean();
-    expect(stored.importErrors).toHaveLength(1);
+    const stored = await Import.findById(result!._id).lean();
+    expect(stored!.importErrors).toHaveLength(1);
   });
 
   it('links every inserted transaction to the created import via importId', async () => {
@@ -53,7 +54,7 @@ describe('import.service (integration, real MongoDB transaction)', () => {
 
     const result = await service.create(userId, { accountId, file: csvFile(csv) });
 
-    const transactions = await Transaction.find({ importId: result._id });
+    const transactions = await Transaction.find({ importId: result!._id });
     expect(transactions).toHaveLength(2);
     expect(transactions.every((t) => t.userId.toString() === userId.toString())).toBe(true);
   });
@@ -61,9 +62,9 @@ describe('import.service (integration, real MongoDB transaction)', () => {
   it('rolls back the Import record when writing the transactions fails', async () => {
     const userId = new mongoose.Types.ObjectId();
     const accountId = new mongoose.Types.ObjectId();
-    const failingTransactionRepository = {
+    const failingTransactionRepository: typeof transactionRepository = {
       ...transactionRepository,
-      createMany: jest.fn().mockRejectedValue(new Error('simulated write failure')),
+      createMany: jest.fn().mockRejectedValue(new Error('simulated write failure')) as unknown as typeof transactionRepository.createMany,
     };
     const service = createImportService(importRepository, failingTransactionRepository);
 

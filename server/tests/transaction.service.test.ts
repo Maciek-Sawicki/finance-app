@@ -1,21 +1,29 @@
 import { createTransactionService } from '../services/transaction.service.js';
+import * as transactionRepository from '../repositories/transaction.repository.js';
 
-const createFakeTransactionRepository = () => ({
-  create: jest.fn(),
-  findById: jest.fn(),
-  updateById: jest.fn(),
-  deleteById: jest.fn(),
-  toggleSettledById: jest.fn(),
-  findPaginated: jest.fn(),
-  count: jest.fn(),
-  findRecent: jest.fn(),
-});
+type TransactionRepository = jest.Mocked<typeof transactionRepository>;
+// Fixtures below are partial ({ _id: 'tx1' }) - these tests only check
+// pass-through/whitelisting behavior, not real document shape, so each mock
+// value is cast to the real (populated, non-lean) document type once here.
+type TransactionDoc = Awaited<ReturnType<typeof transactionRepository.create>>;
+
+const createFakeTransactionRepository = (): TransactionRepository =>
+  ({
+    create: jest.fn(),
+    findById: jest.fn(),
+    updateById: jest.fn(),
+    deleteById: jest.fn(),
+    toggleSettledById: jest.fn(),
+    findPaginated: jest.fn(),
+    count: jest.fn(),
+    findRecent: jest.fn(),
+  } as unknown as TransactionRepository);
 
 describe('transaction.service', () => {
   describe('create', () => {
     it('rounds the amount and defaults date/settled/exclude', async () => {
       const repo = createFakeTransactionRepository();
-      repo.create.mockResolvedValue({ _id: 'tx1' });
+      repo.create.mockResolvedValue({ _id: 'tx1' } as unknown as TransactionDoc);
       const service = createTransactionService(repo);
 
       await service.create('user1', { categoryId: 'cat1', accountId: 'acc1', type: 'expense', amount: 12.345 });
@@ -32,20 +40,21 @@ describe('transaction.service', () => {
   describe('update', () => {
     it('only forwards whitelisted fields, dropping anything else the caller sent', async () => {
       const repo = createFakeTransactionRepository();
-      repo.updateById.mockResolvedValue({ _id: 'tx1' });
+      repo.updateById.mockResolvedValue({ _id: 'tx1' } as unknown as TransactionDoc);
       const service = createTransactionService(repo);
 
-      await service.update('user1', 'tx1', {
+      const maliciousPayload = {
         amount: 10, description: 'ok',
         userId: 'attacker', transferId: 'fake', importId: 'fake', _id: 'other-id',
-      });
+      } as unknown as Parameters<typeof service.update>[2];
+      await service.update('user1', 'tx1', maliciousPayload);
 
       expect(repo.updateById).toHaveBeenCalledWith('user1', 'tx1', { amount: 10, description: 'ok' });
     });
 
     it('omits fields the caller did not send', async () => {
       const repo = createFakeTransactionRepository();
-      repo.updateById.mockResolvedValue({ _id: 'tx1' });
+      repo.updateById.mockResolvedValue({ _id: 'tx1' } as unknown as TransactionDoc);
       const service = createTransactionService(repo);
 
       await service.update('user1', 'tx1', { settled: true });
@@ -65,7 +74,7 @@ describe('transaction.service', () => {
 
     it('returns true when a document was deleted', async () => {
       const repo = createFakeTransactionRepository();
-      repo.deleteById.mockResolvedValue({ _id: 'tx1' });
+      repo.deleteById.mockResolvedValue({ _id: 'tx1' } as unknown as TransactionDoc);
       const service = createTransactionService(repo);
 
       expect(await service.remove('user1', 'tx1')).toBe(true);
@@ -94,14 +103,15 @@ describe('transaction.service', () => {
 
       await service.list('user1', { startDate: '2026-01-01', endDate: '2026-01-31' });
 
-      const [, filter] = repo.findPaginated.mock.calls[0];
-      expect(filter.date.$gte).toEqual(new Date('2026-01-01'));
-      expect(filter.date.$lte).toEqual(new Date('2026-01-31'));
+      const [, filter] = repo.findPaginated.mock.calls[0]!;
+      const dateFilter = filter.date as { $gte?: Date; $lte?: Date };
+      expect(dateFilter.$gte).toEqual(new Date('2026-01-01'));
+      expect(dateFilter.$lte).toEqual(new Date('2026-01-31'));
     });
 
     it('returns paging metadata alongside the data', async () => {
       const repo = createFakeTransactionRepository();
-      repo.findPaginated.mockResolvedValue([{ _id: 'tx1' }]);
+      repo.findPaginated.mockResolvedValue([{ _id: 'tx1' }] as unknown as TransactionDoc[]);
       repo.count.mockResolvedValue(45);
       const service = createTransactionService(repo);
 
@@ -114,13 +124,13 @@ describe('transaction.service', () => {
   describe('toggleSettled', () => {
     it('delegates to the repository\'s atomic toggle', async () => {
       const repo = createFakeTransactionRepository();
-      repo.toggleSettledById.mockResolvedValue({ _id: 'tx1', settled: true });
+      repo.toggleSettledById.mockResolvedValue({ _id: 'tx1', settled: true } as unknown as TransactionDoc);
       const service = createTransactionService(repo);
 
       const result = await service.toggleSettled('user1', 'tx1');
 
       expect(repo.toggleSettledById).toHaveBeenCalledWith('user1', 'tx1');
-      expect(result.settled).toBe(true);
+      expect(result!.settled).toBe(true);
     });
   });
 });
