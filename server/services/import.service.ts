@@ -8,10 +8,14 @@ import Papa from "papaparse";
 import { randomUUID } from "node:crypto";
 import * as importRepository from "../repositories/import.repository.js";
 import * as transactionRepository from "../repositories/transaction.repository.js";
+import * as accountRepository from "../repositories/account.repository.js";
+import * as categoryRepository from "../repositories/category.repository.js";
 import type { Id, MongooseSessionFactory } from "../types/common.js";
 
 type ImportRepository = typeof importRepository;
 type TransactionRepository = typeof transactionRepository;
+type AccountRepository = typeof accountRepository;
+type CategoryRepository = typeof categoryRepository;
 
 const domainError = (message: string, status: number): Error => Object.assign(new Error(message), { status });
 
@@ -92,11 +96,16 @@ interface CreateImportInput {
 export const createImportService = (
   importRepository: ImportRepository,
   transactionRepository: TransactionRepository,
+  accountRepository: AccountRepository,
+  categoryRepository: CategoryRepository,
   mongooseInstance: MongooseSessionFactory = mongoose
 ) => {
   const create = async (userId: Id, { accountId, file }: CreateImportInput) => {
     if (!accountId) throw domainError("Missing accountId", 400);
     if (!file) throw domainError("No file uploaded", 400);
+
+    const account = await accountRepository.findById(userId, accountId);
+    if (!account) throw domainError("Account not found.", 404);
 
     const { rowCount, transactions, errors } = parseCsv(file.buffer.toString("utf-8"));
     const importId = new mongoose.Types.ObjectId();
@@ -145,6 +154,9 @@ export const createImportService = (
   const updateTransactionCategory = async (userId: Id, transactionId: Id, categoryId: Id | undefined) => {
     if (!categoryId) throw domainError("No categoryId", 400);
 
+    const category = await categoryRepository.findById(userId, categoryId);
+    if (!category) throw domainError("Category not found.", 404);
+
     const updated = await transactionRepository.updateById(userId, transactionId, { categoryId });
     if (!updated) throw domainError("No transactions found", 404);
     return updated;
@@ -152,6 +164,11 @@ export const createImportService = (
 
   const batchUpdateTransactionCategories = async (userId: Id, importId: Id, updates: Array<{ transactionId: Id; categoryId: Id }>) => {
     if (!Array.isArray(updates) || updates.length === 0) throw domainError("No data to update", 400);
+
+    const uniqueCategoryIds = [...new Set(updates.map((u) => u.categoryId.toString()))];
+    const categories = await Promise.all(uniqueCategoryIds.map((id) => categoryRepository.findById(userId, id)));
+    if (categories.some((category) => !category)) throw domainError("Category not found.", 404);
+
     return transactionRepository.bulkUpdateCategories(userId, importId, updates);
   };
 
@@ -166,7 +183,7 @@ export const createImportService = (
   return { create, listForUser, getTransactions, updateTransactionCategory, batchUpdateTransactionCategories, remove };
 };
 
-const defaultService = createImportService(importRepository, transactionRepository);
+const defaultService = createImportService(importRepository, transactionRepository, accountRepository, categoryRepository);
 
 export const {
   create,

@@ -1,6 +1,8 @@
 import { createImportService, parseCsv } from '../services/import.service.js';
 import * as importRepository from '../repositories/import.repository.js';
 import * as transactionRepository from '../repositories/transaction.repository.js';
+import * as accountRepository from '../repositories/account.repository.js';
+import * as categoryRepository from '../repositories/category.repository.js';
 import type { MongooseSessionFactory } from '../types/common.js';
 
 describe('parseCsv', () => {
@@ -64,6 +66,8 @@ describe('parseCsv', () => {
 
 type ImportRepository = jest.Mocked<typeof importRepository>;
 type TransactionRepository = jest.Mocked<typeof transactionRepository>;
+type AccountRepository = jest.Mocked<typeof accountRepository>;
+type CategoryRepository = jest.Mocked<typeof categoryRepository>;
 type ImportDoc = Awaited<ReturnType<typeof importRepository.findById>>;
 type TransactionDoc = Awaited<ReturnType<typeof transactionRepository.createMany>>[number];
 
@@ -92,6 +96,20 @@ const createFakeMongoose = (): MongooseSessionFactory =>
     }),
   } as unknown as MongooseSessionFactory);
 
+// Ownership checks default to "found" so existing tests don't each need
+// their own account/category stub.
+const createFakeAccountRepository = (): AccountRepository =>
+  ({ findById: jest.fn().mockResolvedValue({ _id: 'acc1' }) } as unknown as AccountRepository);
+
+const createFakeCategoryRepository = (): CategoryRepository =>
+  ({ findById: jest.fn().mockResolvedValue({ _id: 'cat1' }) } as unknown as CategoryRepository);
+
+const createService = (
+  importRepo: ImportRepository,
+  transactionRepo: TransactionRepository,
+  mongooseInstance: MongooseSessionFactory = createFakeMongoose()
+) => createImportService(importRepo, transactionRepo, createFakeAccountRepository(), createFakeCategoryRepository(), mongooseInstance);
+
 // Only the two fields the service actually reads (buffer, originalname) are
 // faked - real Express.Multer.File has many more (fieldname, mimetype...).
 const fakeFile = (buffer: Buffer, originalname: string): Express.Multer.File =>
@@ -100,16 +118,28 @@ const fakeFile = (buffer: Buffer, originalname: string): Express.Multer.File =>
 describe('import.service', () => {
   describe('create', () => {
     it('rejects when accountId is missing', async () => {
-      const service = createImportService(createFakeImportRepository(), createFakeTransactionRepository(), createFakeMongoose());
+      const service = createService(createFakeImportRepository(), createFakeTransactionRepository(), createFakeMongoose());
 
       await expect(service.create('user1', { file: fakeFile(Buffer.from(''), 'a.csv') }))
         .rejects.toMatchObject({ status: 400 });
     });
 
     it('rejects when no file was uploaded', async () => {
-      const service = createImportService(createFakeImportRepository(), createFakeTransactionRepository(), createFakeMongoose());
+      const service = createService(createFakeImportRepository(), createFakeTransactionRepository(), createFakeMongoose());
 
       await expect(service.create('user1', { accountId: 'acc1' })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('rejects with 404 when the account does not belong to the user', async () => {
+      const accountRepo = createFakeAccountRepository();
+      accountRepo.findById.mockResolvedValue(null);
+      const service = createImportService(
+        createFakeImportRepository(), createFakeTransactionRepository(), accountRepo, createFakeCategoryRepository(), createFakeMongoose()
+      );
+
+      await expect(
+        service.create('user1', { accountId: 'not-mine', file: fakeFile(Buffer.from('date,amount\n2026-01-01,1'), 'a.csv') })
+      ).rejects.toMatchObject({ status: 404 });
     });
 
     it('writes the Import record and parsed transactions inside the same session', async () => {
@@ -119,7 +149,7 @@ describe('import.service', () => {
       importRepository.findById.mockResolvedValue({ status: 'completed' } as unknown as ImportDoc);
       const csv = 'date,amount,description\n2026-01-01,100,Salary\nbad-row,x';
 
-      const service = createImportService(importRepository, transactionRepository, mongooseInstance);
+      const service = createService(importRepository, transactionRepository, mongooseInstance);
       await service.create('user1', {
         accountId: 'acc1',
         file: fakeFile(Buffer.from(csv), 'a.csv'),
@@ -144,7 +174,7 @@ describe('import.service', () => {
       const importRepository = createFakeImportRepository();
       const transactionRepository = createFakeTransactionRepository();
       importRepository.findById.mockResolvedValue({ status: 'completed' } as unknown as ImportDoc);
-      const service = createImportService(importRepository, transactionRepository, createFakeMongoose());
+      const service = createService(importRepository, transactionRepository, createFakeMongoose());
 
       await service.create('user1', {
         accountId: 'acc1',
@@ -164,7 +194,7 @@ describe('import.service', () => {
           endSession,
         }),
       } as unknown as MongooseSessionFactory;
-      const service = createImportService(importRepository, transactionRepository, mongooseInstance);
+      const service = createService(importRepository, transactionRepository, mongooseInstance);
 
       await expect(
         service.create('user1', { accountId: 'acc1', file: fakeFile(Buffer.from('date,amount\n2026-01-01,1'), 'a.csv') })
@@ -178,7 +208,7 @@ describe('import.service', () => {
     it('rejects when the import does not belong to the user', async () => {
       const importRepository = createFakeImportRepository();
       importRepository.findById.mockResolvedValue(null);
-      const service = createImportService(importRepository, createFakeTransactionRepository(), createFakeMongoose());
+      const service = createService(importRepository, createFakeTransactionRepository(), createFakeMongoose());
 
       await expect(service.getTransactions('user1', 'import1')).rejects.toMatchObject({ status: 404 });
     });
@@ -188,7 +218,7 @@ describe('import.service', () => {
       const transactionRepository = createFakeTransactionRepository();
       importRepository.findById.mockResolvedValue({ _id: 'import1' } as unknown as ImportDoc);
       transactionRepository.findByImport.mockResolvedValue([{ _id: 'tx1' }] as unknown as TransactionDoc[]);
-      const service = createImportService(importRepository, transactionRepository, createFakeMongoose());
+      const service = createService(importRepository, transactionRepository, createFakeMongoose());
 
       const result = await service.getTransactions('user1', 'import1');
 
@@ -199,7 +229,7 @@ describe('import.service', () => {
 
   describe('updateTransactionCategory', () => {
     it('rejects when categoryId is missing', async () => {
-      const service = createImportService(createFakeImportRepository(), createFakeTransactionRepository(), createFakeMongoose());
+      const service = createService(createFakeImportRepository(), createFakeTransactionRepository(), createFakeMongoose());
 
       await expect(service.updateTransactionCategory('user1', 'tx1', undefined)).rejects.toMatchObject({ status: 400 });
     });
@@ -207,15 +237,39 @@ describe('import.service', () => {
     it('rejects when the transaction does not belong to the user', async () => {
       const transactionRepository = createFakeTransactionRepository();
       transactionRepository.updateById.mockResolvedValue(null);
-      const service = createImportService(createFakeImportRepository(), transactionRepository, createFakeMongoose());
+      const service = createService(createFakeImportRepository(), transactionRepository, createFakeMongoose());
 
       await expect(service.updateTransactionCategory('user1', 'tx1', 'cat1')).rejects.toMatchObject({ status: 404 });
+    });
+
+    it('rejects with 404 when the category does not belong to the user', async () => {
+      const categoryRepo = createFakeCategoryRepository();
+      categoryRepo.findById.mockResolvedValue(null);
+      const service = createImportService(
+        createFakeImportRepository(), createFakeTransactionRepository(), createFakeAccountRepository(), categoryRepo, createFakeMongoose()
+      );
+
+      await expect(service.updateTransactionCategory('user1', 'tx1', 'not-mine')).rejects.toMatchObject({ status: 404 });
     });
   });
 
   describe('batchUpdateTransactionCategories', () => {
+    it('rejects with 404 if any categoryId in the batch does not belong to the user', async () => {
+      const categoryRepo = createFakeCategoryRepository();
+      categoryRepo.findById.mockResolvedValue(null);
+      const transactionRepository = createFakeTransactionRepository();
+      const service = createImportService(
+        createFakeImportRepository(), transactionRepository, createFakeAccountRepository(), categoryRepo, createFakeMongoose()
+      );
+
+      await expect(
+        service.batchUpdateTransactionCategories('user1', 'import1', [{ transactionId: 'tx1', categoryId: 'not-mine' }])
+      ).rejects.toMatchObject({ status: 404 });
+      expect(transactionRepository.bulkUpdateCategories).not.toHaveBeenCalled();
+    });
+
     it('rejects an empty updates array', async () => {
-      const service = createImportService(createFakeImportRepository(), createFakeTransactionRepository(), createFakeMongoose());
+      const service = createService(createFakeImportRepository(), createFakeTransactionRepository(), createFakeMongoose());
 
       await expect(service.batchUpdateTransactionCategories('user1', 'import1', [])).rejects.toMatchObject({ status: 400 });
     });
@@ -225,7 +279,7 @@ describe('import.service', () => {
     it('rejects when the import does not belong to the user', async () => {
       const importRepository = createFakeImportRepository();
       importRepository.findById.mockResolvedValue(null);
-      const service = createImportService(importRepository, createFakeTransactionRepository(), createFakeMongoose());
+      const service = createService(importRepository, createFakeTransactionRepository(), createFakeMongoose());
 
       await expect(service.remove('user1', 'missing')).rejects.toMatchObject({ status: 404 });
     });
@@ -234,7 +288,7 @@ describe('import.service', () => {
       const importRepository = createFakeImportRepository();
       const transactionRepository = createFakeTransactionRepository();
       importRepository.findById.mockResolvedValue({ _id: 'import1' } as unknown as ImportDoc);
-      const service = createImportService(importRepository, transactionRepository, createFakeMongoose());
+      const service = createService(importRepository, transactionRepository, createFakeMongoose());
 
       await service.remove('user1', 'import1');
 

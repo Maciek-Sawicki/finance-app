@@ -1,9 +1,15 @@
 import mongoose from "mongoose";
 import * as transactionRepository from "../repositories/transaction.repository.js";
+import * as accountRepository from "../repositories/account.repository.js";
+import * as categoryRepository from "../repositories/category.repository.js";
 import type { TransactionAttrs } from "../models/transaction.model.js";
 import type { Id } from "../types/common.js";
 
 type TransactionRepository = typeof transactionRepository;
+type AccountRepository = typeof accountRepository;
+type CategoryRepository = typeof categoryRepository;
+
+const domainError = (message: string, status: number): Error => Object.assign(new Error(message), { status });
 
 interface TransactionInput {
   categoryId?: Id;
@@ -26,9 +32,29 @@ export interface ListQuery {
   limit?: string;
 }
 
-export const createTransactionService = (transactionRepository: TransactionRepository) => {
-  const create = (userId: Id, data: Required<Pick<TransactionInput, "accountId" | "type" | "amount">> & TransactionInput) =>
-    transactionRepository.create({
+export const createTransactionService = (
+  transactionRepository: TransactionRepository,
+  accountRepository: AccountRepository,
+  categoryRepository: CategoryRepository
+) => {
+  // accountId/categoryId come from the client - without checking they
+  // actually belong to this user, a caller could write a transaction onto
+  // (and later, via populate, read details of) someone else's account.
+  const assertOwnedRefs = async (userId: Id, data: Pick<TransactionInput, "accountId" | "categoryId">) => {
+    if (data.accountId !== undefined) {
+      const account = await accountRepository.findById(userId, data.accountId);
+      if (!account) throw domainError("Account not found.", 404);
+    }
+    if (data.categoryId !== undefined) {
+      const category = await categoryRepository.findById(userId, data.categoryId);
+      if (!category) throw domainError("Category not found.", 404);
+    }
+  };
+
+  const create = async (userId: Id, data: Required<Pick<TransactionInput, "accountId" | "type" | "amount">> & TransactionInput) => {
+    await assertOwnedRefs(userId, data);
+
+    return transactionRepository.create({
       userId,
       categoryId: data.categoryId,
       accountId: data.accountId,
@@ -39,12 +65,15 @@ export const createTransactionService = (transactionRepository: TransactionRepos
       description: data.description,
       exclude: data.exclude || false,
     } as mongoose.AnyKeys<TransactionAttrs>);
+  };
 
   const getById = (userId: Id, transactionId: Id) => transactionRepository.findById(userId, transactionId);
 
   // Only these fields may be changed by a client - accepting the raw request
   // body here would let a caller overwrite userId/transferId/importId.
-  const update = (userId: Id, transactionId: Id, data: TransactionInput) => {
+  const update = async (userId: Id, transactionId: Id, data: TransactionInput) => {
+    await assertOwnedRefs(userId, data);
+
     const updateData: TransactionInput = {};
     if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
     if (data.accountId !== undefined) updateData.accountId = data.accountId;
@@ -94,6 +123,6 @@ export const createTransactionService = (transactionRepository: TransactionRepos
   return { create, getById, update, remove, toggleSettled, list, listRecent };
 };
 
-const defaultService = createTransactionService(transactionRepository);
+const defaultService = createTransactionService(transactionRepository, accountRepository, categoryRepository);
 
 export const { create, getById, update, remove, toggleSettled, list, listRecent } = defaultService;

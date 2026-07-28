@@ -1,9 +1,13 @@
 import type mongoose from "mongoose";
 import * as recurringTransactionRepository from "../repositories/recurringTransaction.repository.js";
+import * as accountRepository from "../repositories/account.repository.js";
+import * as categoryRepository from "../repositories/category.repository.js";
 import type { RecurringTransactionAttrs } from "../models/recurringTransaction.model.js";
 import type { Id } from "../types/common.js";
 
 type RecurringTransactionRepository = typeof recurringTransactionRepository;
+type AccountRepository = typeof accountRepository;
+type CategoryRepository = typeof categoryRepository;
 
 interface RecurringTransactionInput {
   name?: string;
@@ -38,7 +42,25 @@ const whitelist = (data: RecurringTransactionInput): RecurringTransactionInput =
   return result;
 };
 
-export const createRecurringTransactionService = (repository: RecurringTransactionRepository) => {
+export const createRecurringTransactionService = (
+  repository: RecurringTransactionRepository,
+  accountRepository: AccountRepository,
+  categoryRepository: CategoryRepository
+) => {
+  // accountId/categoryId come from the client - without checking they
+  // actually belong to this user, a caller could point a recurring
+  // transaction at someone else's account/category.
+  const assertOwnedRefs = async (userId: Id, data: Pick<RecurringTransactionInput, "accountId" | "categoryId">) => {
+    if (data.accountId !== undefined) {
+      const account = await accountRepository.findById(userId, data.accountId);
+      if (!account) throw domainError("Account not found", 404);
+    }
+    if (data.categoryId !== undefined) {
+      const category = await categoryRepository.findById(userId, data.categoryId);
+      if (!category) throw domainError("Category not found", 404);
+    }
+  };
+
   const list = (userId: Id) => repository.findByUser(userId);
 
   const getById = async (userId: Id, id: Id) => {
@@ -47,10 +69,13 @@ export const createRecurringTransactionService = (repository: RecurringTransacti
     return transaction;
   };
 
-  const create = (userId: Id, data: RecurringTransactionInput) =>
-    repository.create({ ...whitelist(data), userId } as mongoose.AnyKeys<RecurringTransactionAttrs>);
+  const create = async (userId: Id, data: RecurringTransactionInput) => {
+    await assertOwnedRefs(userId, data);
+    return repository.create({ ...whitelist(data), userId } as mongoose.AnyKeys<RecurringTransactionAttrs>);
+  };
 
   const update = async (userId: Id, id: Id, data: RecurringTransactionInput) => {
+    await assertOwnedRefs(userId, data);
     const updated = await repository.updateById(userId, id, whitelist(data) as Partial<RecurringTransactionAttrs>);
     if (!updated) throw domainError("Recurring transaction not found", 404);
     return updated;
@@ -71,6 +96,6 @@ export const createRecurringTransactionService = (repository: RecurringTransacti
   return { list, getById, create, update, remove, toggleActive };
 };
 
-const defaultService = createRecurringTransactionService(recurringTransactionRepository);
+const defaultService = createRecurringTransactionService(recurringTransactionRepository, accountRepository, categoryRepository);
 
 export const { list, getById, create, update, remove, toggleActive } = defaultService;
