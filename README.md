@@ -6,7 +6,7 @@ A personal finance management app for tracking accounts, transactions, budgets, 
 
 **Frontend** — React 19 + TypeScript, Vite, Tailwind CSS, shadcn/ui, React Router v7, Recharts, Axios
 
-**Backend** — Node.js, Express 5, MongoDB + Mongoose, JWT auth, node-cron
+**Backend** — Node.js, Express 5, MongoDB + Mongoose, JWT auth via httpOnly cookie, node-cron
 
 ## Features
 
@@ -18,7 +18,7 @@ A personal finance management app for tracking accounts, transactions, budgets, 
 - CSV import with category mapping
 - Exchange rate updates via cron job
 - Multi-currency support with automatic conversion
-- Dashboard summaries: cash flow, trends, savings rate, category breakdown
+- Dashboard summary (monthly income/expense/profit) and top-category breakdown
 
 ## Getting Started
 
@@ -62,18 +62,19 @@ finance-app/
 │       ├── pages/
 │       └── services/
 ├── server/          # Express backend
-│   ├── controllers/
-│   ├── models/
 │   ├── routes/
-│   ├── middleware/
+│   ├── controllers/
 │   ├── services/
+│   ├── repositories/
+│   ├── models/
+│   ├── middleware/
 │   └── cron/
 └── docs/            # API documentation
 ```
 
 ## API Docs
 
-See [`docs/`](./docs) for full endpoint reference:
+See [`docs/`](./docs) for full endpoint reference, and [`docs/architecture.md`](./docs/architecture.md) for how the backend is put together (layers, soft delete, auth, ownership checks, rate limiting).
 
 - [Authentication](./docs/auth.md)
 - [Accounts](./docs/accounts.md)

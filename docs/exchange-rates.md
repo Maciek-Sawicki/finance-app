@@ -2,7 +2,7 @@
 
 Base path: `/api/rates`
 
-Exchange rates endpoints are **public** (no auth required). Rates are based on USD and updated automatically by a cron job.
+All endpoints here are **public** (no auth required) — rate limited instead (60 requests/min per IP for the reads below). Rates are based on USD and refreshed automatically every 6 hours by a cron job (`fetchRatesJob`), guarded by a distributed lock so only one server instance runs it.
 
 ---
 
@@ -10,28 +10,35 @@ Exchange rates endpoints are **public** (no auth required). Rates are based on U
 
 Get the latest exchange rates document.
 
+**Query params**
+| Param | Default | Description |
+|-------|---------|-------------|
+| `base` | `USD` | Base currency of the document to fetch |
+
 **Response `200`**
 ```json
 {
   "base": "USD",
   "rates": { "EUR": 0.92, "PLN": 3.97, "GBP": 0.79, ... },
-  "updatedAt": "2025-06-01T06:00:00Z"
+  "date": "2026-06-01T06:00:00Z"
 }
 ```
+
+**Response `404`** — no rates document exists yet for that base currency.
 
 ---
 
 ## GET /currencies
 
-Get all available currency codes.
+All available currency codes from the latest rates document.
 
-**Response `200`** — `["USD", "EUR", "PLN", ...]`
+**Response `200`** — `[{ "code": "USD" }, { "code": "EUR" }, ...]`
 
 ---
 
 ## GET /currencies/popular
 
-Get a short list of popular currencies.
+A fixed shortlist of popular currencies (USD, EUR, GBP, PLN, CHF, JPY, CAD, AUD, NZD, SEK, NOK, DKK, CZK, HUF, AED), filtered to only ones present in the latest rates document.
 
 ---
 
@@ -50,13 +57,18 @@ Convert an amount between two currencies.
 
 **Response `200`**
 ```json
-{ "amount": 100, "from": "USD", "to": "PLN", "result": 397.00 }
+{ "amount": 397.00, "from": "USD", "to": "PLN" }
 ```
+(`amount` in the response is the *converted* amount, not the input.)
+
+**Response `400`** — missing param, or `amount` isn't a valid number.
 
 ---
 
-## POST /update
+## POST /update 🔒
 
-Manually trigger a rates refresh (fetches latest data from external API).
+Rate limited: 10 requests / 30s. Manually trigger a rates refresh from the external API (same thing the cron job does).
 
-**Response `200`** — `{ message }`
+**Query params** — `base` (optional, defaults to `USD`)
+
+**Response `200`** — `{ message, rates }`

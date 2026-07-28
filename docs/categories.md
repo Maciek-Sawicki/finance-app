@@ -2,44 +2,47 @@
 
 Base path: `/api/categories`
 
-All endpoints require `Authorization: Bearer <token>`.
+See [Authentication](./auth.md) for what 🔒 requires.
+
+Eight default categories are created automatically for every new user at sign-up (Food, Transport, Entertainment, Shopping, Health, Salary, Investments, Gift).
 
 ---
 
-## POST /create
+## POST /
 
 **Body**
 ```json
 {
   "name": "Groceries",
   "type": "expense",
-  "icon": "🛒",
-  "color": "#4CAF50",
-  "favorite": false
+  "icon": "🛒"
 }
 ```
 
-- `type`: `"income"` or `"expense"`
+- `name`, `type` are required.
+- `type`: `"income"`, `"expense"`, `"transfer"`, or `"exclude"`.
+- The `(userId, name, type)` combination must be unique — a duplicate returns `409`.
 
 **Response `201`** — `{ message, category }`
+**Response `409`** — `{ "message": "Category already exists." }`
 
 ---
 
 ## GET /
 
-Get all categories for the authenticated user.
+Get all categories for the authenticated user, newest first.
 
 ---
 
 ## GET /favorites
 
-Get only categories marked as favorite.
+Get only categories marked `favorite: true`.
 
 ---
 
 ## GET /:id
 
-Get a single category.
+Get a single category. `404` if not found/not owned.
 
 ---
 
@@ -53,4 +56,6 @@ Update a category. All fields optional.
 
 ## DELETE /:id
 
-Delete a category.
+Soft-deletes the category (hidden from every read, not physically removed). Its `(userId, name, type)` slot is freed up immediately — you can create a new category with the same name/type right after deleting the old one.
+
+Note: deleting a category does **not** currently clean up or block on Transactions/Budgets/RecurringTransactions that still reference it — they simply keep the old `categoryId`.

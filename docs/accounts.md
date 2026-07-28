@@ -2,11 +2,11 @@
 
 Base path: `/api/accounts`
 
-All endpoints require `Authorization: Bearer <token>`.
+See [Authentication](./auth.md) for what 🔒 requires.
 
 ---
 
-## POST /create
+## POST /
 
 Create a new account.
 
@@ -23,26 +23,30 @@ Create a new account.
 }
 ```
 
+`name`, `type`, `currency`, `startingBalance` are required. `startingBalance` must be ≥ 0.
+
 **Response `201`** — `{ message, account }`
 
 ---
 
 ## GET /
 
-Get all accounts with calculated balances.
+Get all accounts with calculated balances, each converted into a target currency.
 
 **Query params**
 | Param | Default | Description |
 |-------|---------|-------------|
 | `currency` | `USD` | Target currency for `convertedBalance` |
 
-**Response `200`** — Array of accounts, each with `balance` and `convertedBalance`.
+**Response `200`** — Array of accounts, each with `balance` (settled), `balanceAfterRP` (including unsettled receivables/payables), `convertedBalance`, `convertedCurrency`.
+
+**Response `404`** — no accounts exist yet.
 
 ---
 
 ## GET /default
 
-Get the user's default account with settled and total (including receivables/payables) balance.
+Get the user's default account (`isDefault: true`) with its balance.
 
 **Response `200`**
 ```json
@@ -59,7 +63,7 @@ Get the user's default account with settled and total (including receivables/pay
 
 ## GET /total-balance
 
-Get the total balance across all accounts converted to a single currency.
+Total balance across all accounts, converted into a single currency.
 
 **Query params**
 | Param | Required | Description |
@@ -79,7 +83,7 @@ Get the total balance across all accounts converted to a single currency.
 
 ## GET /summary
 
-Get per-account balances with settled and receivables/payables breakdown, all converted to a target currency.
+Per-account balances (settled + after-receivables/payables), each converted into a target currency.
 
 **Query params**
 | Param | Default | Description |
@@ -90,13 +94,13 @@ Get per-account balances with settled and receivables/payables breakdown, all co
 
 ## GET /by-type/:type
 
-Get accounts filtered by type (e.g. `checking`, `savings`, `investment`).
+Accounts filtered by `type` (e.g. `checking`, `savings`, `investment` — free-text field, not an enum).
 
 ---
 
 ## GET /by-currency/:currency
 
-Get accounts filtered by currency (e.g. `USD`, `EUR`).
+Accounts filtered by `currency` (e.g. `USD`, `EUR`).
 
 ---
 
@@ -108,7 +112,7 @@ Get a single account by ID with its current balance.
 
 ## GET /:id/balance
 
-Get just the numeric balance for an account.
+Just the numeric settled balance.
 
 **Response `200`** — `{ "balance": 1250.00 }`
 
@@ -116,18 +120,20 @@ Get just the numeric balance for an account.
 
 ## PUT /:id
 
-Update account fields. All body fields are optional.
+Update account fields. All body fields optional.
 
-**Body** — any subset of: `name`, `type`, `currency`, `startingBalance`, `icon`, `description`, `isDefault`
+**Body** — any subset of: `name`, `type`, `currency`, `startingBalance`, `icon`, `description`, `isDefault`. `startingBalance`, if sent, must be ≥ 0.
 
 ---
 
 ## DELETE /:id
 
-Delete an account and all its transactions.
+Soft-deletes the account and all of its transactions (marked `isDeleted`, hidden from every read — not physically removed).
+
+**Response `200`** — `{ "message": "Account and related transactions deleted successfully" }`
 
 ---
 
 ## POST /:id/default
 
-Set an account as the default. Clears the previous default.
+Set an account as the default. Unsets the previous default first.
